@@ -6,133 +6,55 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Upload, 
   FileArchive, 
-  FolderOpen, 
   FileCode, 
   CheckCircle2, 
   Loader2,
   X,
-  FileText
+  FileText,
+  Sparkles,
+  Brain
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-
-interface UploadedFile {
-  id: string;
-  name: string;
-  size: number;
-  type: 'zip' | 'folder' | 'php' | 'js' | 'mixed';
-  status: 'uploading' | 'processing' | 'ready' | 'error';
-  progress: number;
-  language?: string;
-  framework?: string;
-}
+import { useLargeFileUpload } from '@/hooks/useLargeFileUpload';
 
 interface SourceUploadProps {
-  onUploadComplete: (file: UploadedFile) => void;
+  onUploadComplete?: (file: any) => void;
+  onAnalysisComplete?: (file: any, analysis: string) => void;
 }
 
-export function SourceUpload({ onUploadComplete }: SourceUploadProps) {
+export function SourceUpload({ onUploadComplete, onAnalysisComplete }: SourceUploadProps) {
   const [isDragging, setIsDragging] = useState(false);
-  const [files, setFiles] = useState<UploadedFile[]>([]);
 
-  const processFile = useCallback((file: File) => {
-    const fileType = file.name.endsWith('.zip') ? 'zip' : 
-                     file.name.endsWith('.php') ? 'php' :
-                     file.name.endsWith('.js') ? 'js' : 'mixed';
-
-    const newFile: UploadedFile = {
-      id: crypto.randomUUID(),
-      name: file.name,
-      size: file.size,
-      type: fileType,
-      status: 'uploading',
-      progress: 0,
-    };
-
-    setFiles(prev => [...prev, newFile]);
-
-    // Simulate chunked upload with progress
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += Math.random() * 15 + 5;
-      if (progress >= 100) {
-        progress = 100;
-        clearInterval(interval);
-        
-        // Move to processing
-        setFiles(prev => prev.map(f => 
-          f.id === newFile.id 
-            ? { ...f, progress: 100, status: 'processing' } 
-            : f
-        ));
-
-        // Simulate processing
-        setTimeout(() => {
-          const detectedLanguage = fileType === 'php' ? 'PHP' : fileType === 'js' ? 'JavaScript' : 'Mixed';
-          const detectedFramework = fileType === 'php' ? 'Laravel' : fileType === 'js' ? 'React' : 'Custom';
-          
-          setFiles(prev => prev.map(f => 
-            f.id === newFile.id 
-              ? { 
-                  ...f, 
-                  status: 'ready', 
-                  language: detectedLanguage,
-                  framework: detectedFramework
-                } 
-              : f
-          ));
-
-          onUploadComplete({
-            ...newFile,
-            status: 'ready',
-            progress: 100,
-            language: detectedLanguage,
-            framework: detectedFramework
-          });
-
-          toast.success('Source code uploaded', {
-            description: `${file.name} is ready for analysis`
-          });
-        }, 2000);
-      } else {
-        setFiles(prev => prev.map(f => 
-          f.id === newFile.id ? { ...f, progress } : f
-        ));
-      }
-    }, 200);
-  }, [onUploadComplete]);
+  const { 
+    files, 
+    isUploading, 
+    uploadAndAnalyze, 
+    removeFile, 
+    formatSize 
+  } = useLargeFileUpload({
+    maxSizeMB: 500, // 500MB max
+    onUploadComplete,
+    onAnalysisComplete,
+  });
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
     
     const droppedFiles = Array.from(e.dataTransfer.files);
-    droppedFiles.forEach(processFile);
-  }, [processFile]);
+    droppedFiles.forEach(file => uploadAndAnalyze(file));
+  }, [uploadAndAnalyze]);
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
-    selectedFiles.forEach(processFile);
-  }, [processFile]);
+    selectedFiles.forEach(file => uploadAndAnalyze(file));
+    e.target.value = ''; // Reset input
+  }, [uploadAndAnalyze]);
 
-  const removeFile = (id: string) => {
-    setFiles(prev => prev.filter(f => f.id !== id));
-  };
-
-  const formatSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + ' B';
-    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-  };
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'zip': return FileArchive;
-      case 'folder': return FolderOpen;
-      case 'php': return FileCode;
-      case 'js': return FileCode;
-      default: return FileText;
-    }
+  const getTypeIcon = (name: string) => {
+    if (name.endsWith('.zip') || name.endsWith('.rar') || name.endsWith('.7z')) return FileArchive;
+    if (name.endsWith('.php') || name.endsWith('.js') || name.endsWith('.ts') || name.endsWith('.py')) return FileCode;
+    return FileText;
   };
 
   return (
@@ -145,9 +67,15 @@ export function SourceUpload({ onUploadComplete }: SourceUploadProps) {
           <div>
             <CardTitle className="text-lg">Source Code Upload</CardTitle>
             <CardDescription className="text-xs">
-              ZIP • Folder • PHP • JS • Mixed | No Size Limit
+              ZIP • PHP • JS • TS • Python | Up to 500MB
             </CardDescription>
           </div>
+          {isUploading && (
+            <Badge variant="outline" className="bg-primary/10 text-primary ml-auto">
+              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+              Uploading...
+            </Badge>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -209,7 +137,7 @@ export function SourceUpload({ onUploadComplete }: SourceUploadProps) {
           <div className="space-y-2">
             <p className="text-sm font-medium text-foreground">Uploaded Files</p>
             {files.map((file) => {
-              const TypeIcon = getTypeIcon(file.type);
+              const TypeIcon = getTypeIcon(file.name);
               
               return (
                 <div
@@ -243,7 +171,16 @@ export function SourceUpload({ onUploadComplete }: SourceUploadProps) {
                       <div className="flex items-center gap-2 mt-1">
                         <Loader2 className="h-3 w-3 animate-spin text-secondary" />
                         <p className="text-xs text-secondary">
-                          Detecting language & framework...
+                          Preparing for analysis...
+                        </p>
+                      </div>
+                    )}
+
+                    {file.status === 'analyzing' && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <Brain className="h-3 w-3 animate-pulse text-primary" />
+                        <p className="text-xs text-primary">
+                          AI analyzing code...
                         </p>
                       </div>
                     )}
@@ -252,7 +189,16 @@ export function SourceUpload({ onUploadComplete }: SourceUploadProps) {
                       <div className="flex items-center gap-2 mt-1">
                         <CheckCircle2 className="h-3 w-3 text-success" />
                         <p className="text-xs text-success">
-                          {file.language} • {file.framework}
+                          {file.analysis ? 'Analysis complete' : 'Ready for analysis'}
+                        </p>
+                      </div>
+                    )}
+
+                    {file.status === 'error' && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <X className="h-3 w-3 text-destructive" />
+                        <p className="text-xs text-destructive">
+                          {file.error || 'Upload failed'}
                         </p>
                       </div>
                     )}
