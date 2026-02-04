@@ -94,6 +94,44 @@ export function AddCreditsModal({ open, onOpenChange, onSuccess }: AddCreditsMod
     const success = await processPayment(1);
     
     if (success) {
+      // Actually add the credit to wallet via Supabase
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: userData } = await supabase.auth.getUser();
+        
+        if (userData.user) {
+          const { data: walletData } = await supabase
+            .from('wallets')
+            .select('id, balance')
+            .eq('user_id', userData.user.id)
+            .maybeSingle();
+
+          if (walletData) {
+            const newBalance = (walletData.balance || 0) + finalAmount;
+            
+            // Create transaction
+            await supabase.from('transactions').insert({
+              wallet_id: walletData.id,
+              type: 'credit',
+              amount: finalAmount,
+              balance_after: newBalance,
+              status: 'completed',
+              description: 'Added credits via payment',
+              created_by: userData.user.id,
+              meta: { payment_method: paymentMethod }
+            });
+
+            // Update wallet balance
+            await supabase
+              .from('wallets')
+              .update({ balance: newBalance })
+              .eq('id', walletData.id);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to update wallet:', error);
+      }
+      
       setStep('success');
       onSuccess?.();
     } else {

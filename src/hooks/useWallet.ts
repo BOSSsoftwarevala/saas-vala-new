@@ -22,6 +22,7 @@ export interface Transaction {
   reference_id: string | null;
   reference_type: string | null;
   created_at: string;
+  meta: Record<string, unknown> | null;
 }
 
 export function useWallet() {
@@ -30,6 +31,8 @@ export function useWallet() {
   const [allWallets, setAllWallets] = useState<Wallet[]>([]);
   const [loading, setLoading] = useState(true);
   const [total, setTotal] = useState(0);
+  const [activeLicenses, setActiveLicenses] = useState(0);
+  const [expiringLicenses, setExpiringLicenses] = useState(0);
 
   const fetchWallet = async () => {
     setLoading(true);
@@ -85,7 +88,35 @@ export function useWallet() {
     }
   };
 
-  const addCredit = async (walletId: string, amount: number, description: string) => {
+  const fetchLicenseStats = async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
+
+    // Get active licenses count
+    const { count: activeCount } = await supabase
+      .from('license_keys')
+      .select('*', { count: 'exact', head: true })
+      .eq('created_by', userData.user.id)
+      .eq('status', 'active');
+
+    setActiveLicenses(activeCount || 0);
+
+    // Get expiring licenses (within 7 days)
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+
+    const { count: expiringCount } = await supabase
+      .from('license_keys')
+      .select('*', { count: 'exact', head: true })
+      .eq('created_by', userData.user.id)
+      .eq('status', 'active')
+      .not('expires_at', 'is', null)
+      .lt('expires_at', sevenDaysFromNow.toISOString());
+
+    setExpiringLicenses(expiringCount || 0);
+  };
+
+  const addCredit = async (walletId: string, amount: number, description: string, paymentMethod?: string) => {
     const { data: userData } = await supabase.auth.getUser();
     
     // Get current balance
@@ -97,7 +128,7 @@ export function useWallet() {
 
     const newBalance = (walletData?.balance || 0) + amount;
 
-    // Create transaction
+    // Create transaction with meta for payment method
     const { error: txError } = await supabase
       .from('transactions')
       .insert({
@@ -107,7 +138,8 @@ export function useWallet() {
         balance_after: newBalance,
         status: 'completed',
         description,
-        created_by: userData.user?.id
+        created_by: userData.user?.id,
+        meta: paymentMethod ? { payment_method: paymentMethod } : null
       });
 
     if (txError) {
@@ -131,7 +163,7 @@ export function useWallet() {
     await fetchAllWallets();
   };
 
-  const deductBalance = async (walletId: string, amount: number, description: string) => {
+  const deductBalance = async (walletId: string, amount: number, description: string, referenceId?: string, referenceType?: string) => {
     const { data: userData } = await supabase.auth.getUser();
     
     // Get current balance
@@ -158,6 +190,8 @@ export function useWallet() {
         balance_after: newBalance,
         status: 'completed',
         description,
+        reference_id: referenceId,
+        reference_type: referenceType,
         created_by: userData.user?.id
       });
 
@@ -177,9 +211,21 @@ export function useWallet() {
     await fetchAllWallets();
   };
 
+  const getLastPaymentStatus = (): { status: 'success' | 'failed' | 'pending' | null; amount: number } => {
+    const lastCreditTx = transactions.find(t => t.type === 'credit');
+    if (!lastCreditTx) return { status: null, amount: 0 };
+    
+    return {
+      status: lastCreditTx.status === 'completed' ? 'success' : 
+              lastCreditTx.status === 'failed' ? 'failed' : 'pending',
+      amount: lastCreditTx.amount
+    };
+  };
+
   useEffect(() => {
     fetchWallet();
     fetchAllWallets();
+    fetchLicenseStats();
   }, []);
 
   useEffect(() => {
@@ -194,10 +240,13 @@ export function useWallet() {
     allWallets,
     loading,
     total,
+    activeLicenses,
+    expiringLicenses,
     fetchWallet,
     fetchTransactions,
     fetchAllWallets,
     addCredit,
-    deductBalance
+    deductBalance,
+    getLastPaymentStatus
   };
 }
