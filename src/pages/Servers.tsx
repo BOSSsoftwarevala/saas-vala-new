@@ -132,6 +132,7 @@ export default function Servers() {
             onDeployNow={handleDeployNow}
             onRefresh={fetchAll}
             onForceSync={handleForceSync}
+            onSecurity={() => navigate('/security-logs')}
             loading={loading}
           />
 

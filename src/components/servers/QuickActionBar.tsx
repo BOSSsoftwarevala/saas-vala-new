@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Plus, Globe, GitBranch, Rocket, RefreshCw, Zap } from 'lucide-react';
+import { Plus, Globe, GitBranch, Rocket, RefreshCw, Zap, Shield } from 'lucide-react';
 
 interface QuickActionBarProps {
   onAddServer: () => void;
@@ -8,6 +8,7 @@ interface QuickActionBarProps {
   onDeployNow: () => void;
   onRefresh: () => void;
   onForceSync: () => void;
+  onSecurity?: () => void;
   loading?: boolean;
 }
 
@@ -18,6 +19,7 @@ export function QuickActionBar({
   onDeployNow,
   onRefresh,
   onForceSync,
+  onSecurity,
   loading,
 }: QuickActionBarProps) {
   return (
@@ -73,6 +75,17 @@ export function QuickActionBar({
           <Globe className="h-4 w-4" />
           <span className="hidden md:inline">Add Domain</span>
         </Button>
+        {onSecurity && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={onSecurity}
+            className="gap-1.5"
+          >
+            <Shield className="h-4 w-4" />
+            <span className="hidden md:inline">Security</span>
+          </Button>
+        )}
         <Button 
           variant="secondary" 
           size="sm" 
