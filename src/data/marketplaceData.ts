@@ -1,6 +1,7 @@
 import { educationSystems } from './educationProducts';
 import { healthcareSystems } from './healthcareData';
 import { governmentSystems } from './governmentData';
+import { retailSystems } from './retailData';
 
 // Category definitions for marketplace
 export const categories = [
@@ -156,6 +157,11 @@ export function generateProducts(categoryId: string, count: number = 8) {
   // Special handling for government - return all 45 real systems
   if (categoryId === 'government') {
     return governmentSystems;
+  }
+
+  // Special handling for retail - return all 45 real systems
+  if (categoryId === 'retail') {
+    return retailSystems;
   }
 
   const categoryMap: Record<string, keyof typeof businessImages> = {
