@@ -14,6 +14,7 @@ import Keys from "./pages/Keys";
 import Servers from "./pages/Servers";
 import ServerSetup from "./pages/ServerSetup";
 import DomainOperations from "./pages/DomainOperations";
+import SecurityLogs from "./pages/SecurityLogs";
 import AiChat from "./pages/AiChat";
 import SaasAiDashboard from "./pages/SaasAiDashboard";
 import AiApis from "./pages/AiApis";
@@ -117,6 +118,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <DomainOperations />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/security-logs"
+        element={
+          <ProtectedRoute>
+            <SecurityLogs />
           </ProtectedRoute>
         }
       />
