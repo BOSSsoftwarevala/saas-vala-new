@@ -12,7 +12,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Plus,
   Wallet as WalletIcon,
@@ -22,6 +21,10 @@ import {
   Search,
   Loader2,
   Users,
+  Settings,
+  CreditCard,
+  Smartphone,
+  Globe,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWallet } from '@/hooks/useWallet';
@@ -29,6 +32,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { AddCreditsModal } from '@/components/wallet/AddCreditsModal';
 import { AdminWalletManager } from '@/components/wallet/AdminWalletManager';
+import { AutoPaySettingsModal } from '@/components/wallet/AutoPaySettingsModal';
+import { WalletStatsCards } from '@/components/wallet/WalletStatsCards';
 
 const ITEMS_PER_PAGE = 25;
 
@@ -39,13 +44,30 @@ const transactionStatusStyles = {
   cancelled: 'bg-muted text-muted-foreground border-muted-foreground/30',
 };
 
+const paymentMethodIcons: Record<string, React.ReactNode> = {
+  card: <CreditCard className="h-3 w-3" />,
+  upi: <Smartphone className="h-3 w-3" />,
+  international: <Globe className="h-3 w-3" />,
+};
+
 export default function Wallet() {
-  const { wallet, transactions, loading, total, fetchTransactions, fetchWallet } = useWallet();
+  const { 
+    wallet, 
+    transactions, 
+    loading, 
+    total, 
+    fetchTransactions, 
+    fetchWallet,
+    activeLicenses,
+    expiringLicenses,
+    getLastPaymentStatus 
+  } = useWallet();
   const { isSuperAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('transactions');
   const [currentPage, setCurrentPage] = useState(1);
   const [showAddCredits, setShowAddCredits] = useState(false);
+  const [showAutoPaySettings, setShowAutoPaySettings] = useState(false);
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
@@ -68,9 +90,16 @@ export default function Wallet() {
     .filter(t => t.status === 'pending')
     .reduce((sum, t) => sum + Math.abs(t.amount), 0);
 
+  const lastPayment = getLastPaymentStatus();
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     fetchTransactions(page, ITEMS_PER_PAGE);
+  };
+
+  const getPaymentMethod = (tx: typeof transactions[0]) => {
+    const meta = tx.meta as Record<string, unknown> | null;
+    return meta?.payment_method as string || null;
   };
 
   return (
@@ -86,85 +115,37 @@ export default function Wallet() {
               Manage your credits, invoices, and agreements
             </p>
           </div>
-          <Button 
-            className="bg-orange-gradient hover:opacity-90 text-white gap-2"
-            onClick={() => setShowAddCredits(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Add Credits
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant="outline" 
+              className="gap-2"
+              onClick={() => setShowAutoPaySettings(true)}
+            >
+              <Settings className="h-4 w-4" />
+              Auto Pay
+            </Button>
+            <Button 
+              className="bg-orange-gradient hover:opacity-90 text-white gap-2"
+              onClick={() => setShowAddCredits(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Add Credits
+            </Button>
+          </div>
         </div>
 
-        {/* Balance Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="glass-card-hover">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground font-normal">
-                Current Balance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-orange-gradient flex items-center justify-center glow-orange">
-                  <WalletIcon className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-3xl font-bold font-display text-foreground">
-                    {loading ? (
-                      <Loader2 className="h-6 w-6 animate-spin" />
-                    ) : (
-                      `₹${(wallet?.balance || 0).toLocaleString()}`
-                    )}
-                  </p>
-                  <p className="text-sm text-success flex items-center gap-1">
-                    <ArrowUpRight className="h-4 w-4" />
-                    +₹{thisMonthCredits.toLocaleString()} this month
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card-hover">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground font-normal">
-                This Month's Spending
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-cyan-gradient flex items-center justify-center glow-cyan">
-                  <ArrowDownRight className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-3xl font-bold font-display text-foreground">
-                    ₹{thisMonthDebits.toLocaleString()}
-                  </p>
-                  <p className="text-sm text-muted-foreground">{transactions.filter(t => t.type === 'debit').length} transactions</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card-hover">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-muted-foreground font-normal">
-                Pending Transactions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center gap-3">
-                <div className="h-12 w-12 rounded-xl bg-purple-gradient flex items-center justify-center glow-purple">
-                  <FileText className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-3xl font-bold font-display text-foreground">₹{pendingAmount.toLocaleString()}</p>
-                  <p className="text-sm text-warning">{transactions.filter(t => t.status === 'pending').length} pending</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        {/* Stats Cards */}
+        <WalletStatsCards
+          balance={wallet?.balance || 0}
+          loading={loading}
+          thisMonthCredits={thisMonthCredits}
+          thisMonthDebits={thisMonthDebits}
+          pendingAmount={pendingAmount}
+          lastPaymentStatus={lastPayment.status}
+          lastPaymentAmount={lastPayment.amount}
+          activeLicenses={activeLicenses}
+          expiringLicenses={expiringLicenses}
+        />
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -220,57 +201,85 @@ export default function Wallet() {
                       <TableRow className="border-border hover:bg-muted/50">
                         <TableHead className="text-muted-foreground">Description</TableHead>
                         <TableHead className="text-muted-foreground">Type</TableHead>
+                        <TableHead className="text-muted-foreground">Product</TableHead>
+                        <TableHead className="text-muted-foreground">Method</TableHead>
                         <TableHead className="text-muted-foreground">Date</TableHead>
                         <TableHead className="text-muted-foreground">Status</TableHead>
                         <TableHead className="text-muted-foreground text-right">Amount</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {filteredTransactions.map((tx) => (
-                        <TableRow key={tx.id} className="border-border hover:bg-muted/30">
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <div
-                                className={cn(
-                                  'h-8 w-8 rounded-lg flex items-center justify-center',
-                                  tx.type === 'credit' || tx.type === 'refund' ? 'bg-success/20' : 'bg-muted'
-                                )}
-                              >
-                                {tx.type === 'credit' || tx.type === 'refund' ? (
-                                  <ArrowUpRight className="h-4 w-4 text-success" />
-                                ) : (
-                                  <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
-                                )}
+                      {filteredTransactions.map((tx) => {
+                        const paymentMethod = getPaymentMethod(tx);
+                        return (
+                          <TableRow key={tx.id} className="border-border hover:bg-muted/30">
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={cn(
+                                    'h-8 w-8 rounded-lg flex items-center justify-center',
+                                    tx.type === 'credit' || tx.type === 'refund' ? 'bg-success/20' : 'bg-muted'
+                                  )}
+                                >
+                                  {tx.type === 'credit' || tx.type === 'refund' ? (
+                                    <ArrowUpRight className="h-4 w-4 text-success" />
+                                  ) : (
+                                    <ArrowDownRight className="h-4 w-4 text-muted-foreground" />
+                                  )}
+                                </div>
+                                <span className="text-foreground">{tx.description || 'Transaction'}</span>
                               </div>
-                              <span className="text-foreground">{tx.description || 'Transaction'}</span>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className="capitalize">
-                              {tx.type}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {new Date(tx.created_at).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant="outline"
-                              className={cn(transactionStatusStyles[tx.status])}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className="capitalize">
+                                {tx.type}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {tx.reference_type === 'license' && tx.reference_id ? (
+                                <Badge variant="outline" className="text-xs">
+                                  License #{tx.reference_id.slice(0, 8)}
+                                </Badge>
+                              ) : tx.reference_type === 'product' && tx.reference_id ? (
+                                <Badge variant="outline" className="text-xs">
+                                  Product
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {paymentMethod ? (
+                                <div className="flex items-center gap-1.5">
+                                  {paymentMethodIcons[paymentMethod] || <CreditCard className="h-3 w-3" />}
+                                  <span className="text-xs text-muted-foreground capitalize">{paymentMethod}</span>
+                                </div>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {new Date(tx.created_at).toLocaleDateString()}
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant="outline"
+                                className={cn(transactionStatusStyles[tx.status])}
+                              >
+                                {tx.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell
+                              className={cn(
+                                'text-right font-semibold',
+                                tx.type === 'credit' || tx.type === 'refund' ? 'text-success' : 'text-foreground'
+                              )}
                             >
-                              {tx.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell
-                            className={cn(
-                              'text-right font-semibold',
-                              tx.type === 'credit' || tx.type === 'refund' ? 'text-success' : 'text-foreground'
-                            )}
-                          >
-                            {tx.type === 'credit' || tx.type === 'refund' ? '+' : '-'}₹{Math.abs(tx.amount).toLocaleString()}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                              {tx.type === 'credit' || tx.type === 'refund' ? '+' : '-'}₹{Math.abs(tx.amount).toLocaleString()}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                   <PaginationControls
@@ -329,6 +338,12 @@ export default function Wallet() {
         open={showAddCredits}
         onOpenChange={setShowAddCredits}
         onSuccess={fetchWallet}
+      />
+
+      {/* Auto Pay Settings Modal */}
+      <AutoPaySettingsModal
+        open={showAutoPaySettings}
+        onOpenChange={setShowAutoPaySettings}
       />
     </DashboardLayout>
   );
