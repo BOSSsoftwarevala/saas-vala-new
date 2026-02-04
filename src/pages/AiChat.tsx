@@ -4,6 +4,7 @@ import { ChatHeader } from '@/components/ai-chat/ChatHeader';
 import { ChatMessage, Message, FileAttachment } from '@/components/ai-chat/ChatMessage';
 import { ChatInput } from '@/components/ai-chat/ChatInput';
 import { EmptyState } from '@/components/ai-chat/EmptyState';
+import { HostingCredentialsModal, HostingCredentials } from '@/components/ai-chat/HostingCredentialsModal';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +17,7 @@ interface ChatSession {
   createdAt: Date;
   messages: Message[];
 }
+
 
 const getFileType = (file: File): FileAttachment['type'] => {
   const ext = file.name.split('.').pop()?.toLowerCase() || '';
@@ -31,7 +33,7 @@ const getFileType = (file: File): FileAttachment['type'] => {
 // Check if file is analyzable source code
 const isAnalyzableFile = (file: File): boolean => {
   const ext = file.name.split('.').pop()?.toLowerCase() || '';
-  const analyzableExts = ['zip', 'apk', 'php', 'js', 'ts', 'tsx', 'jsx', 'py', 'html', 'css', 'json', 'sql', 'java', 'kt', 'xml'];
+  const analyzableExts = ['zip', 'apk', 'php', 'js', 'ts', 'tsx', 'jsx', 'py', 'html', 'css', 'json', 'sql', 'java', 'kt', 'xml', 'tar', 'gz', 'rar'];
   return analyzableExts.includes(ext);
 };
 
@@ -64,6 +66,15 @@ export default function AiChat() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
+  
+  // Hosting modal state
+  const [showHostingModal, setShowHostingModal] = useState(false);
+  const [pendingDeployFile, setPendingDeployFile] = useState<{
+    filePath: string;
+    fileName: string;
+    fileId: string;
+    analysisResult: any;
+  } | null>(null);
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
 
@@ -282,8 +293,25 @@ ${result.analysis?.dependencies?.length > 0 ? result.analysis.dependencies.map((
 ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
 
 **📋 Status:** ${result.deployment?.status === 'ready' ? '🟢 Ready to deploy' : result.deployment?.status === 'deployed' ? '🚀 Deployed' : '🔴 Needs attention'}
+
+---
+🚀 **Ready to deploy!** Click the deploy button or type "deploy" to upload to your hosting.
 `);
                   toast.success(`${file.name} analyzed successfully`);
+                  
+                  // Save for deployment
+                  setPendingDeployFile({
+                    filePath,
+                    fileName: file.name,
+                    fileId,
+                    analysisResult: result
+                  });
+                  
+                  // Auto-show hosting modal after short delay
+                  setTimeout(() => {
+                    setShowHostingModal(true);
+                  }, 1500);
+                  
                 } else {
                   console.error('Pipeline error:', pipelineError);
                 }
@@ -464,6 +492,73 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
     toast.success('Chat exported successfully');
   };
 
+  // Handle hosting credentials submission and deploy
+  const handleHostingDeploy = async (credentials: HostingCredentials) => {
+    if (!pendingDeployFile) return;
+    
+    toast.info('🚀 Starting deployment to your server...');
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('auto-deploy-pipeline', {
+        body: {
+          filePath: pendingDeployFile.filePath,
+          deploymentId: pendingDeployFile.fileId,
+          hostingCredentials: {
+            type: credentials.type,
+            host: credentials.host,
+            username: credentials.username,
+            password: credentials.password,
+            port: parseInt(credentials.port),
+            path: credentials.path,
+          }
+        }
+      });
+
+      if (error) {
+        toast.error('Deployment failed: ' + error.message);
+        return;
+      }
+
+      // Add deployment result to chat
+      const deployResult = data as any;
+      const deployMessage = `
+🚀 **DEPLOYMENT COMPLETE!**
+
+**Status:** ${deployResult.deployment?.status === 'deployed' ? '✅ Live' : '⚠️ ' + deployResult.deployment?.status}
+${deployResult.deployment?.url ? `**URL:** ${deployResult.deployment.url}` : ''}
+
+**Summary:**
+- Files uploaded: ✓
+- Security fixes applied: ${deployResult.fixes?.applied || 0}
+- Tests passed: ${deployResult.tests?.passed || 0}
+
+${credentials.domain ? `Your site is now live at: **${credentials.domain}**` : ''}
+`;
+
+      // Add to session
+      const deployMessageObj: Message = {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: deployMessage,
+        timestamp: new Date()
+      };
+
+      setSessions(prev => prev.map(s => {
+        if (s.id === activeSessionId) {
+          return { ...s, messages: [...s.messages, deployMessageObj] };
+        }
+        return s;
+      }));
+
+      toast.success('🎉 Deployment successful!');
+      
+    } catch (err: any) {
+      toast.error('Deploy failed: ' + err.message);
+    }
+    
+    setPendingDeployFile(null);
+  };
+
   return (
     <div className="h-screen flex bg-background overflow-hidden">
       {/* Sidebar */}
@@ -529,6 +624,14 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
         {/* Input Area */}
         <ChatInput onSend={handleSend} isLoading={isLoading} onVoiceMessage={handleVoiceMessage} />
       </div>
+
+      {/* Hosting Credentials Modal */}
+      <HostingCredentialsModal
+        open={showHostingModal}
+        onOpenChange={setShowHostingModal}
+        onSubmit={handleHostingDeploy}
+        fileName={pendingDeployFile?.fileName}
+      />
     </div>
   );
 }
