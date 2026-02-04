@@ -28,6 +28,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import softwareValaLogo from '@/assets/softwarevala-logo.png';
+import wiseQrCode from '@/assets/wise-qr-code.png';
 
 interface AddCreditsModalProps {
   open: boolean;
@@ -417,6 +418,19 @@ export function AddCreditsModal({ open, onOpenChange, onSuccess }: AddCreditsMod
                       <span className="text-sm font-medium text-cyan-500">Send via Remitly/WU to Indian Bank</span>
                     </>
                   )}
+                </div>
+              )}
+
+              {/* Wise QR Code for quick pay */}
+              {paymentMethod === 'wise' && (
+                <div className="bg-muted/30 rounded-lg p-4 text-center">
+                  <p className="text-xs text-muted-foreground mb-3">Scan with Wise App for Quick Pay</p>
+                  <img 
+                    src={wiseQrCode} 
+                    alt="Wise Quick Pay QR Code" 
+                    className="mx-auto w-40 h-40 rounded-lg border border-border"
+                  />
+                  <p className="text-xs text-success mt-2 font-medium">🌍 Works from any country</p>
                 </div>
               )}
 
