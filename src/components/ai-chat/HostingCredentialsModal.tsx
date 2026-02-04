@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Badge } from '@/components/ui/badge';
 import { Server, Globe, FolderUp, Rocket, Shield } from 'lucide-react';
 
 export interface HostingCredentials {
@@ -54,15 +53,17 @@ export function HostingCredentialsModal({
             <Rocket className="h-5 w-5 text-primary" />
             Deploy to Your Server
           </DialogTitle>
-          <DialogDescription>
-            {fileName && (
-              <Badge variant="outline" className="mt-2">
-                {fileName}
-              </Badge>
-            )}
-            <span className="block mt-2">
-              Enter your hosting credentials to auto-deploy
-            </span>
+          <DialogDescription asChild>
+            <div>
+              {fileName && (
+                <span className="inline-flex items-center mt-2 px-2 py-0.5 rounded-md border text-xs font-medium">
+                  {fileName}
+                </span>
+              )}
+              <span className="block mt-2">
+                Enter your hosting credentials to auto-deploy
+              </span>
+            </div>
           </DialogDescription>
         </DialogHeader>
 

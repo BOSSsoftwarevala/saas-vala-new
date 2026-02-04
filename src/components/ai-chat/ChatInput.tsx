@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Badge } from '@/components/ui/badge';
 import { Send, Paperclip, Image, Sparkles, X, FileCode, FileArchive, File, Mic, MicOff, Wand2, Volume2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -280,9 +279,9 @@ export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage }: ChatI
                 </motion.div>
               ))}
             </div>
-            <Badge variant="outline" className="mt-3 text-[10px] bg-muted/30">
+            <span className="inline-flex items-center mt-3 px-2 py-0.5 rounded-full border text-[10px] font-medium bg-muted/30">
               {files.length}/10 files attached
-            </Badge>
+            </span>
           </motion.div>
         )}
       </AnimatePresence>
