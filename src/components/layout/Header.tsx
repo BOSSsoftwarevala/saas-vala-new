@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, Search, Bell, User, Settings, LogOut } from 'lucide-react';
+import { WalletHeaderButton } from '@/components/wallet/WalletHeaderButton';
 
 const pageTitles: Record<string, string> = {
   '/': 'Dashboard',
@@ -81,6 +82,9 @@ export function Header() {
 
       {/* Right section */}
       <div className="flex items-center gap-3">
+        {/* Wallet */}
+        <WalletHeaderButton />
+
         {/* Notifications */}
         <Button
           variant="ghost"

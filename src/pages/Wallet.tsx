@@ -21,10 +21,14 @@ import {
   FileText,
   Search,
   Loader2,
+  Users,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useWallet } from '@/hooks/useWallet';
+import { useAuth } from '@/hooks/useAuth';
 import { PaginationControls } from '@/components/ui/pagination-controls';
+import { AddCreditsModal } from '@/components/wallet/AddCreditsModal';
+import { AdminWalletManager } from '@/components/wallet/AdminWalletManager';
 
 const ITEMS_PER_PAGE = 25;
 
@@ -36,10 +40,12 @@ const transactionStatusStyles = {
 };
 
 export default function Wallet() {
-  const { wallet, transactions, loading, total, fetchTransactions } = useWallet();
+  const { wallet, transactions, loading, total, fetchTransactions, fetchWallet } = useWallet();
+  const { isSuperAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('transactions');
   const [currentPage, setCurrentPage] = useState(1);
+  const [showAddCredits, setShowAddCredits] = useState(false);
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
@@ -80,7 +86,10 @@ export default function Wallet() {
               Manage your credits, invoices, and agreements
             </p>
           </div>
-          <Button className="bg-orange-gradient hover:opacity-90 text-white gap-2">
+          <Button 
+            className="bg-orange-gradient hover:opacity-90 text-white gap-2"
+            onClick={() => setShowAddCredits(true)}
+          >
             <Plus className="h-4 w-4" />
             Add Credits
           </Button>
@@ -171,6 +180,12 @@ export default function Wallet() {
                 <TabsTrigger value="agreements" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
                   Agreements
                 </TabsTrigger>
+                {isSuperAdmin && (
+                  <TabsTrigger value="admin" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-1">
+                    <Users className="h-3 w-3" />
+                    All Wallets
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               <div className="relative w-full md:w-64">
@@ -299,8 +314,22 @@ export default function Wallet() {
               </Button>
             </div>
           </TabsContent>
+
+          {/* Admin Wallets Tab */}
+          {isSuperAdmin && (
+            <TabsContent value="admin" className="mt-6">
+              <AdminWalletManager />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
+
+      {/* Add Credits Modal */}
+      <AddCreditsModal
+        open={showAddCredits}
+        onOpenChange={setShowAddCredits}
+        onSuccess={fetchWallet}
+      />
     </DashboardLayout>
   );
 }
