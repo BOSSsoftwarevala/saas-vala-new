@@ -1,0 +1,146 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import type { Json } from '@/integrations/supabase/types';
+
+export interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  category_id: string | null;
+  status: 'active' | 'suspended' | 'archived' | 'draft';
+  price: number;
+  currency: string;
+  version: string;
+  features: Json;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  level: 'master' | 'sub' | 'micro' | 'nano';
+  parent_id: string | null;
+  description: string | null;
+  is_active: boolean;
+}
+
+export function useProducts() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      toast.error('Failed to fetch products');
+      console.error(error);
+    } else {
+      setProducts((data || []) as Product[]);
+    }
+    setLoading(false);
+  };
+
+  const fetchCategories = async () => {
+    const { data, error } = await supabase
+      .from('categories')
+      .select('*')
+      .eq('is_active', true)
+      .order('sort_order');
+
+    if (error) {
+      console.error(error);
+    } else {
+      setCategories((data || []) as Category[]);
+    }
+  };
+
+  const createProduct = async (product: Partial<Product>) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const { data, error } = await supabase
+      .from('products')
+      .insert({
+        name: product.name || '',
+        slug: product.slug || product.name?.toLowerCase().replace(/[^a-z0-9]/g, '-') || '',
+        description: product.description,
+        category_id: product.category_id,
+        status: product.status || 'draft',
+        price: product.price || 0,
+        currency: product.currency || 'INR',
+        version: product.version || '1.0.0',
+        features: product.features || [],
+        created_by: userData.user?.id
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast.error('Failed to create product');
+      throw error;
+    }
+    toast.success('Product created');
+    await fetchProducts();
+    return data;
+  };
+
+  const updateProduct = async (id: string, updates: Partial<Product>) => {
+    const { error } = await supabase
+      .from('products')
+      .update(updates)
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Failed to update product');
+      throw error;
+    }
+    toast.success('Product updated');
+    await fetchProducts();
+  };
+
+  const deleteProduct = async (id: string) => {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast.error('Failed to delete product');
+      throw error;
+    }
+    toast.success('Product deleted');
+    await fetchProducts();
+  };
+
+  const suspendProduct = async (id: string) => {
+    await updateProduct(id, { status: 'suspended' });
+  };
+
+  const activateProduct = async (id: string) => {
+    await updateProduct(id, { status: 'active' });
+  };
+
+  useEffect(() => {
+    fetchProducts();
+    fetchCategories();
+  }, []);
+
+  return {
+    products,
+    categories,
+    loading,
+    fetchProducts,
+    createProduct,
+    updateProduct,
+    deleteProduct,
+    suspendProduct,
+    activateProduct
+  };
+}
