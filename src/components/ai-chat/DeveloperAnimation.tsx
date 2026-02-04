@@ -1,8 +1,9 @@
 import { motion } from 'framer-motion';
 
+// Cartoon developer animation v2 - MaxMotion style
 export function DeveloperAnimation() {
   return (
-    <div className="relative w-full h-80 md:h-96 overflow-hidden rounded-2xl bg-gradient-to-br from-[#2d3748] via-[#1a202c] to-[#2d3748]">
+    <div className="relative w-full h-80 md:h-96 overflow-hidden rounded-2xl bg-gradient-to-br from-[#1e293b] via-[#0f172a] to-[#1e293b] border border-primary/20 shadow-2xl shadow-primary/10">
       {/* Background Elements */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute top-10 left-10 w-32 h-32 bg-primary/30 rounded-full blur-3xl" />
