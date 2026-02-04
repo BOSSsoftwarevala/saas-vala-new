@@ -46,7 +46,9 @@ const bankDetails = {
   bankName: 'INDIAN BANK',
   accountType: 'Current',
   accountNumber: '8045924772',
+  accountNumberMasked: '••••••4772',
   ifsc: 'IDIB000K196',
+  ifscMasked: 'IDIB•••196',
   branchCode: '01940',
   branchName: 'KANKAR BAGH',
 };
@@ -385,40 +387,43 @@ export function AddCreditsModal({ open, onOpenChange, onSuccess }: AddCreditsMod
             <div className="space-y-4 py-4">
               {/* Bank Details Card */}
               <div className="glass-card rounded-lg p-4 space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-border">
-                  <span className="font-semibold text-foreground">{bankDetails.accountName}</span>
-                  <Badge variant="outline" className="text-xs">{bankDetails.bankName}</Badge>
+                {/* Brand Name - Prominent */}
+                <div className="text-center pb-3 border-b border-border">
+                  <p className="text-2xl font-bold font-display text-foreground">{bankDetails.accountName}</p>
+                  <Badge variant="outline" className="mt-1">{bankDetails.bankName}</Badge>
                 </div>
 
-                {/* Account Number */}
+                {/* Account Number - Masked with reveal on copy */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-muted-foreground">Account Number</p>
-                    <p className="font-mono font-semibold text-foreground">{bankDetails.accountNumber}</p>
+                    <p className="font-mono font-semibold text-foreground">{bankDetails.accountNumberMasked}</p>
                   </div>
                   <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8"
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-1.5"
                     onClick={() => handleCopy(bankDetails.accountNumber, 'Account Number')}
                   >
-                    <Copy className="h-4 w-4" />
+                    <Copy className="h-3 w-3" />
+                    Copy
                   </Button>
                 </div>
 
-                {/* IFSC */}
+                {/* IFSC - Masked with reveal on copy */}
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-xs text-muted-foreground">IFSC Code</p>
-                    <p className="font-mono font-semibold text-foreground">{bankDetails.ifsc}</p>
+                    <p className="font-mono font-semibold text-foreground">{bankDetails.ifscMasked}</p>
                   </div>
                   <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="h-8 w-8"
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-1.5"
                     onClick={() => handleCopy(bankDetails.ifsc, 'IFSC Code')}
                   >
-                    <Copy className="h-4 w-4" />
+                    <Copy className="h-3 w-3" />
+                    Copy
                   </Button>
                 </div>
 
