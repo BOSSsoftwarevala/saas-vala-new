@@ -212,12 +212,7 @@ export default function Keys() {
                 className="pl-10 bg-muted/50 border-border"
               />
             </div>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="border-border"
-              onClick={() => toast.info('Filter options coming soon')}
-            >
+            <Button variant="outline" size="icon" className="border-border">
               <Filter className="h-4 w-4" />
             </Button>
           </div>

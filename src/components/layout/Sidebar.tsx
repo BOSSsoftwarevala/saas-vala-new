@@ -1,7 +1,7 @@
+import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
-import { useSidebar } from '@/hooks/useSidebar';
 import {
   LayoutDashboard,
   Package,
@@ -16,8 +16,6 @@ import {
   ChevronRight,
   LogOut,
   Users,
-  History,
-  Headphones,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import saasValaLogo from '@/assets/saas-vala-logo.jpg';
@@ -39,14 +37,12 @@ const navItems: NavItem[] = [
   { title: 'AI APIs', icon: Cpu, href: '/ai-apis' },
   { title: 'Wallet', icon: Wallet, href: '/wallet' },
   { title: 'SEO & Leads', icon: TrendingUp, href: '/seo-leads' },
-  { title: 'Support', icon: Headphones, href: '/support' },
   { title: 'Resellers', icon: Users, href: '/resellers', adminOnly: true },
-  { title: 'Audit Logs', icon: History, href: '/audit-logs', adminOnly: true },
   { title: 'Settings', icon: Settings, href: '/settings', adminOnly: true },
 ];
 
 export function Sidebar() {
-  const { collapsed, toggle } = useSidebar();
+  const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
   const { isSuperAdmin, signOut } = useAuth();
 
@@ -145,7 +141,7 @@ export function Sidebar() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={toggle}
+            onClick={() => setCollapsed(!collapsed)}
             className={cn(
               'mt-2 w-full justify-center text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground',
               collapsed && 'px-0'

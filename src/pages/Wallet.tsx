@@ -27,20 +27,13 @@ import {
   Globe,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
 import { useWallet } from '@/hooks/useWallet';
-import { useInvoices } from '@/hooks/useInvoices';
 import { useAuth } from '@/hooks/useAuth';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { AddCreditsModal } from '@/components/wallet/AddCreditsModal';
 import { AdminWalletManager } from '@/components/wallet/AdminWalletManager';
 import { AutoPaySettingsModal } from '@/components/wallet/AutoPaySettingsModal';
 import { WalletStatsCards } from '@/components/wallet/WalletStatsCards';
-import { InvoiceList } from '@/components/invoice/InvoiceList';
-import { CreateInvoiceModal } from '@/components/invoice/CreateInvoiceModal';
-import { InvoicePreview } from '@/components/invoice/InvoicePreview';
-import { SignatureModal } from '@/components/invoice/SignatureModal';
-import { Invoice } from '@/hooks/useInvoices';
 
 const ITEMS_PER_PAGE = 25;
 
@@ -69,16 +62,12 @@ export default function Wallet() {
     expiringLicenses,
     getLastPaymentStatus 
   } = useWallet();
-  const { invoices, loading: invoicesLoading } = useInvoices();
   const { isSuperAdmin } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('transactions');
   const [currentPage, setCurrentPage] = useState(1);
   const [showAddCredits, setShowAddCredits] = useState(false);
   const [showAutoPaySettings, setShowAutoPaySettings] = useState(false);
-  const [showCreateInvoice, setShowCreateInvoice] = useState(false);
-  const [previewInvoice, setPreviewInvoice] = useState<Invoice | null>(null);
-  const [signatureInvoice, setSignatureInvoice] = useState<Invoice | null>(null);
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
 
@@ -307,25 +296,14 @@ export default function Wallet() {
 
           {/* Invoices Tab */}
           <TabsContent value="invoices" className="mt-6">
-            <div className="space-y-4">
-              <div className="flex justify-end">
-                <Button 
-                  className="bg-orange-gradient hover:opacity-90 text-white gap-2"
-                  onClick={() => setShowCreateInvoice(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Create Invoice
-                </Button>
-              </div>
-              <div className="glass-card rounded-xl overflow-hidden">
-                <InvoiceList 
-                  invoices={invoices} 
-                  loading={invoicesLoading}
-                  onView={(invoice) => setPreviewInvoice(invoice)}
-                  onEdit={(invoice) => setPreviewInvoice(invoice)}
-                  onRequestSignature={(invoice) => setSignatureInvoice(invoice)}
-                />
-              </div>
+            <div className="glass-card rounded-xl p-12 text-center">
+              <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="font-display text-lg font-bold text-foreground mb-2">
+                Invoices Coming Soon
+              </h3>
+              <p className="text-muted-foreground mb-4">
+                Invoice management will be available shortly
+              </p>
             </div>
           </TabsContent>
 
@@ -339,10 +317,7 @@ export default function Wallet() {
               <p className="text-muted-foreground mb-4">
                 Upload contracts and agreements with your clients
               </p>
-              <Button 
-                className="bg-orange-gradient hover:opacity-90 text-white gap-2"
-                onClick={() => toast.info('Agreement Upload', { description: 'Document upload feature coming soon. Contact support to share agreements.' })}
-              >
+              <Button className="bg-orange-gradient hover:opacity-90 text-white gap-2">
                 <Plus className="h-4 w-4" />
                 Upload Agreement
               </Button>
@@ -369,30 +344,6 @@ export default function Wallet() {
       <AutoPaySettingsModal
         open={showAutoPaySettings}
         onOpenChange={setShowAutoPaySettings}
-      />
-
-      {/* Create Invoice Modal */}
-      <CreateInvoiceModal
-        open={showCreateInvoice}
-        onOpenChange={setShowCreateInvoice}
-      />
-
-      {/* Invoice Preview Modal */}
-      <InvoicePreview
-        invoice={previewInvoice}
-        open={!!previewInvoice}
-        onOpenChange={(open) => !open && setPreviewInvoice(null)}
-        onRequestSignature={(invoice) => {
-          setPreviewInvoice(null);
-          setSignatureInvoice(invoice);
-        }}
-      />
-
-      {/* Signature Modal */}
-      <SignatureModal
-        invoice={signatureInvoice}
-        open={!!signatureInvoice}
-        onOpenChange={(open) => !open && setSignatureInvoice(null)}
       />
     </DashboardLayout>
   );

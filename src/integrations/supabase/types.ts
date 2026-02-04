@@ -14,42 +14,6 @@ export type Database = {
   }
   public: {
     Tables: {
-      activity_logs: {
-        Row: {
-          action: string
-          created_at: string | null
-          details: Json | null
-          entity_id: string
-          entity_type: string
-          id: string
-          ip_address: string | null
-          performed_by: string | null
-          user_agent: string | null
-        }
-        Insert: {
-          action: string
-          created_at?: string | null
-          details?: Json | null
-          entity_id: string
-          entity_type: string
-          id?: string
-          ip_address?: string | null
-          performed_by?: string | null
-          user_agent?: string | null
-        }
-        Update: {
-          action?: string
-          created_at?: string | null
-          details?: Json | null
-          entity_id?: string
-          entity_type?: string
-          id?: string
-          ip_address?: string | null
-          performed_by?: string | null
-          user_agent?: string | null
-        }
-        Relationships: []
-      }
       ai_usage: {
         Row: {
           cost: number | null
@@ -57,7 +21,6 @@ export type Database = {
           endpoint: string | null
           id: string
           model: string
-          product_id: string | null
           session_id: string | null
           tokens_input: number | null
           tokens_output: number | null
@@ -69,7 +32,6 @@ export type Database = {
           endpoint?: string | null
           id?: string
           model: string
-          product_id?: string | null
           session_id?: string | null
           tokens_input?: number | null
           tokens_output?: number | null
@@ -81,79 +43,18 @@ export type Database = {
           endpoint?: string | null
           id?: string
           model?: string
-          product_id?: string | null
           session_id?: string | null
           tokens_input?: number | null
           tokens_output?: number | null
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "ai_usage_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      apk_versions: {
-        Row: {
-          apk_id: string
-          checksum: string | null
-          created_at: string | null
-          created_by: string | null
-          file_path: string | null
-          file_size: number | null
-          id: string
-          is_stable: boolean | null
-          release_notes: string | null
-          version_code: number
-          version_name: string
-        }
-        Insert: {
-          apk_id: string
-          checksum?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          file_path?: string | null
-          file_size?: number | null
-          id?: string
-          is_stable?: boolean | null
-          release_notes?: string | null
-          version_code: number
-          version_name: string
-        }
-        Update: {
-          apk_id?: string
-          checksum?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          file_path?: string | null
-          file_size?: number | null
-          id?: string
-          is_stable?: boolean | null
-          release_notes?: string | null
-          version_code?: number
-          version_name?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "apk_versions_apk_id_fkey"
-            columns: ["apk_id"]
-            isOneToOne: false
-            referencedRelation: "apks"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       apks: {
         Row: {
-          architecture: string | null
           changelog: string | null
           created_at: string | null
           created_by: string | null
-          current_version_id: string | null
           download_count: number | null
           file_size: number | null
           file_url: string | null
@@ -166,11 +67,9 @@ export type Database = {
           version: string
         }
         Insert: {
-          architecture?: string | null
           changelog?: string | null
           created_at?: string | null
           created_by?: string | null
-          current_version_id?: string | null
           download_count?: number | null
           file_size?: number | null
           file_url?: string | null
@@ -183,11 +82,9 @@ export type Database = {
           version: string
         }
         Update: {
-          architecture?: string | null
           changelog?: string | null
           created_at?: string | null
           created_by?: string | null
-          current_version_id?: string | null
           download_count?: number | null
           file_size?: number | null
           file_url?: string | null
@@ -200,13 +97,6 @@ export type Database = {
           version?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "apks_current_version_id_fkey"
-            columns: ["current_version_id"]
-            isOneToOne: false
-            referencedRelation: "apk_versions"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "apks_product_id_fkey"
             columns: ["product_id"]
@@ -254,56 +144,6 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
-      }
-      backup_logs: {
-        Row: {
-          backup_type: string | null
-          completed_at: string | null
-          created_at: string | null
-          created_by: string | null
-          error_message: string | null
-          file_path: string | null
-          file_size: number | null
-          id: string
-          server_id: string | null
-          started_at: string | null
-          status: Database["public"]["Enums"]["backup_status"] | null
-        }
-        Insert: {
-          backup_type?: string | null
-          completed_at?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          error_message?: string | null
-          file_path?: string | null
-          file_size?: number | null
-          id?: string
-          server_id?: string | null
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["backup_status"] | null
-        }
-        Update: {
-          backup_type?: string | null
-          completed_at?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          error_message?: string | null
-          file_path?: string | null
-          file_size?: number | null
-          id?: string
-          server_id?: string | null
-          started_at?: string | null
-          status?: Database["public"]["Enums"]["backup_status"] | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "backup_logs_server_id_fkey"
-            columns: ["server_id"]
-            isOneToOne: false
-            referencedRelation: "servers"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       categories: {
         Row: {
@@ -408,38 +248,6 @@ export type Database = {
           },
         ]
       }
-      deployment_logs: {
-        Row: {
-          deployment_id: string | null
-          id: string
-          log_level: string | null
-          message: string
-          timestamp: string | null
-        }
-        Insert: {
-          deployment_id?: string | null
-          id?: string
-          log_level?: string | null
-          message: string
-          timestamp?: string | null
-        }
-        Update: {
-          deployment_id?: string | null
-          id?: string
-          log_level?: string | null
-          message?: string
-          timestamp?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "deployment_logs_deployment_id_fkey"
-            columns: ["deployment_id"]
-            isOneToOne: false
-            referencedRelation: "deployments"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       deployments: {
         Row: {
           branch: string | null
@@ -492,312 +300,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      domains: {
-        Row: {
-          created_at: string | null
-          created_by: string | null
-          dns_verified: boolean | null
-          dns_verified_at: string | null
-          domain_name: string
-          domain_type: string
-          id: string
-          is_primary: boolean | null
-          product_id: string | null
-          server_id: string | null
-          ssl_auto_renew: boolean | null
-          ssl_expiry_at: string | null
-          ssl_status: string | null
-          status: Database["public"]["Enums"]["domain_status"] | null
-          updated_at: string | null
-        }
-        Insert: {
-          created_at?: string | null
-          created_by?: string | null
-          dns_verified?: boolean | null
-          dns_verified_at?: string | null
-          domain_name: string
-          domain_type?: string
-          id?: string
-          is_primary?: boolean | null
-          product_id?: string | null
-          server_id?: string | null
-          ssl_auto_renew?: boolean | null
-          ssl_expiry_at?: string | null
-          ssl_status?: string | null
-          status?: Database["public"]["Enums"]["domain_status"] | null
-          updated_at?: string | null
-        }
-        Update: {
-          created_at?: string | null
-          created_by?: string | null
-          dns_verified?: boolean | null
-          dns_verified_at?: string | null
-          domain_name?: string
-          domain_type?: string
-          id?: string
-          is_primary?: boolean | null
-          product_id?: string | null
-          server_id?: string | null
-          ssl_auto_renew?: boolean | null
-          ssl_expiry_at?: string | null
-          ssl_status?: string | null
-          status?: Database["public"]["Enums"]["domain_status"] | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "domains_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "domains_server_id_fkey"
-            columns: ["server_id"]
-            isOneToOne: false
-            referencedRelation: "servers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      git_connections: {
-        Row: {
-          auto_deploy: boolean | null
-          branch: string | null
-          created_at: string | null
-          created_by: string | null
-          deploy_token: string | null
-          id: string
-          last_commit_message: string | null
-          last_commit_sha: string | null
-          last_sync_at: string | null
-          provider: Database["public"]["Enums"]["git_provider"]
-          repository_name: string | null
-          repository_url: string
-          server_id: string | null
-          status: string | null
-          updated_at: string | null
-          webhook_secret: string | null
-        }
-        Insert: {
-          auto_deploy?: boolean | null
-          branch?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deploy_token?: string | null
-          id?: string
-          last_commit_message?: string | null
-          last_commit_sha?: string | null
-          last_sync_at?: string | null
-          provider?: Database["public"]["Enums"]["git_provider"]
-          repository_name?: string | null
-          repository_url: string
-          server_id?: string | null
-          status?: string | null
-          updated_at?: string | null
-          webhook_secret?: string | null
-        }
-        Update: {
-          auto_deploy?: boolean | null
-          branch?: string | null
-          created_at?: string | null
-          created_by?: string | null
-          deploy_token?: string | null
-          id?: string
-          last_commit_message?: string | null
-          last_commit_sha?: string | null
-          last_sync_at?: string | null
-          provider?: Database["public"]["Enums"]["git_provider"]
-          repository_name?: string | null
-          repository_url?: string
-          server_id?: string | null
-          status?: string | null
-          updated_at?: string | null
-          webhook_secret?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "git_connections_server_id_fkey"
-            columns: ["server_id"]
-            isOneToOne: false
-            referencedRelation: "servers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      health_checks: {
-        Row: {
-          apk_status: string | null
-          created_at: string | null
-          demo_status: string | null
-          id: string
-          last_checked_at: string | null
-          license_status: string | null
-          overall_status: string | null
-          product_id: string
-          server_status: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          apk_status?: string | null
-          created_at?: string | null
-          demo_status?: string | null
-          id?: string
-          last_checked_at?: string | null
-          license_status?: string | null
-          overall_status?: string | null
-          product_id: string
-          server_status?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          apk_status?: string | null
-          created_at?: string | null
-          demo_status?: string | null
-          id?: string
-          last_checked_at?: string | null
-          license_status?: string | null
-          overall_status?: string | null
-          product_id?: string
-          server_status?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "health_checks_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: true
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      invoice_otp_codes: {
-        Row: {
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          invoice_id: string
-          otp_code: string
-          verified: boolean | null
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          expires_at: string
-          id?: string
-          invoice_id: string
-          otp_code: string
-          verified?: boolean | null
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          invoice_id?: string
-          otp_code?: string
-          verified?: boolean | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "invoice_otp_codes_invoice_id_fkey"
-            columns: ["invoice_id"]
-            isOneToOne: false
-            referencedRelation: "invoices"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      invoices: {
-        Row: {
-          created_at: string
-          currency: string | null
-          customer_address: string | null
-          customer_email: string
-          customer_name: string
-          customer_phone: string | null
-          discount_amount: number | null
-          discount_percent: number | null
-          due_date: string | null
-          id: string
-          invoice_number: string
-          items: Json
-          notes: string | null
-          otp_verified: boolean | null
-          otp_verified_at: string | null
-          signature_data: string | null
-          signed_at: string | null
-          signer_ip: string | null
-          status: string | null
-          subtotal: number
-          tax_amount: number | null
-          tax_percent: number | null
-          terms: string | null
-          total_amount: number
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          currency?: string | null
-          customer_address?: string | null
-          customer_email: string
-          customer_name: string
-          customer_phone?: string | null
-          discount_amount?: number | null
-          discount_percent?: number | null
-          due_date?: string | null
-          id?: string
-          invoice_number: string
-          items?: Json
-          notes?: string | null
-          otp_verified?: boolean | null
-          otp_verified_at?: string | null
-          signature_data?: string | null
-          signed_at?: string | null
-          signer_ip?: string | null
-          status?: string | null
-          subtotal?: number
-          tax_amount?: number | null
-          tax_percent?: number | null
-          terms?: string | null
-          total_amount?: number
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          currency?: string | null
-          customer_address?: string | null
-          customer_email?: string
-          customer_name?: string
-          customer_phone?: string | null
-          discount_amount?: number | null
-          discount_percent?: number | null
-          due_date?: string | null
-          id?: string
-          invoice_number?: string
-          items?: Json
-          notes?: string | null
-          otp_verified?: boolean | null
-          otp_verified_at?: string | null
-          signature_data?: string | null
-          signed_at?: string | null
-          signer_ip?: string | null
-          status?: string | null
-          subtotal?: number
-          tax_amount?: number | null
-          tax_percent?: number | null
-          terms?: string | null
-          total_amount?: number
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
       }
       leads: {
         Row: {
@@ -934,67 +436,52 @@ export type Database = {
       }
       products: {
         Row: {
-          business_type: string | null
           category_id: string | null
           created_at: string | null
           created_by: string | null
           currency: string | null
           description: string | null
           features: Json | null
-          icon_path: string | null
           id: string
           meta: Json | null
           name: string
           price: number | null
-          product_code: string
-          short_description: string | null
           slug: string
           status: Database["public"]["Enums"]["product_status"] | null
           updated_at: string | null
           version: string | null
-          visibility: string | null
         }
         Insert: {
-          business_type?: string | null
           category_id?: string | null
           created_at?: string | null
           created_by?: string | null
           currency?: string | null
           description?: string | null
           features?: Json | null
-          icon_path?: string | null
           id?: string
           meta?: Json | null
           name: string
           price?: number | null
-          product_code?: string
-          short_description?: string | null
           slug: string
           status?: Database["public"]["Enums"]["product_status"] | null
           updated_at?: string | null
           version?: string | null
-          visibility?: string | null
         }
         Update: {
-          business_type?: string | null
           category_id?: string | null
           created_at?: string | null
           created_by?: string | null
           currency?: string | null
           description?: string | null
           features?: Json | null
-          icon_path?: string | null
           id?: string
           meta?: Json | null
           name?: string
           price?: number | null
-          product_code?: string
-          short_description?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["product_status"] | null
           updated_at?: string | null
           version?: string | null
-          visibility?: string | null
         }
         Relationships: [
           {
@@ -1140,109 +627,6 @@ export type Database = {
           },
         ]
       }
-      server_auto_rules: {
-        Row: {
-          auto_backup: boolean | null
-          auto_deploy: boolean | null
-          auto_health_check: boolean | null
-          auto_restart: boolean | null
-          auto_ssl_renewal: boolean | null
-          backup_schedule: string | null
-          created_at: string | null
-          health_check_interval: number | null
-          id: string
-          max_restart_attempts: number | null
-          restart_on_failure: boolean | null
-          server_id: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          auto_backup?: boolean | null
-          auto_deploy?: boolean | null
-          auto_health_check?: boolean | null
-          auto_restart?: boolean | null
-          auto_ssl_renewal?: boolean | null
-          backup_schedule?: string | null
-          created_at?: string | null
-          health_check_interval?: number | null
-          id?: string
-          max_restart_attempts?: number | null
-          restart_on_failure?: boolean | null
-          server_id?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          auto_backup?: boolean | null
-          auto_deploy?: boolean | null
-          auto_health_check?: boolean | null
-          auto_restart?: boolean | null
-          auto_ssl_renewal?: boolean | null
-          backup_schedule?: string | null
-          created_at?: string | null
-          health_check_interval?: number | null
-          id?: string
-          max_restart_attempts?: number | null
-          restart_on_failure?: boolean | null
-          server_id?: string | null
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "server_auto_rules_server_id_fkey"
-            columns: ["server_id"]
-            isOneToOne: true
-            referencedRelation: "servers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      server_events: {
-        Row: {
-          created_at: string | null
-          description: string | null
-          event_type: Database["public"]["Enums"]["server_event_type"]
-          id: string
-          meta: Json | null
-          resolved: boolean | null
-          resolved_at: string | null
-          server_id: string | null
-          severity: string | null
-          title: string
-        }
-        Insert: {
-          created_at?: string | null
-          description?: string | null
-          event_type: Database["public"]["Enums"]["server_event_type"]
-          id?: string
-          meta?: Json | null
-          resolved?: boolean | null
-          resolved_at?: string | null
-          server_id?: string | null
-          severity?: string | null
-          title: string
-        }
-        Update: {
-          created_at?: string | null
-          description?: string | null
-          event_type?: Database["public"]["Enums"]["server_event_type"]
-          id?: string
-          meta?: Json | null
-          resolved?: boolean | null
-          resolved_at?: string | null
-          server_id?: string | null
-          severity?: string | null
-          title?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "server_events_server_id_fkey"
-            columns: ["server_id"]
-            isOneToOne: false
-            referencedRelation: "servers"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       servers: {
         Row: {
           auto_deploy: boolean | null
@@ -1258,9 +642,7 @@ export type Database = {
           last_deploy_commit: string | null
           last_deploy_message: string | null
           name: string
-          product_id: string | null
           runtime: Database["public"]["Enums"]["server_runtime"] | null
-          server_type: string | null
           ssl_status: string | null
           status: Database["public"]["Enums"]["server_status"] | null
           subdomain: string | null
@@ -1281,9 +663,7 @@ export type Database = {
           last_deploy_commit?: string | null
           last_deploy_message?: string | null
           name: string
-          product_id?: string | null
           runtime?: Database["public"]["Enums"]["server_runtime"] | null
-          server_type?: string | null
           ssl_status?: string | null
           status?: Database["public"]["Enums"]["server_status"] | null
           subdomain?: string | null
@@ -1304,212 +684,12 @@ export type Database = {
           last_deploy_commit?: string | null
           last_deploy_message?: string | null
           name?: string
-          product_id?: string | null
           runtime?: Database["public"]["Enums"]["server_runtime"] | null
-          server_type?: string | null
           ssl_status?: string | null
           status?: Database["public"]["Enums"]["server_status"] | null
           subdomain?: string | null
           updated_at?: string | null
           uptime_percent?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "servers_product_id_fkey"
-            columns: ["product_id"]
-            isOneToOne: false
-            referencedRelation: "products"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      ssl_logs: {
-        Row: {
-          action: string
-          created_at: string | null
-          domain_id: string | null
-          error_message: string | null
-          expires_at: string | null
-          id: string
-          issued_at: string | null
-          provider: string | null
-          status: string | null
-        }
-        Insert: {
-          action: string
-          created_at?: string | null
-          domain_id?: string | null
-          error_message?: string | null
-          expires_at?: string | null
-          id?: string
-          issued_at?: string | null
-          provider?: string | null
-          status?: string | null
-        }
-        Update: {
-          action?: string
-          created_at?: string | null
-          domain_id?: string | null
-          error_message?: string | null
-          expires_at?: string | null
-          id?: string
-          issued_at?: string | null
-          provider?: string | null
-          status?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "ssl_logs_domain_id_fkey"
-            columns: ["domain_id"]
-            isOneToOne: false
-            referencedRelation: "domains"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      support_audit_logs: {
-        Row: {
-          action: string
-          actor_id: string
-          actor_type: string
-          created_at: string | null
-          details: Json | null
-          id: string
-          ip_hash: string | null
-          message_id: string | null
-          ticket_id: string | null
-        }
-        Insert: {
-          action: string
-          actor_id: string
-          actor_type: string
-          created_at?: string | null
-          details?: Json | null
-          id?: string
-          ip_hash?: string | null
-          message_id?: string | null
-          ticket_id?: string | null
-        }
-        Update: {
-          action?: string
-          actor_id?: string
-          actor_type?: string
-          created_at?: string | null
-          details?: Json | null
-          id?: string
-          ip_hash?: string | null
-          message_id?: string | null
-          ticket_id?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "support_audit_logs_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "support_messages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "support_audit_logs_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "support_tickets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      support_messages: {
-        Row: {
-          content: string | null
-          created_at: string | null
-          delivered_at: string | null
-          id: string
-          is_internal_note: boolean | null
-          media_url: string | null
-          message_type: Database["public"]["Enums"]["message_type"] | null
-          read_at: string | null
-          sender_id: string
-          sender_type: string
-          ticket_id: string
-          voice_duration: number | null
-        }
-        Insert: {
-          content?: string | null
-          created_at?: string | null
-          delivered_at?: string | null
-          id?: string
-          is_internal_note?: boolean | null
-          media_url?: string | null
-          message_type?: Database["public"]["Enums"]["message_type"] | null
-          read_at?: string | null
-          sender_id: string
-          sender_type: string
-          ticket_id: string
-          voice_duration?: number | null
-        }
-        Update: {
-          content?: string | null
-          created_at?: string | null
-          delivered_at?: string | null
-          id?: string
-          is_internal_note?: boolean | null
-          media_url?: string | null
-          message_type?: Database["public"]["Enums"]["message_type"] | null
-          read_at?: string | null
-          sender_id?: string
-          sender_type?: string
-          ticket_id?: string
-          voice_duration?: number | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "support_messages_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "support_tickets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      support_tickets: {
-        Row: {
-          assigned_staff_id: string | null
-          created_at: string | null
-          id: string
-          ip_hash: string | null
-          resolved_at: string | null
-          status: Database["public"]["Enums"]["support_status"] | null
-          ticket_number: string
-          updated_at: string | null
-          user_email: string
-          user_id: string
-          user_name: string
-        }
-        Insert: {
-          assigned_staff_id?: string | null
-          created_at?: string | null
-          id?: string
-          ip_hash?: string | null
-          resolved_at?: string | null
-          status?: Database["public"]["Enums"]["support_status"] | null
-          ticket_number: string
-          updated_at?: string | null
-          user_email: string
-          user_id: string
-          user_name: string
-        }
-        Update: {
-          assigned_staff_id?: string | null
-          created_at?: string | null
-          id?: string
-          ip_hash?: string | null
-          resolved_at?: string | null
-          status?: Database["public"]["Enums"]["support_status"] | null
-          ticket_number?: string
-          updated_at?: string | null
-          user_email?: string
-          user_id?: string
-          user_name?: string
         }
         Relationships: []
       }
@@ -1587,48 +767,6 @@ export type Database = {
         }
         Relationships: []
       }
-      user_sessions: {
-        Row: {
-          browser: string | null
-          created_at: string
-          device_name: string | null
-          device_type: string | null
-          id: string
-          ip_address: string | null
-          is_current: boolean | null
-          last_active_at: string | null
-          location: string | null
-          os: string | null
-          user_id: string
-        }
-        Insert: {
-          browser?: string | null
-          created_at?: string
-          device_name?: string | null
-          device_type?: string | null
-          id?: string
-          ip_address?: string | null
-          is_current?: boolean | null
-          last_active_at?: string | null
-          location?: string | null
-          os?: string | null
-          user_id: string
-        }
-        Update: {
-          browser?: string | null
-          created_at?: string
-          device_name?: string | null
-          device_type?: string | null
-          id?: string
-          ip_address?: string | null
-          is_current?: boolean | null
-          last_active_at?: string | null
-          location?: string | null
-          os?: string | null
-          user_id?: string
-        }
-        Relationships: []
-      }
       wallets: {
         Row: {
           balance: number | null
@@ -1664,9 +802,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      generate_invoice_number: { Args: never; Returns: string }
       generate_license_key: { Args: never; Returns: string }
-      generate_ticket_number: { Args: never; Returns: string }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
@@ -1677,19 +813,6 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
-      }
-      log_activity: {
-        Args: {
-          p_action: string
-          p_details?: Json
-          p_entity_id: string
-          p_entity_type: string
-        }
-        Returns: string
-      }
-      update_product_health: {
-        Args: { p_product_id: string }
-        Returns: undefined
       }
     }
     Enums: {
@@ -1704,7 +827,6 @@ export type Database = {
         | "logout"
         | "suspend"
         | "activate"
-      backup_status: "pending" | "running" | "success" | "failed"
       category_level: "master" | "sub" | "micro" | "nano"
       demo_status: "active" | "expired" | "disabled"
       deploy_status:
@@ -1714,8 +836,6 @@ export type Database = {
         | "failed"
         | "cancelled"
         | "rolled_back"
-      domain_status: "pending" | "active" | "failed" | "expired"
-      git_provider: "github" | "gitlab" | "bitbucket"
       key_status: "active" | "expired" | "suspended" | "revoked"
       key_type: "lifetime" | "yearly" | "monthly" | "trial"
       lead_source:
@@ -1726,15 +846,7 @@ export type Database = {
         | "organic"
         | "other"
       lead_status: "new" | "contacted" | "qualified" | "converted" | "lost"
-      message_type: "text" | "voice" | "image"
       product_status: "active" | "suspended" | "archived" | "draft"
-      server_event_type:
-        | "restart"
-        | "deploy"
-        | "backup"
-        | "ssl_renewal"
-        | "health_check"
-        | "error"
       server_runtime:
         | "nodejs18"
         | "nodejs20"
@@ -1743,7 +855,6 @@ export type Database = {
         | "python311"
         | "python312"
       server_status: "deploying" | "live" | "failed" | "stopped" | "suspended"
-      support_status: "pending" | "open" | "resolved" | "escalated"
       transaction_status: "pending" | "completed" | "failed" | "cancelled"
       transaction_type: "credit" | "debit" | "refund" | "adjustment"
     }
@@ -1885,7 +996,6 @@ export const Constants = {
         "suspend",
         "activate",
       ],
-      backup_status: ["pending", "running", "success", "failed"],
       category_level: ["master", "sub", "micro", "nano"],
       demo_status: ["active", "expired", "disabled"],
       deploy_status: [
@@ -1896,22 +1006,11 @@ export const Constants = {
         "cancelled",
         "rolled_back",
       ],
-      domain_status: ["pending", "active", "failed", "expired"],
-      git_provider: ["github", "gitlab", "bitbucket"],
       key_status: ["active", "expired", "suspended", "revoked"],
       key_type: ["lifetime", "yearly", "monthly", "trial"],
       lead_source: ["website", "referral", "social", "ads", "organic", "other"],
       lead_status: ["new", "contacted", "qualified", "converted", "lost"],
-      message_type: ["text", "voice", "image"],
       product_status: ["active", "suspended", "archived", "draft"],
-      server_event_type: [
-        "restart",
-        "deploy",
-        "backup",
-        "ssl_renewal",
-        "health_check",
-        "error",
-      ],
       server_runtime: [
         "nodejs18",
         "nodejs20",
@@ -1921,7 +1020,6 @@ export const Constants = {
         "python312",
       ],
       server_status: ["deploying", "live", "failed", "stopped", "suspended"],
-      support_status: ["pending", "open", "resolved", "escalated"],
       transaction_status: ["pending", "completed", "failed", "cancelled"],
       transaction_type: ["credit", "debit", "refund", "adjustment"],
     },

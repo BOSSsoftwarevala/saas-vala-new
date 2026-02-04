@@ -12,18 +12,13 @@ import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import Keys from "./pages/Keys";
 import Servers from "./pages/Servers";
-import ServerSetup from "./pages/ServerSetup";
-import DomainOperations from "./pages/DomainOperations";
-import SecurityLogs from "./pages/SecurityLogs";
 import AiChat from "./pages/AiChat";
 import SaasAiDashboard from "./pages/SaasAiDashboard";
 import AiApis from "./pages/AiApis";
 import Wallet from "./pages/Wallet";
 import SeoLeads from "./pages/SeoLeads";
 import Resellers from "./pages/Resellers";
-import AuditLogs from "./pages/AuditLogs";
 import Settings from "./pages/Settings";
-import Support from "./pages/Support";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -106,30 +101,6 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/server-setup"
-        element={
-          <ProtectedRoute>
-            <ServerSetup />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/domain-operations"
-        element={
-          <ProtectedRoute>
-            <DomainOperations />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/security-logs"
-        element={
-          <ProtectedRoute>
-            <SecurityLogs />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/ai-chat"
         element={
           <ProtectedRoute>
@@ -170,29 +141,11 @@ function AppRoutes() {
         }
       />
       <Route
-        path="/support"
-        element={
-          <ProtectedRoute>
-            <Support />
-          </ProtectedRoute>
-        }
-      />
-      <Route
         path="/resellers"
         element={
           <ProtectedRoute>
             <AdminRoute>
               <Resellers />
-            </AdminRoute>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/audit-logs"
-        element={
-          <ProtectedRoute>
-            <AdminRoute>
-              <AuditLogs />
             </AdminRoute>
           </ProtectedRoute>
         }

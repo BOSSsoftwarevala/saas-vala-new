@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { Json } from '@/integrations/supabase/types';
@@ -39,7 +39,7 @@ export function useServers() {
   const [deployments, setDeployments] = useState<Deployment[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchServers = useCallback(async () => {
+  const fetchServers = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('servers')
@@ -53,9 +53,9 @@ export function useServers() {
       setServers((data || []) as Server[]);
     }
     setLoading(false);
-  }, []);
+  };
 
-  const fetchDeployments = useCallback(async (serverId?: string) => {
+  const fetchDeployments = async (serverId?: string) => {
     let query = supabase
       .from('deployments')
       .select('*')
@@ -73,7 +73,7 @@ export function useServers() {
     } else {
       setDeployments((data || []) as Deployment[]);
     }
-  }, []);
+  };
 
   const createServer = async (server: Partial<Server>) => {
     const { data: userData } = await supabase.auth.getUser();
@@ -101,7 +101,7 @@ export function useServers() {
       throw error;
     }
     toast.success('Server created: ' + subdomain + '.saasvala.com');
-    // Real-time will handle refresh
+    await fetchServers();
     return data;
   };
 
@@ -116,7 +116,7 @@ export function useServers() {
       throw error;
     }
     toast.success('Server updated');
-    // Real-time will handle refresh
+    await fetchServers();
   };
 
   const deleteServer = async (id: string) => {
@@ -130,7 +130,7 @@ export function useServers() {
       throw error;
     }
     toast.success('Server deleted');
-    // Real-time will handle refresh
+    await fetchServers();
   };
 
   const deployServer = async (id: string) => {
@@ -157,7 +157,8 @@ export function useServers() {
       .eq('id', id);
 
     toast.success('Deployment triggered');
-    // Real-time will handle refresh
+    await fetchServers();
+    await fetchDeployments(id);
   };
 
   const stopServer = async (id: string) => {
@@ -168,48 +169,10 @@ export function useServers() {
     await updateServer(id, { status: 'suspended' });
   };
 
-  const rollbackDeployment = async (serverId: string, deploymentId: string) => {
-    const { data: userData } = await supabase.auth.getUser();
-    
-    // Mark original deployment as rolled back
-    await supabase
-      .from('deployments')
-      .update({ status: 'rolled_back' })
-      .eq('id', deploymentId);
-
-    // Create new deployment for rollback
-    await supabase
-      .from('deployments')
-      .insert({
-        server_id: serverId,
-        status: 'building',
-        commit_message: 'Rollback deployment',
-        triggered_by: userData.user?.id
-      });
-
-    toast.success('Rollback initiated');
-    // Real-time will handle refresh
-  };
-
   useEffect(() => {
     fetchServers();
     fetchDeployments();
-
-    // Real-time subscriptions for live updates
-    const channel = supabase
-      .channel('servers-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'servers' }, () => {
-        fetchServers();
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'deployments' }, () => {
-        fetchDeployments();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [fetchServers, fetchDeployments]);
+  }, []);
 
   return {
     servers,
@@ -222,7 +185,6 @@ export function useServers() {
     deleteServer,
     deployServer,
     stopServer,
-    suspendServer,
-    rollbackDeployment
+    suspendServer
   };
 }
