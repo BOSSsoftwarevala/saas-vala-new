@@ -8,6 +8,7 @@ import {
   Globe2,
   Sparkles,
   Users,
+  Link2,
   BarChart3,
   Settings,
 } from 'lucide-react';
@@ -17,6 +18,7 @@ import { MetaTagManager } from '@/components/seo-leads/MetaTagManager';
 import { CountrySeo } from '@/components/seo-leads/CountrySeo';
 import { AiContentGenerator } from '@/components/seo-leads/AiContentGenerator';
 import { LeadsManager } from '@/components/seo-leads/LeadsManager';
+import { LeadSources } from '@/components/seo-leads/LeadSources';
 import { SeoAnalytics } from '@/components/seo-leads/SeoAnalytics';
 import { SeoSettings } from '@/components/seo-leads/SeoSettings';
 
@@ -38,7 +40,7 @@ export default function SeoLeads() {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="w-full grid grid-cols-4 md:grid-cols-8 h-auto gap-1 bg-muted/30 p-1.5 rounded-xl">
+          <TabsList className="w-full grid grid-cols-3 md:grid-cols-9 h-auto gap-1 bg-muted/30 p-1.5 rounded-xl">
             <TabsTrigger value="dashboard" className="gap-1 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <LayoutDashboard className="h-3 w-3" />
               <span className="hidden sm:inline">Dashboard</span>
@@ -62,6 +64,10 @@ export default function SeoLeads() {
             <TabsTrigger value="leads" className="gap-1 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Users className="h-3 w-3" />
               <span className="hidden sm:inline">Leads</span>
+            </TabsTrigger>
+            <TabsTrigger value="sources" className="gap-1 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+              <Link2 className="h-3 w-3" />
+              <span className="hidden sm:inline">Sources</span>
             </TabsTrigger>
             <TabsTrigger value="analytics" className="gap-1 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <BarChart3 className="h-3 w-3" />
@@ -95,6 +101,10 @@ export default function SeoLeads() {
 
           <TabsContent value="leads" className="mt-6">
             <LeadsManager />
+          </TabsContent>
+
+          <TabsContent value="sources" className="mt-6">
+            <LeadSources />
           </TabsContent>
 
           <TabsContent value="analytics" className="mt-6">
