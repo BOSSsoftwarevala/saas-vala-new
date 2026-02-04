@@ -24,11 +24,13 @@ import {
   Clock,
   Send,
   Banknote,
+  Bitcoin,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import softwareValaLogo from '@/assets/softwarevala-logo.png';
 import wiseQrCode from '@/assets/wise-qr-code.png';
+import binanceQrCode from '@/assets/binance-qr-code.jpg';
 import { RefundPolicyCard } from './RefundPolicyCard';
 import { ConfirmPaymentModal } from './ConfirmPaymentModal';
 
@@ -46,8 +48,15 @@ const paymentMethods = [
   { id: 'bank', name: 'Bank Transfer (NEFT/IMPS/SWIFT)', icon: Building2, badge: 'Manual Verify', countries: '🇮🇳 🌍' },
   { id: 'wise', name: 'Wise (TransferWise)', icon: Send, badge: 'Low Fees', countries: '🌍 🇺🇸 🇬🇧 🇪🇺 🇦🇺 🇨🇦' },
   { id: 'remit', name: 'Remitly / Western Union', icon: Banknote, badge: 'Fast', countries: '🌍 🇺🇸 🇬🇧 🇦🇪 🇸🇬' },
+  { id: 'crypto', name: 'Crypto (Binance Pay / USDT)', icon: Bitcoin, badge: 'Global', countries: '🌍 🪙 Worldwide' },
   { id: 'international', name: 'International Card (Visa/MC)', icon: Globe, badge: 'Worldwide', countries: '🌍 All Countries' },
 ];
+
+const binanceDetails = {
+  binanceId: '1078928519',
+  binanceIdMasked: '107••••519',
+  accountName: 'software vala 2',
+};
 
 const bankDetails = {
   accountName: 'SOFTWARE VALA',
@@ -61,7 +70,7 @@ const bankDetails = {
   branchName: 'KANKAR BAGH',
 };
 
-type Step = 'amount' | 'method' | 'bank_details' | 'processing' | 'success' | 'pending';
+type Step = 'amount' | 'method' | 'bank_details' | 'crypto_details' | 'processing' | 'success' | 'pending';
 
 export function AddCreditsModal({ open, onOpenChange, onSuccess }: AddCreditsModalProps) {
   const [step, setStep] = useState<Step>('amount');
@@ -112,6 +121,8 @@ export function AddCreditsModal({ open, onOpenChange, onSuccess }: AddCreditsMod
   const handlePaymentMethodSelect = () => {
     if (paymentMethod === 'bank' || paymentMethod === 'wise' || paymentMethod === 'remit') {
       setStep('bank_details');
+    } else if (paymentMethod === 'crypto') {
+      setStep('crypto_details');
     } else {
       // Show confirmation modal for card/UPI payments
       setShowConfirmModal(true);
@@ -613,6 +624,91 @@ export function AddCreditsModal({ open, onOpenChange, onSuccess }: AddCreditsMod
               Done
             </Button>
           </div>
+        )}
+
+        {/* Step: Crypto Details (Binance) */}
+        {step === 'crypto_details' && (
+          <>
+            <DialogHeader>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" onClick={() => setStep('method')}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div>
+                  <DialogTitle className="font-display text-xl">Crypto Payment</DialogTitle>
+                  <DialogDescription>
+                    Pay ₹{finalAmount.toLocaleString()} via Binance Pay
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {/* Binance Pay Banner */}
+              <div className="flex items-center justify-center gap-2 bg-yellow-500/10 rounded-lg p-3">
+                <Bitcoin className="h-5 w-5 text-yellow-500" />
+                <span className="text-sm font-medium text-yellow-500">Scan with Binance App to Pay</span>
+              </div>
+
+              {/* Binance QR Code */}
+              <div className="bg-slate-900 rounded-lg p-6 text-center">
+                <img 
+                  src={binanceQrCode} 
+                  alt="Binance Pay QR Code" 
+                  className="mx-auto w-48 h-48 rounded-lg"
+                />
+                <p className="text-yellow-400 font-medium mt-3">{binanceDetails.accountName}</p>
+              </div>
+
+              {/* Binance ID */}
+              <div className="glass-card rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Binance ID</p>
+                    <p className="font-mono font-semibold text-foreground">{binanceDetails.binanceIdMasked}</p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="gap-1.5"
+                    onClick={() => handleCopy(binanceDetails.binanceId, 'Binance ID')}
+                  >
+                    <Copy className="h-3 w-3" />
+                    Copy
+                  </Button>
+                </div>
+              </div>
+
+              {/* Amount to Transfer */}
+              <div className="bg-yellow-500/10 rounded-lg p-4 text-center">
+                <p className="text-xs text-muted-foreground">Amount to Pay</p>
+                <p className="text-2xl font-bold text-yellow-500">₹{finalAmount.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground mt-1">Pay in USDT, BUSD, or any supported crypto</p>
+              </div>
+
+              {/* Transaction Reference */}
+              <div className="space-y-2">
+                <Label htmlFor="crypto-txn-ref">Transaction ID / TxHash</Label>
+                <Input
+                  id="crypto-txn-ref"
+                  placeholder="Enter Binance transaction ID"
+                  value={transactionRef}
+                  onChange={(e) => setTransactionRef(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  After payment, enter the transaction ID from Binance
+                </p>
+              </div>
+
+              <Button
+                className="w-full bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-semibold h-12"
+                onClick={handleBankTransferSubmit}
+                disabled={!transactionRef.trim()}
+              >
+                I've Made the Payment
+              </Button>
+            </div>
+          </>
         )}
 
         {/* Step 6: Pending (Bank Transfer) */}
