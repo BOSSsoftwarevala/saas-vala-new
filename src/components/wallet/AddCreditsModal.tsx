@@ -25,6 +25,9 @@ import {
   Send,
   Banknote,
   Bitcoin,
+  Smartphone,
+  XCircle,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -70,7 +73,7 @@ const bankDetails = {
   branchName: 'KANKAR BAGH',
 };
 
-type Step = 'amount' | 'method' | 'bank_details' | 'crypto_details' | 'processing' | 'success' | 'pending';
+type Step = 'amount' | 'method' | 'bank_details' | 'crypto_details' | 'upi_collect' | 'upi_waiting' | 'processing' | 'success' | 'pending' | 'failed';
 
 export function AddCreditsModal({ open, onOpenChange, onSuccess }: AddCreditsModalProps) {
   const [step, setStep] = useState<Step>('amount');
@@ -81,6 +84,8 @@ export function AddCreditsModal({ open, onOpenChange, onSuccess }: AddCreditsMod
   const [transactionRef, setTransactionRef] = useState('');
   const [policyAgreed, setPolicyAgreed] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [userUpiId, setUserUpiId] = useState('');
+  const [upiError, setUpiError] = useState('');
 
   const handleClose = () => {
     setStep('amount');
@@ -91,6 +96,8 @@ export function AddCreditsModal({ open, onOpenChange, onSuccess }: AddCreditsMod
     setTransactionRef('');
     setPolicyAgreed(false);
     setShowConfirmModal(false);
+    setUserUpiId('');
+    setUpiError('');
     onOpenChange(false);
   };
 
@@ -123,9 +130,103 @@ export function AddCreditsModal({ open, onOpenChange, onSuccess }: AddCreditsMod
       setStep('bank_details');
     } else if (paymentMethod === 'crypto') {
       setStep('crypto_details');
+    } else if (paymentMethod === 'upi') {
+      setStep('upi_collect');
     } else {
-      // Show confirmation modal for card/UPI payments
+      // Show confirmation modal for card payments
       setShowConfirmModal(true);
+    }
+  };
+
+  // Validate UPI ID format
+  const validateUpiId = (upiId: string): boolean => {
+    const upiRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9]+$/;
+    return upiRegex.test(upiId);
+  };
+
+  // Mask UPI ID for storage (e.g., ****@bank)
+  const maskUpiId = (upiId: string): string => {
+    const parts = upiId.split('@');
+    if (parts.length === 2) {
+      return `****@${parts[1]}`;
+    }
+    return '****';
+  };
+
+  // Handle UPI Collect Request
+  const handleUpiCollectRequest = async () => {
+    setUpiError('');
+    
+    if (!userUpiId.trim()) {
+      setUpiError('Please enter your UPI ID');
+      return;
+    }
+    
+    if (!validateUpiId(userUpiId.trim())) {
+      setUpiError('Invalid UPI ID format. Example: name@bank');
+      return;
+    }
+
+    // Log consent and move to waiting state
+    console.log('UPI Collect Request:', {
+      timestamp: new Date().toISOString(),
+      maskedUpiId: maskUpiId(userUpiId),
+      amount: finalAmount,
+      policyVersion: '1.0'
+    });
+
+    setStep('upi_waiting');
+
+    // Simulate UPI collect request processing
+    await new Promise(resolve => setTimeout(resolve, 3000));
+
+    // Simulate 85% success rate
+    const success = Math.random() > 0.15;
+
+    if (success) {
+      // Add to wallet
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: userData } = await supabase.auth.getUser();
+        
+        if (userData.user) {
+          const { data: walletData } = await supabase
+            .from('wallets')
+            .select('id, balance')
+            .eq('user_id', userData.user.id)
+            .maybeSingle();
+
+          if (walletData) {
+            const newBalance = (walletData.balance || 0) + finalAmount;
+            
+            await supabase.from('transactions').insert({
+              wallet_id: walletData.id,
+              type: 'credit',
+              amount: finalAmount,
+              balance_after: newBalance,
+              status: 'completed',
+              description: 'Added credits via UPI',
+              created_by: userData.user.id,
+              meta: { 
+                payment_method: 'upi_collect',
+                masked_upi_id: maskUpiId(userUpiId)
+              }
+            });
+
+            await supabase
+              .from('wallets')
+              .update({ balance: newBalance })
+              .eq('id', walletData.id);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to update wallet:', error);
+      }
+      
+      setStep('success');
+      onSuccess?.();
+    } else {
+      setStep('failed');
     }
   };
 
@@ -600,6 +701,151 @@ export function AddCreditsModal({ open, onOpenChange, onSuccess }: AddCreditsMod
                 Auto-retry attempt {retryCount}/3
               </p>
             )}
+          </div>
+        )}
+
+        {/* Step: UPI Collect - Enter UPI ID */}
+        {step === 'upi_collect' && (
+          <>
+            <DialogHeader>
+              <div className="flex items-center gap-2">
+                <Button variant="ghost" size="icon" onClick={() => setStep('method')}>
+                  <ArrowLeft className="h-4 w-4" />
+                </Button>
+                <div>
+                  <DialogTitle className="font-display text-xl uppercase tracking-wide">
+                    Pay Using UPI
+                  </DialogTitle>
+                  <DialogDescription>
+                    Pay ₹{finalAmount.toLocaleString()} securely
+                  </DialogDescription>
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="space-y-4 py-4">
+              {/* UPI Banner */}
+              <div className="flex items-center justify-center gap-2 bg-violet-500/10 rounded-lg p-3">
+                <Smartphone className="h-5 w-5 text-violet-500" />
+                <span className="text-sm font-medium text-violet-500">Secure UPI Collect Request</span>
+              </div>
+
+              {/* UPI ID Input */}
+              <div className="space-y-2">
+                <Label htmlFor="user-upi-id" className="text-sm font-medium">
+                  Enter Your UPI ID
+                </Label>
+                <Input
+                  id="user-upi-id"
+                  placeholder="yourname@bank"
+                  value={userUpiId}
+                  onChange={(e) => {
+                    setUserUpiId(e.target.value);
+                    setUpiError('');
+                  }}
+                  className={cn(
+                    'h-12 text-base',
+                    upiError && 'border-destructive focus-visible:ring-destructive'
+                  )}
+                />
+                {upiError && (
+                  <p className="text-xs text-destructive">{upiError}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  We will send a payment request to your UPI app.
+                </p>
+              </div>
+
+              {/* Amount Display */}
+              <div className="bg-violet-500/10 rounded-lg p-4 text-center">
+                <p className="text-xs text-muted-foreground">Amount to Pay</p>
+                <p className="text-2xl font-bold text-violet-500">₹{finalAmount.toLocaleString()}</p>
+              </div>
+
+              {/* How it works */}
+              <div className="bg-muted/30 rounded-lg p-3 space-y-2">
+                <p className="text-xs font-medium text-foreground">How it works:</p>
+                <ul className="text-xs text-muted-foreground space-y-1">
+                  <li className="flex items-center gap-2">
+                    <span className="h-4 w-4 rounded-full bg-violet-500/20 text-violet-500 flex items-center justify-center text-[10px]">1</span>
+                    Enter your UPI ID above
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="h-4 w-4 rounded-full bg-violet-500/20 text-violet-500 flex items-center justify-center text-[10px]">2</span>
+                    Approve request in your UPI app
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="h-4 w-4 rounded-full bg-violet-500/20 text-violet-500 flex items-center justify-center text-[10px]">3</span>
+                    Credits added instantly!
+                  </li>
+                </ul>
+              </div>
+
+              <Button
+                className="w-full bg-gradient-to-r from-violet-500 to-violet-600 hover:from-violet-600 hover:to-violet-700 text-white h-12 font-semibold"
+                onClick={handleUpiCollectRequest}
+                disabled={!userUpiId.trim()}
+              >
+                Request Payment
+              </Button>
+            </div>
+          </>
+        )}
+
+        {/* Step: UPI Waiting for Approval */}
+        {step === 'upi_waiting' && (
+          <div className="py-12 text-center space-y-4">
+            <div className="h-16 w-16 rounded-full bg-violet-500/10 flex items-center justify-center mx-auto">
+              <Loader2 className="h-8 w-8 text-violet-500 animate-spin" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-semibold text-foreground">
+                Waiting for Approval...
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Please approve the payment request in your UPI app
+              </p>
+            </div>
+            <div className="bg-muted/50 rounded-lg p-3">
+              <p className="text-xs text-muted-foreground">Amount</p>
+              <p className="font-semibold text-violet-500">₹{finalAmount.toLocaleString()}</p>
+            </div>
+            <p className="text-xs text-muted-foreground animate-pulse">
+              Check your PhonePe, GPay, Paytm or BHIM app
+            </p>
+          </div>
+        )}
+
+        {/* Step: Payment Failed */}
+        {step === 'failed' && (
+          <div className="py-12 text-center space-y-4">
+            <div className="h-16 w-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto animate-in zoom-in duration-300">
+              <XCircle className="h-8 w-8 text-destructive" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg font-semibold text-foreground">
+                Payment Failed
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                The payment was not completed. Please try again.
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={handleClose}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-orange-gradient hover:opacity-90 text-white gap-2"
+                onClick={() => setStep('upi_collect')}
+              >
+                <RefreshCw className="h-4 w-4" />
+                Retry
+              </Button>
+            </div>
           </div>
         )}
 
