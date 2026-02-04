@@ -22,9 +22,7 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { cn } from '@/lib/utils';
-import saasValaLogo from '@/assets/saas-vala-logo.jpg';
-import { useNavigate } from 'react-router-dom';
-import { Wallet as WalletIcon, User } from 'lucide-react';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 
 const subCategories = [
   { id: 1, name: 'USER MANAGEMENT', icon: Users, description: 'Complete user lifecycle control from registration to deactivation' },
@@ -84,7 +82,6 @@ const techStack = [
 ];
 
 export default function RoleDetail() {
-  const navigate = useNavigate();
   const [enabledCategories, setEnabledCategories] = useState<Record<number, boolean>>(
     Object.fromEntries(subCategories.map(c => [c.id, true]))
   );
@@ -114,51 +111,8 @@ export default function RoleDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* GLOBAL HEADER */}
-      <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-background/95 backdrop-blur-md border-b border-border">
-        <div className="h-full px-4 md:px-8 flex items-center justify-between">
-          <div 
-            className="flex items-center gap-3 cursor-pointer"
-            onClick={() => navigate('/marketplace')}
-          >
-            <img 
-              src={saasValaLogo} 
-              alt="SaaS VALA" 
-              className="h-10 w-10 rounded-xl object-cover border border-primary/20"
-            />
-            <span className="font-display font-bold text-lg text-foreground hidden sm:block">
-              SaaS VALA
-            </span>
-          </div>
-
-          <h1 className="absolute left-1/2 -translate-x-1/2 font-display font-bold text-foreground text-sm md:text-base uppercase">
-            SUPER ADMIN ROLE
-          </h1>
-
-          <div className="flex items-center gap-2">
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="gap-1 px-2"
-              onClick={() => navigate('/wallet')}
-            >
-              <WalletIcon className="h-4 w-4" />
-              <span className="hidden sm:inline text-xs font-medium">₹0</span>
-            </Button>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={() => navigate('/settings')}
-            >
-              <User className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* MAIN CONTENT */}
-      <main className="pt-20 pb-16 px-4 md:px-8 max-w-7xl mx-auto">
+    <DashboardLayout>
+      <div className="space-y-6">
         
         {/* ROLE HEADER SECTION */}
         <motion.section 
@@ -435,15 +389,7 @@ export default function RoleDetail() {
             </Accordion>
           </div>
         </motion.section>
-
-      </main>
-
-      {/* FOOTER */}
-      <footer className="border-t border-border py-6">
-        <p className="text-center text-xs text-muted-foreground">
-          POWERED BY <span className="font-bold text-foreground">SOFTWARE VALA™</span>
-        </p>
-      </footer>
-    </div>
+      </div>
+    </DashboardLayout>
   );
 }
