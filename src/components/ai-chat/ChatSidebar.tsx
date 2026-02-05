@@ -160,33 +160,33 @@ export function ChatSidebar({
         {/* Body */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {/* Sessions List - smaller when chat panel exists */}
-          <ScrollArea className={cn(hasChatPanel ? 'shrink-0 max-h-[30vh]' : 'flex-1')}>
-            <div className="py-2">
+          <ScrollArea className={cn(hasChatPanel ? 'shrink-0 max-h-[15vh]' : 'flex-1')}>
+            <div className="py-1">
               <SessionGroup title="Today" items={groupedSessions.today} />
               <SessionGroup title="Yesterday" items={groupedSessions.yesterday} />
               <SessionGroup title="Last 7 days" items={groupedSessions.lastWeek} />
               <SessionGroup title="Older" items={groupedSessions.older} />
 
               {sessions.length === 0 && (
-                <div className="px-4 py-8 text-center">
-                  <MessageSquare className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
-                  <p className="text-sm text-muted-foreground font-medium">No conversations yet</p>
+                <div className="px-4 py-4 text-center">
+                  <MessageSquare className="h-6 w-6 mx-auto mb-1 text-muted-foreground/30" />
+                  <p className="text-xs text-muted-foreground">No chats yet</p>
                 </div>
               )}
             </div>
           </ScrollArea>
 
-          {/* Chat Panel - takes more space */}
+          {/* Chat Panel - 85% of remaining space */}
           {hasChatPanel && (
             <div className="flex-1 min-h-0 overflow-hidden flex flex-col bg-background border-t border-sidebar-border">
               {children}
             </div>
           )}
 
-          {/* Footer - always at bottom */}
-          <div className="shrink-0 p-3 border-t border-sidebar-border bg-sidebar">
-            <p className="text-xs text-center text-muted-foreground">
-              Powered by <span className="font-semibold text-primary">SoftwareVala™</span>
+          {/* Footer - compact */}
+          <div className="shrink-0 py-2 px-3 border-t border-sidebar-border bg-sidebar">
+            <p className="text-[10px] text-center text-muted-foreground">
+              Powered by <span className="font-medium text-primary">SoftwareVala™</span>
             </p>
           </div>
         </div>

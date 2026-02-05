@@ -173,17 +173,12 @@ export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage, onTempl
     }
   };
 
-  const quickSuggestions = [
-    { text: 'Upload source code', icon: FileCode },
-    { text: 'Analyze my project', icon: Wand2 },
-    { text: 'Deploy to server', icon: Sparkles },
-    { text: 'Add payment addon', icon: Sparkles }
-  ];
+  const quickSuggestions: { text: string; icon: typeof FileCode }[] = [];
 
   const hasContent = input.trim() || files.length > 0;
 
   return (
-    <div className="border-t border-border bg-gradient-to-t from-background via-background to-transparent">
+    <div className="border-t border-border bg-background/95 backdrop-blur-sm">
       {/* Hidden File Inputs */}
       <input
         ref={fileInputRef}
@@ -289,7 +284,7 @@ export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage, onTempl
       </AnimatePresence>
 
       {/* Input Area */}
-      <div className="p-4 max-w-3xl mx-auto">
+      <div className="p-2 max-w-3xl mx-auto">
         <motion.div 
           animate={{ 
             borderColor: isFocused ? 'hsl(var(--primary) / 0.5)' : 'hsl(var(--border))',
