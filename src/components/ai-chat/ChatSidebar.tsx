@@ -119,11 +119,11 @@ export function ChatSidebar({
 
   return (
     <>
-      {/* Sidebar */}
+      {/* Sidebar - Lovable style narrow width */}
       <div
         className={cn(
           'h-full bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 shrink-0',
-          isOpen ? 'w-[380px]' : 'w-0 overflow-hidden',
+          isOpen ? 'w-64' : 'w-0 overflow-hidden',
         )}
       >
         {/* Header - compact */}
