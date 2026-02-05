@@ -13,6 +13,7 @@
  import { Badge } from '@/components/ui/badge';
  import { Button } from '@/components/ui/button';
  import { Progress } from '@/components/ui/progress';
+ import { setGlobalWorking } from './WorkingDeveloperIndicator';
  
  export interface GlobalActivity {
    id: string;
@@ -31,6 +32,9 @@
  export const addGlobalActivity = (activity: Omit<GlobalActivity, 'startedAt'>) => {
    globalActivities = [...globalActivities, { ...activity, startedAt: new Date() }];
    listeners.forEach(fn => fn());
+   // Trigger developer indicator
+   const hasProcessing = globalActivities.some(a => a.status === 'processing');
+   setGlobalWorking(hasProcessing);
  };
  
  export const updateGlobalActivity = (id: string, updates: Partial<GlobalActivity>) => {
@@ -38,16 +42,25 @@
      a.id === id ? { ...a, ...updates } : a
    );
    listeners.forEach(fn => fn());
+   // Update developer indicator
+   const hasProcessing = globalActivities.some(a => a.status === 'processing');
+   setGlobalWorking(hasProcessing);
  };
  
  export const removeGlobalActivity = (id: string) => {
    globalActivities = globalActivities.filter(a => a.id !== id);
    listeners.forEach(fn => fn());
+   // Update developer indicator
+   const hasProcessing = globalActivities.some(a => a.status === 'processing');
+   setGlobalWorking(hasProcessing);
  };
  
  export const clearCompletedActivities = () => {
    globalActivities = globalActivities.filter(a => a.status !== 'completed');
    listeners.forEach(fn => fn());
+   // Update developer indicator
+   const hasProcessing = globalActivities.some(a => a.status === 'processing');
+   setGlobalWorking(hasProcessing);
  };
  
  export function GlobalActivityPanel() {
