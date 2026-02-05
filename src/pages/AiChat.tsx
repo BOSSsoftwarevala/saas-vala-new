@@ -8,6 +8,9 @@ import { HostingCredentialsModal, HostingCredentials } from '@/components/ai-cha
 import { ThinkingIndicator } from '@/components/ai-chat/ThinkingIndicator';
 import { ChatHistoryPanel } from '@/components/ai-chat/ChatHistoryPanel';
 import { SmartSuggestions } from '@/components/ai-chat/SmartSuggestions';
+import { TypingIndicator } from '@/components/ai-chat/TypingIndicator';
+import { ChatSearch } from '@/components/ai-chat/ChatSearch';
+import { KeyboardShortcuts, useKeyboardShortcuts } from '@/components/ai-chat/KeyboardShortcuts';
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
@@ -82,10 +85,44 @@ export default function AiChat() {
   // History panel state
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   
+  // Search panel state
+  const [showSearchPanel, setShowSearchPanel] = useState(false);
+  
+  // Shortcuts panel state
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  
+  // Pinned messages state
+  const [pinnedMessages, setPinnedMessages] = useState<Set<string>>(new Set());
+  
   // Context for thinking indicator
   const [thinkingContext, setThinkingContext] = useState<'analyzing' | 'fixing' | 'deploying' | 'general'>('general');
 
   const activeSession = sessions.find(s => s.id === activeSessionId);
+
+  // Pin/Unpin message handlers
+  const handlePinMessage = useCallback((messageId: string) => {
+    setPinnedMessages(prev => new Set([...prev, messageId]));
+  }, []);
+
+  const handleUnpinMessage = useCallback((messageId: string) => {
+    setPinnedMessages(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(messageId);
+      return newSet;
+    });
+  }, []);
+
+  // Navigate to message from search
+  const handleNavigateToMessage = useCallback((messageId: string) => {
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      messageElement.classList.add('ring-2', 'ring-primary', 'ring-offset-2');
+      setTimeout(() => {
+        messageElement.classList.remove('ring-2', 'ring-primary', 'ring-offset-2');
+      }, 2000);
+    }
+  }, []);
 
   // Save to localStorage
   useEffect(() => {
@@ -642,6 +679,17 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
     setPendingDeployFile(null);
   };
 
+  // Keyboard shortcuts - must be after all function definitions
+  useKeyboardShortcuts({
+    onNewChat: createNewSession,
+    onExport: handleExport,
+    onSearch: () => setShowSearchPanel(true),
+    onHistory: () => setShowHistoryPanel(true),
+    onClear: clearCurrentChat,
+    onToggleSidebar: () => setSidebarOpen(!sidebarOpen),
+    onShowShortcuts: () => setShowShortcuts(true),
+  });
+
   return (
     <div className="h-screen flex bg-background overflow-hidden">
       {/* Sidebar */}
@@ -668,6 +716,8 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
           sidebarOpen={sidebarOpen}
           onOpenHistory={() => setShowHistoryPanel(true)}
           onClearChat={clearCurrentChat}
+          onOpenSearch={() => setShowSearchPanel(true)}
+          onOpenShortcuts={() => setShowShortcuts(true)}
         />
 
         {/* Messages Area */}
@@ -677,13 +727,23 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
           ) : (
             <div className="pb-4">
               {activeSession.messages.map((message, index) => (
-                <ChatMessage key={message.id} message={message} index={index} />
+                <div key={message.id} id={`message-${message.id}`}>
+                  <ChatMessage 
+                    message={message} 
+                    index={index}
+                    isPinned={pinnedMessages.has(message.id)}
+                    onPin={handlePinMessage}
+                    onUnpin={handleUnpinMessage}
+                  />
+                </div>
               ))}
-              {/* Enhanced Thinking Indicator */}
-              <ThinkingIndicator 
-                isActive={isLoading && activeSession.messages[activeSession.messages.length - 1]?.role === 'user'} 
-                context={thinkingContext}
-              />
+              {/* Typing / Thinking Indicator */}
+              {isLoading && activeSession.messages[activeSession.messages.length - 1]?.role === 'user' && (
+                <>
+                  <TypingIndicator isVisible={true} />
+                  <ThinkingIndicator isActive={true} context={thinkingContext} />
+                </>
+              )}
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -717,6 +777,20 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
         onOpenChange={setShowHostingModal}
         onSubmit={handleHostingDeploy}
         fileName={pendingDeployFile?.fileName}
+      />
+
+      {/* Search Dialog */}
+      <ChatSearch
+        isOpen={showSearchPanel}
+        onClose={() => setShowSearchPanel(false)}
+        messages={activeSession?.messages || []}
+        onNavigateToMessage={handleNavigateToMessage}
+      />
+
+      {/* Keyboard Shortcuts Dialog */}
+      <KeyboardShortcuts
+        isOpen={showShortcuts}
+        onClose={() => setShowShortcuts(false)}
       />
     </div>
   );

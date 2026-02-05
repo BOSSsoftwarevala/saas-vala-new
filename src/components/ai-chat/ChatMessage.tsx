@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { User, Sparkles, Copy, Check, ThumbsUp, ThumbsDown, RotateCcw, FileCode, FileArchive, File, Image } from 'lucide-react';
+import { User, Sparkles, Copy, Check, RotateCcw, FileCode, FileArchive, File, Image, Pin } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
  import ReactMarkdown from 'react-markdown';
  import remarkGfm from 'remark-gfm';
+import { MessageReactions } from './MessageReactions';
 
 export interface FileAttachment {
   name: string;
@@ -26,6 +27,9 @@ export interface Message {
 interface ChatMessageProps {
   message: Message;
   index?: number;
+  isPinned?: boolean;
+  onPin?: (messageId: string) => void;
+  onUnpin?: (messageId: string) => void;
 }
 
 const getFileIcon = (type: FileAttachment['type']) => {
@@ -37,9 +41,8 @@ const getFileIcon = (type: FileAttachment['type']) => {
   }
 };
 
-export function ChatMessage({ message, index = 0 }: ChatMessageProps) {
+export function ChatMessage({ message, index = 0, isPinned, onPin, onUnpin }: ChatMessageProps) {
   const [copied, setCopied] = useState(false);
-  const [liked, setLiked] = useState<boolean | null>(null);
   const isUser = message.role === 'user';
 
   const handleCopy = async () => {
@@ -210,10 +213,19 @@ export function ChatMessage({ message, index = 0 }: ChatMessageProps) {
         ease: [0.16, 1, 0.3, 1]
       }}
       className={cn(
-        'group py-6 px-4 md:px-6 transition-colors duration-300',
-        isUser ? 'bg-transparent' : 'bg-muted/10'
+        'group py-6 px-4 md:px-6 transition-colors duration-300 relative',
+        isUser ? 'bg-transparent' : 'bg-muted/10',
+        isPinned && 'bg-primary/5 border-l-2 border-primary'
       )}
     >
+      {/* Pinned indicator */}
+      {isPinned && (
+        <div className="absolute top-2 right-4 flex items-center gap-1 text-xs text-primary">
+          <Pin className="h-3 w-3 fill-primary" />
+          <span>Pinned</span>
+        </div>
+      )}
+      
       <div className="max-w-3xl mx-auto flex gap-4">
         {/* Avatar */}
         <motion.div
@@ -330,32 +342,12 @@ export function ChatMessage({ message, index = 0 }: ChatMessageProps) {
                 )}
               </Button>
               <div className="w-px h-4 bg-border mx-1" />
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setLiked(true)}
-                className={cn(
-                  "h-8 px-2.5 rounded-lg transition-all",
-                  liked === true 
-                    ? "text-success bg-success/10" 
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                )}
-              >
-                <ThumbsUp className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setLiked(false)}
-                className={cn(
-                  "h-8 px-2.5 rounded-lg transition-all",
-                  liked === false 
-                    ? "text-destructive bg-destructive/10" 
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-                )}
-              >
-                <ThumbsDown className="h-4 w-4" />
-              </Button>
+              <MessageReactions 
+                messageId={message.id} 
+                isPinned={isPinned}
+                onPin={onPin}
+                onUnpin={onUnpin}
+              />
               <div className="w-px h-4 bg-border mx-1" />
               <Button
                 variant="ghost"

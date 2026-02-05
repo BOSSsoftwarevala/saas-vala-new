@@ -10,7 +10,9 @@ import {
   MoreVertical,
   Trash2,
   Copy,
-  History
+  History,
+  Search,
+  Keyboard
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -29,9 +31,11 @@ interface ChatHeaderProps {
   sidebarOpen?: boolean;
   onOpenHistory?: () => void;
   onClearChat?: () => void;
+  onOpenSearch?: () => void;
+  onOpenShortcuts?: () => void;
 }
 
-export function ChatHeader({ title, onExport, onToggleSidebar, sidebarOpen, onOpenHistory, onClearChat }: ChatHeaderProps) {
+export function ChatHeader({ title, onExport, onToggleSidebar, sidebarOpen, onOpenHistory, onClearChat, onOpenSearch, onOpenShortcuts }: ChatHeaderProps) {
   const navigate = useNavigate();
 
   return (
@@ -115,6 +119,16 @@ export function ChatHeader({ title, onExport, onToggleSidebar, sidebarOpen, onOp
         <Button
           variant="ghost"
           size="icon"
+          onClick={onOpenSearch}
+          className="h-9 w-9 text-muted-foreground hover:text-foreground"
+          title="Search (Ctrl+K)"
+        >
+          <Search className="h-4 w-4" />
+        </Button>
+        
+        <Button
+          variant="ghost"
+          size="icon"
           onClick={onOpenHistory}
           className="h-9 w-9 text-muted-foreground hover:text-foreground"
           title="View History"
@@ -158,6 +172,12 @@ export function ChatHeader({ title, onExport, onToggleSidebar, sidebarOpen, onOp
             <DropdownMenuItem className="gap-2 text-destructive focus:text-destructive" onClick={onClearChat}>
               <Trash2 className="h-4 w-4" />
               Clear Chat
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="gap-2" onClick={onOpenShortcuts}>
+              <Keyboard className="h-4 w-4" />
+              Keyboard Shortcuts
+              <kbd className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-muted">Ctrl+/</kbd>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

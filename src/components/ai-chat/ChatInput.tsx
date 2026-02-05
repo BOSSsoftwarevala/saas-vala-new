@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVoiceConversation } from '@/hooks/useVoiceConversation';
+import { QuickTemplates } from './QuickTemplates';
 
 interface UploadedFile {
   file: File;
@@ -18,6 +19,7 @@ interface ChatInputProps {
   isLoading: boolean;
   disabled?: boolean;
   onVoiceMessage?: (userText: string, aiResponse: string) => void;
+  onTemplateSelect?: (template: string) => void;
 }
 
 const getFileType = (file: File): UploadedFile['type'] => {
@@ -39,7 +41,7 @@ const getFileIcon = (type: UploadedFile['type']) => {
   }
 };
 
-export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage }: ChatInputProps) {
+export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage, onTemplateSelect }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [files, setFiles] = useState<UploadedFile[]>([]);
   const [isFocused, setIsFocused] = useState(false);
@@ -299,6 +301,15 @@ export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage }: ChatI
         >
           {/* Attachment Buttons */}
           <div className="flex gap-0.5">
+            {/* Quick Templates */}
+            <QuickTemplates onSelectTemplate={(template) => {
+              if (onTemplateSelect) {
+                onTemplateSelect(template);
+              } else {
+                setInput(template);
+              }
+            }} />
+            
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
                 type="button"
