@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { Loader2 } from "lucide-react";
  import { GlobalActivityPanel } from "@/components/global/GlobalActivityPanel";
+ import { WorkingDeveloperIndicator } from "@/components/global/WorkingDeveloperIndicator";
 
 // Pages
 import Auth from "./pages/Auth";
@@ -258,6 +259,7 @@ const App = () => (
       <Toaster />
       <Sonner />
        <GlobalActivityPanel />
+       <WorkingDeveloperIndicator />
       <BrowserRouter>
         <AuthProvider>
           <AppRoutes />
