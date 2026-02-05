@@ -5,6 +5,7 @@ import { HostingCredentialsModal, HostingCredentials } from '@/components/ai-cha
 import { ThinkingIndicator } from '@/components/ai-chat/ThinkingIndicator';
 import { ChatHistoryPanel } from '@/components/ai-chat/ChatHistoryPanel';
 import { SmartSuggestions } from '@/components/ai-chat/SmartSuggestions';
+import { ChatResultPanel } from '@/components/ai-chat/ChatResultPanel';
 import { ChatSearch } from '@/components/ai-chat/ChatSearch';
 import { KeyboardShortcuts, useKeyboardShortcuts } from '@/components/ai-chat/KeyboardShortcuts';
 import { ModelSelector } from '@/components/ai-chat/ModelSelector';
@@ -19,7 +20,6 @@ import {
   MessageSquare,
   Trash2,
   MoreHorizontal,
-  FileText,
   Search,
   History,
   MoreVertical,
@@ -744,9 +744,6 @@ Password: ${pendingDeployFile.analysisResult?.demoCredentials?.password || 'demo
       </div>
     );
   };
-
-  const lastAssistant = activeSession?.messages ? [...activeSession.messages].reverse().find((m) => m.role === 'assistant' && (m.content || '').trim().length > 0) : null;
-
   return (
     <div className="h-screen flex bg-background overflow-hidden">
       {/* ==================== LEFT PANEL: AI CHAT ==================== */}
@@ -879,31 +876,11 @@ Password: ${pendingDeployFile.analysisResult?.demoCredentials?.password || 'demo
           </div>
         </header>
 
-        {/* Result Content */}
-        <div className="flex-1 overflow-y-auto">
-          {lastAssistant ? (
-            <div className="max-w-4xl mx-auto">
-              <div className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm border-b border-border px-4 py-3 flex items-center gap-2">
-                <FileText className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium text-foreground">Result</span>
-                <span className="ml-auto text-xs text-muted-foreground">
-                  {isLoading ? 'Generating…' : lastAssistant.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </span>
-              </div>
-              <ChatMessage message={lastAssistant} index={0} />
-            </div>
-          ) : (
-            <div className="h-full flex items-center justify-center p-8">
-              <div className="max-w-md text-center space-y-3">
-                <div className="mx-auto h-12 w-12 rounded-xl bg-muted flex items-center justify-center">
-                  <FileText className="h-6 w-6 text-muted-foreground" />
-                </div>
-                <p className="text-sm font-medium text-foreground">Result yahin show hoga</p>
-                <p className="text-xs text-muted-foreground">Left panel me chat start karo — output yahan update hoga.</p>
-              </div>
-            </div>
-          )}
-        </div>
+        <ChatResultPanel
+          messages={activeSession?.messages || []}
+          isLoading={isLoading}
+          onSuggestionClick={handleSuggestionClick}
+        />
       </div>
 
       {/* Modals */}
