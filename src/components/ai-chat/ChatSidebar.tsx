@@ -1,11 +1,9 @@
-import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Plus,
   MessageSquare,
   Trash2,
-  Sparkles,
   PanelLeftClose,
   PanelLeft,
   MoreHorizontal,
@@ -33,8 +31,6 @@ interface ChatSidebarProps {
   onDeleteSession: (id: string) => void;
   isOpen: boolean;
   onToggle: () => void;
-  /** Optional content to render below the sessions list (e.g. chat messages + input). */
-  children?: ReactNode;
 }
 
 export function ChatSidebar({
@@ -45,9 +41,7 @@ export function ChatSidebar({
   onDeleteSession,
   isOpen,
   onToggle,
-  children,
 }: ChatSidebarProps) {
-  const hasChatPanel = Boolean(children);
 
   // Group sessions by date
   const today = new Date();
@@ -150,8 +144,8 @@ export function ChatSidebar({
 
         {/* Body */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          {/* Sessions List - smaller when chat panel exists */}
-          <ScrollArea className={cn(hasChatPanel ? 'shrink-0 max-h-[15vh]' : 'flex-1')}>
+          {/* Sessions List - full height now since chat moved to main area */}
+          <ScrollArea className="flex-1">
             <div className="py-1">
               <SessionGroup title="Today" items={groupedSessions.today} />
               <SessionGroup title="Yesterday" items={groupedSessions.yesterday} />
@@ -166,13 +160,6 @@ export function ChatSidebar({
               )}
             </div>
           </ScrollArea>
-
-          {/* Chat Panel - 85% of remaining space */}
-          {hasChatPanel && (
-            <div className="flex-1 min-h-0 overflow-hidden flex flex-col bg-background border-t border-sidebar-border">
-              {children}
-            </div>
-          )}
 
           {/* Footer - compact */}
           <div className="shrink-0 py-2 px-3 border-t border-sidebar-border bg-sidebar">
