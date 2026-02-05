@@ -78,12 +78,9 @@ interface ChatHeaderProps {
 
         <div className="flex items-center gap-3">
           <img 
-            src="/softwarevala-logo.png" 
+            src="/vala-ai-logo.jpg" 
             alt="VALA AI" 
             className="h-8 w-8 rounded-full object-cover"
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
           />
           <div>
             <div className="flex items-center gap-2">
