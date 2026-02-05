@@ -4,6 +4,8 @@ import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { ProductSlider } from '@/components/marketplace/ProductSlider';
 import { categories, generateProducts } from '@/data/marketplaceData';
 import { toast } from 'sonner';
+import { useMarketplacePurchase } from '@/hooks/useMarketplacePurchase';
+import { useAuth } from '@/hooks/useAuth';
 import {
   Dialog,
   DialogContent,
@@ -28,21 +30,33 @@ export default function Marketplace() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [showPayment, setShowPayment] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [processing, setProcessing] = useState(false);
+  const [generatedLicenseKey, setGeneratedLicenseKey] = useState<string>('');
+  const { purchaseProduct, processing } = useMarketplacePurchase();
+  const { user } = useAuth();
 
   const handleBuyNow = (product: Product) => {
+    if (!user) {
+      toast.error('Please sign in to make a purchase');
+      return;
+    }
     setSelectedProduct(product);
     setShowPayment(true);
     setPaymentSuccess(false);
+    setGeneratedLicenseKey('');
   };
 
   const handlePayment = async () => {
-    setProcessing(true);
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setProcessing(false);
-    setPaymentSuccess(true);
-    toast.success('Payment successful! License activated.');
+    if (!selectedProduct) return;
+    
+    const result = await purchaseProduct(selectedProduct);
+    
+    if (result.success) {
+      setPaymentSuccess(true);
+      setGeneratedLicenseKey(result.licenseKey || '');
+      toast.success('Payment successful! License activated.');
+    } else {
+      toast.error(result.error || 'Payment failed');
+    }
   };
 
   const handleFavorite = (product: Product) => {
@@ -194,6 +208,12 @@ export default function Marketplace() {
                   <div>
                     <h3 className="font-semibold text-lg">{selectedProduct?.title}</h3>
                     <p className="text-sm text-muted-foreground">License automatically activated</p>
+                      {generatedLicenseKey && (
+                        <div className="mt-3 p-3 bg-muted rounded-lg">
+                          <p className="text-xs text-muted-foreground mb-1">Your License Key:</p>
+                          <p className="font-mono font-bold text-primary">{generatedLicenseKey}</p>
+                        </div>
+                      )}
                   </div>
                   <Button className="w-full gap-2">
                     <Download className="h-4 w-4" />
