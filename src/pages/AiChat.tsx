@@ -242,11 +242,11 @@ export default function AiChat() {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
       },
-       body: JSON.stringify({ 
-         messages: formattedMessages, 
-         stream: true,
-         model: selectedModel,
-       }),
+      body: JSON.stringify({
+        messages: formattedMessages,
+        stream: true,
+        model: selectedModel,
+      }),
     });
 
     if (!resp.ok) {
@@ -259,6 +259,24 @@ export default function AiChat() {
         toast.error(error.error || 'Failed to get AI response');
       }
       throw new Error(error.error || 'Stream failed');
+    }
+
+    // The ai-developer function currently responds with JSON (non-SSE).
+    // Support both: SSE streaming when available, otherwise a JSON fallback.
+    const contentType = resp.headers.get('content-type') || '';
+    const isSse = contentType.includes('text/event-stream');
+
+    if (!isSse) {
+      const data = await resp.json().catch(() => ({} as any));
+      const text =
+        (typeof (data as any)?.response === 'string' && (data as any).response) ||
+        (typeof (data as any)?.message === 'string' && (data as any).message) ||
+        (typeof (data as any)?.content === 'string' && (data as any).content) ||
+        '';
+
+      onDelta(text || '');
+      onDone();
+      return;
     }
 
     if (!resp.body) throw new Error('No response body');
@@ -283,15 +301,15 @@ export default function AiChat() {
 
           // Clean up line
           if (line.endsWith('\r')) line = line.slice(0, -1);
-          
+
           // Skip SSE comments (: OPENROUTER PROCESSING) and empty lines
           if (line.startsWith(':') || line.trim() === '') continue;
-          
+
           // Skip non-data lines
           if (!line.startsWith('data: ')) continue;
 
           const jsonStr = line.slice(6).trim();
-          
+
           // Check for stream end
           if (jsonStr === '[DONE]') {
             streamDone = true;
@@ -327,12 +345,14 @@ export default function AiChat() {
           if (content && typeof content === 'string') {
             onDelta(content);
           }
-        } catch { /* ignore incomplete final chunks */ }
+        } catch {
+          /* ignore incomplete final chunks */
+        }
       }
     }
 
     onDone();
-   }, [selectedModel]);
+  }, [selectedModel]);
 
   const handleSend = async (content: string, files?: File[]) => {
     if ((!content.trim() && (!files || files.length === 0)) || isLoading) return;
