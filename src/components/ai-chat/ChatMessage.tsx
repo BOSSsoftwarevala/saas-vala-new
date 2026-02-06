@@ -226,42 +226,26 @@ export function ChatMessage({ message, index = 0, isPinned, onPin, onUnpin }: Ch
         </div>
       )}
       
-      <div className="max-w-3xl mx-auto flex gap-4">
-        {/* Avatar */}
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ delay: 0.1, type: "spring", stiffness: 400 }}
-        >
-          <Avatar className={cn(
-            "h-9 w-9 shrink-0 mt-0.5 ring-2 ring-offset-2 ring-offset-background transition-all duration-300",
-            isUser 
-              ? "ring-secondary/30 hover:ring-secondary/50" 
-              : "ring-primary/30 hover:ring-primary/50"
-          )}>
-            <AvatarFallback
-              className={cn(
-                'text-sm font-medium',
-                isUser
-                  ? 'bg-gradient-to-br from-secondary/20 to-cyan-500/20 text-secondary'
-                  : 'bg-gradient-to-br from-primary/20 to-orange-500/20 text-primary'
-              )}
-            >
-              {isUser ? <User className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
-            </AvatarFallback>
-          </Avatar>
-        </motion.div>
-
+      <div className="max-w-3xl mx-auto">
         {/* Content */}
         <div className="flex-1 min-w-0 space-y-2">
-          {/* Header */}
+          {/* Header - Name first, then icon */}
           <div className="flex items-center gap-2">
             <span className={cn(
               "text-sm font-semibold",
               isUser ? "text-secondary" : "text-primary"
             )}>
-              {isUser ? 'You' : 'SaaS VALA AI'}
+              {isUser ? 'You' : 'VALA AI'}
             </span>
+            {/* Small icon AFTER name */}
+            <div className={cn(
+              "h-5 w-5 rounded-full flex items-center justify-center shrink-0",
+              isUser 
+                ? "bg-secondary/20 text-secondary" 
+                : "bg-primary/20 text-primary"
+            )}>
+              {isUser ? <User className="h-3 w-3" /> : <Sparkles className="h-3 w-3" />}
+            </div>
             <span className="text-xs text-muted-foreground/60">
               {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
