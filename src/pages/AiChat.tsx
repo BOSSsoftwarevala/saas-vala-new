@@ -3,7 +3,6 @@ import { ChatSidebar } from '@/components/ai-chat/ChatSidebar';
 import { ChatHeader } from '@/components/ai-chat/ChatHeader';
 import { ChatMessage, Message, FileAttachment } from '@/components/ai-chat/ChatMessage';
 import { ChatInput } from '@/components/ai-chat/ChatInput';
-import { EmptyState } from '@/components/ai-chat/EmptyState';
 import { HostingCredentialsModal, HostingCredentials } from '@/components/ai-chat/HostingCredentialsModal';
 import { ThinkingIndicator } from '@/components/ai-chat/ThinkingIndicator';
 import { ChatHistoryPanel } from '@/components/ai-chat/ChatHistoryPanel';
@@ -791,9 +790,8 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
           onModelChange={setSelectedModel}
         />
 
-        <div className="flex-1 overflow-y-auto">
-          <EmptyState onSuggestionClick={handleSuggestionClick} />
-        </div>
+        {/* Clean empty area - no content */}
+        <div className="flex-1 overflow-y-auto" />
       </div>
 
 

@@ -133,11 +133,7 @@ export function ChatSidebar({
         )}
       >
         {/* Header - compact */}
-        <div className="p-3 border-b border-sidebar-border flex items-center gap-2">
-          <Button onClick={onNewSession} className="flex-1 gap-2 bg-primary hover:bg-primary/90 h-9">
-            <Plus className="h-4 w-4" />
-            New Chat
-          </Button>
+        <div className="p-3 border-b border-sidebar-border flex items-center justify-end">
           <Button
             variant="ghost"
             size="icon"
