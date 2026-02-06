@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { ChatSidebar } from '@/components/ai-chat/ChatSidebar';
 import { ChatHeader } from '@/components/ai-chat/ChatHeader';
 import { ChatMessage, Message, FileAttachment } from '@/components/ai-chat/ChatMessage';
 import { ChatInput } from '@/components/ai-chat/ChatInput';
@@ -733,67 +732,46 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
   });
 
   return (
-    <div className="h-screen flex overflow-hidden">
-      {/* Left Sidebar - Sessions + Chat */}
-      <ChatSidebar
-        sessions={sessions}
-        activeSessionId={activeSessionId}
-        onSelectSession={(id) => {
-          setActiveSessionId(id);
-          if (isMobile) setSidebarOpen(false);
-        }}
-        onNewSession={createNewSession}
-        onDeleteSession={deleteSession}
-        isOpen={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
+    <div className="h-screen flex flex-col overflow-hidden">
+      {/* Header */}
+      <ChatHeader
+        title={activeSession?.title || 'SaaS VALA AI'}
+        onExport={handleExport}
+        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        sidebarOpen={sidebarOpen}
         onOpenHistory={() => setShowHistoryPanel(true)}
-      >
-        {/* Chat Panel (messages + input) */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            {activeSession && activeSession.messages.length > 0 ? (
-              <div className="pb-4">
-                {activeSession.messages.map((message, index) => (
-                  <div key={message.id} id={`message-${message.id}`}>
-                    <ChatMessage
-                      message={message}
-                      index={index}
-                      isPinned={pinnedMessages.has(message.id)}
-                      onPin={handlePinMessage}
-                      onUnpin={handleUnpinMessage}
-                    />
-                  </div>
-                ))}
-                {isLoading && activeSession.messages[activeSession.messages.length - 1]?.role === 'user' && (
-                  <ThinkingIndicator isActive={true} context={thinkingContext} />
-                )}
-                <div ref={messagesEndRef} />
+        onClearChat={clearCurrentChat}
+        onOpenSearch={() => setShowSearchPanel(true)}
+        onOpenShortcuts={() => setShowShortcuts(true)}
+        selectedModel={selectedModel}
+        onModelChange={setSelectedModel}
+      />
+
+      {/* Chat Messages Area - Full Width, starts from screen edge */}
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {activeSession && activeSession.messages.length > 0 ? (
+          <div className="pb-4 max-w-4xl mx-auto px-4">
+            {activeSession.messages.map((message, index) => (
+              <div key={message.id} id={`message-${message.id}`}>
+                <ChatMessage
+                  message={message}
+                  index={index}
+                  isPinned={pinnedMessages.has(message.id)}
+                  onPin={handlePinMessage}
+                  onUnpin={handleUnpinMessage}
+                />
               </div>
-            ) : null}
+            ))}
+            {isLoading && activeSession.messages[activeSession.messages.length - 1]?.role === 'user' && (
+              <ThinkingIndicator isActive={true} context={thinkingContext} />
+            )}
+            <div ref={messagesEndRef} />
           </div>
-
-          <ChatInput onSend={handleSend} isLoading={isLoading} onVoiceMessage={handleVoiceMessage} />
-        </div>
-      </ChatSidebar>
-
-      {/* Main Screen Area - Output/Display only */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <ChatHeader
-          title={activeSession?.title || 'SaaS VALA AI'}
-          onExport={handleExport}
-          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-          sidebarOpen={sidebarOpen}
-          onOpenHistory={() => setShowHistoryPanel(true)}
-          onClearChat={clearCurrentChat}
-          onOpenSearch={() => setShowSearchPanel(true)}
-          onOpenShortcuts={() => setShowShortcuts(true)}
-          selectedModel={selectedModel}
-          onModelChange={setSelectedModel}
-        />
-
-        {/* Clean empty area - no content */}
-        <div className="flex-1 overflow-y-auto" />
+        ) : null}
       </div>
+
+      {/* Chat Input - Fixed at bottom */}
+      <ChatInput onSend={handleSend} isLoading={isLoading} onVoiceMessage={handleVoiceMessage} />
 
 
       {/* History Panel */}
