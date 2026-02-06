@@ -747,6 +747,8 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         onOpenHistory={() => setShowHistoryPanel(true)}
+        onClearChat={clearCurrentChat}
+        onExport={handleExport}
       >
         {/* Chat Panel (messages + input) */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
