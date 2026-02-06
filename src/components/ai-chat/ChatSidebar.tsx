@@ -127,26 +127,25 @@ export function ChatSidebar({
       >
         <TooltipProvider delayDuration={200}>
           {/* Row 1: Action Icons */}
-          <div className="h-10 flex items-center justify-center gap-1 px-2 border-b border-sidebar-border/50 shrink-0">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" onClick={onOpenHistory} className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground">
-                  <History className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">History</TooltipContent>
-            </Tooltip>
+          <div className="h-9 flex items-center justify-between gap-1 px-3 border-b border-sidebar-border/50 shrink-0">
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={onOpenHistory} className="h-6 w-6 rounded text-muted-foreground hover:text-foreground">
+                    <History className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">History</TooltipContent>
+              </Tooltip>
 
-            <div className="w-px h-4 bg-border" />
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground">
-                  <Cloud className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">Cloud</TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded text-muted-foreground hover:text-foreground">
+                    <Cloud className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Cloud</TooltipContent>
+              </Tooltip>
 
             <div className="w-px h-4 bg-border" />
 
@@ -199,10 +198,9 @@ export function ChatSidebar({
                 <DropdownMenuItem className="text-destructive">Clear</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+            </div>
 
-            <div className="flex-1" />
-
-            <Button variant="ghost" size="icon" onClick={onToggle} className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground">
+            <Button variant="ghost" size="icon" onClick={onToggle} className="h-6 w-6 rounded text-muted-foreground hover:text-foreground">
               <PanelLeftClose className="h-3.5 w-3.5" />
             </Button>
           </div>
