@@ -121,8 +121,8 @@ export function ChatSidebar({
     <>
       <div
         className={cn(
-          'h-full bg-foreground/10 border-r border-sidebar-border flex flex-col transition-all duration-300 shrink-0',
-          isOpen ? 'w-[20vw]' : 'w-0 overflow-hidden',
+          'h-full border-r border-sidebar-border flex flex-col transition-all duration-300 shrink-0',
+          isOpen ? 'w-[20%] min-w-[280px]' : 'w-0 overflow-hidden',
         )}
       >
         <TooltipProvider delayDuration={200}>
@@ -267,7 +267,7 @@ export function ChatSidebar({
         {/* Chat Content */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
           {hasChatPanel && (
-            <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col bg-background">
               {children}
             </div>
           )}

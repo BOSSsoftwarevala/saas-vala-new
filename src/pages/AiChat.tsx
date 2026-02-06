@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { ChatSidebar } from '@/components/ai-chat/ChatSidebar';
 import { ChatHeader } from '@/components/ai-chat/ChatHeader';
 import { ChatMessage, Message, FileAttachment } from '@/components/ai-chat/ChatMessage';
 import { ChatInput } from '@/components/ai-chat/ChatInput';
@@ -10,13 +11,11 @@ import { KeyboardShortcuts, useKeyboardShortcuts } from '@/components/ai-chat/Ke
 import { toast } from 'sonner';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { supabase } from '@/integrations/supabase/client';
-import { 
-  addGlobalActivity, 
-  updateGlobalActivity, 
-  removeGlobalActivity 
-} from '@/components/global/GlobalActivityPanel';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+ import { 
+   addGlobalActivity, 
+   updateGlobalActivity, 
+   removeGlobalActivity 
+ } from '@/components/global/GlobalActivityPanel';
 
 const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`;
 
@@ -733,36 +732,27 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
     onShowShortcuts: () => setShowShortcuts(true),
   });
 
-  // Derive last assistant content for Live Result panel
-  const lastAssistantContent = activeSession?.messages
-    .slice()
-    .reverse()
-    .find(m => m.role === 'assistant')?.content || '';
-
   return (
-    <div className="fixed inset-0 flex flex-col overflow-hidden bg-background">
-      {/* Header */}
-      <ChatHeader
-        title={activeSession?.title || 'SaaS VALA AI'}
-        onExport={handleExport}
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-        sidebarOpen={sidebarOpen}
+    <div className="h-screen flex bg-background overflow-hidden">
+      {/* Left Sidebar - Sessions + Chat */}
+      <ChatSidebar
+        sessions={sessions}
+        activeSessionId={activeSessionId}
+        onSelectSession={(id) => {
+          setActiveSessionId(id);
+          if (isMobile) setSidebarOpen(false);
+        }}
+        onNewSession={createNewSession}
+        onDeleteSession={deleteSession}
+        isOpen={sidebarOpen}
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
         onOpenHistory={() => setShowHistoryPanel(true)}
-        onClearChat={clearCurrentChat}
-        onOpenSearch={() => setShowSearchPanel(true)}
-        onOpenShortcuts={() => setShowShortcuts(true)}
-        selectedModel={selectedModel}
-        onModelChange={setSelectedModel}
-      />
-
-      {/* Main Content: 20% chat | 80% Live Result */}
-      <div className="flex-1 flex min-h-0 overflow-hidden">
-        {/* Left Chat Panel - exactly 20% */}
-        <aside className="w-[20%] min-w-[280px] max-w-[360px] flex flex-col border-r border-border bg-card/50">
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto px-3 py-2">
+      >
+        {/* Chat Panel (messages + input) */}
+        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             {activeSession && activeSession.messages.length > 0 ? (
-              <div className="space-y-2">
+              <div className="pb-4">
                 {activeSession.messages.map((message, index) => (
                   <div key={message.id} id={`message-${message.id}`}>
                     <ChatMessage
@@ -779,33 +769,32 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
                 )}
                 <div ref={messagesEndRef} />
               </div>
-            ) : (
-              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                Start a conversation...
-              </div>
-            )}
+            ) : null}
           </div>
 
-          {/* Chat Input */}
           <ChatInput onSend={handleSend} isLoading={isLoading} onVoiceMessage={handleVoiceMessage} />
-        </aside>
+        </div>
+      </ChatSidebar>
 
-        {/* Right Live Result Panel - takes remaining 80% */}
-        <main className="flex-1 overflow-y-auto bg-background">
-          {lastAssistantContent ? (
-            <article className="p-6 prose prose-invert prose-sm max-w-none">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{lastAssistantContent}</ReactMarkdown>
-            </article>
-          ) : (
-            <div className="flex items-center justify-center h-full text-muted-foreground">
-              <div className="text-center space-y-2">
-                <p className="text-lg font-medium">Live Result</p>
-                <p className="text-sm opacity-70">AI output will appear here</p>
-              </div>
-            </div>
-          )}
-        </main>
+      {/* Main Screen Area - Output/Display only */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <ChatHeader
+          title={activeSession?.title || 'SaaS VALA AI'}
+          onExport={handleExport}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          sidebarOpen={sidebarOpen}
+          onOpenHistory={() => setShowHistoryPanel(true)}
+          onClearChat={clearCurrentChat}
+          onOpenSearch={() => setShowSearchPanel(true)}
+          onOpenShortcuts={() => setShowShortcuts(true)}
+          selectedModel={selectedModel}
+          onModelChange={setSelectedModel}
+        />
+
+        {/* Clean empty area - no content */}
+        <div className="flex-1 overflow-y-auto" />
       </div>
+
 
       {/* History Panel */}
       <ChatHistoryPanel
