@@ -84,17 +84,18 @@
    const completedCount = activeActivities.filter(a => a.status === 'completed').length;
    const currentActivity = activeActivities.find(a => a.status === 'processing');
  
-   return (
-     <AnimatePresence>
-       <motion.div
-         initial={{ opacity: 0, y: 100, scale: 0.9 }}
-         animate={{ opacity: 1, y: 0, scale: 1 }}
-         exit={{ opacity: 0, y: 100, scale: 0.9 }}
-         className={cn(
-           "fixed bottom-6 right-6 z-[100] bg-card/95 backdrop-blur-xl border border-primary/30 rounded-2xl shadow-2xl overflow-hidden",
-           isMinimized ? "w-auto" : "w-80"
-         )}
-       >
+  return (
+    <AnimatePresence mode="wait">
+      <motion.div
+        key="activity-panel"
+        initial={{ opacity: 0, y: 100, scale: 0.9 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: 100, scale: 0.9 }}
+        className={cn(
+          "fixed bottom-6 right-6 z-[100] bg-card/95 backdrop-blur-xl border border-primary/30 rounded-2xl shadow-2xl overflow-hidden",
+          isMinimized ? "w-auto" : "w-80"
+        )}
+      >
          {/* Header */}
          <div className="p-3 bg-gradient-to-r from-primary/20 to-orange-500/20 border-b border-border/30">
            <div className="flex items-center justify-between">

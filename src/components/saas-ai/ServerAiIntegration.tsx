@@ -20,8 +20,6 @@ import {
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { OneClickDeploy } from './OneClickDeploy';
-import { ServerDeploy } from './ServerDeploy';
 
 interface FeatureToggle {
   id: string;
@@ -73,16 +71,6 @@ export function ServerAiIntegration() {
       transition={{ delay: 0.5 }}
       className="grid grid-cols-1 lg:grid-cols-2 gap-6"
     >
-      {/* One-Click Deploy - THE MAIN FEATURE */}
-      <div className="lg:col-span-2">
-        <OneClickDeploy />
-      </div>
-
-      {/* Client Server Deploy (FTP/SSH) */}
-      <div className="lg:col-span-2">
-        <ServerDeploy />
-      </div>
-
       {/* Server + AI Features */}
       <Card className="border-border">
         <CardHeader>
