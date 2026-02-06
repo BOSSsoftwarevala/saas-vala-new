@@ -571,6 +571,60 @@ export type Database = {
         }
         Relationships: []
       }
+      auto_software_queue: {
+        Row: {
+          ai_generated_description: string | null
+          ai_generated_meta: Json | null
+          apk_url: string | null
+          build_logs: string | null
+          created_at: string
+          features: Json
+          id: string
+          marketplace_id: string | null
+          published_at: string | null
+          scheduled_date: string | null
+          software_name: string
+          software_type: string
+          status: string | null
+          target_industry: string
+          tech_stack: Json | null
+        }
+        Insert: {
+          ai_generated_description?: string | null
+          ai_generated_meta?: Json | null
+          apk_url?: string | null
+          build_logs?: string | null
+          created_at?: string
+          features?: Json
+          id?: string
+          marketplace_id?: string | null
+          published_at?: string | null
+          scheduled_date?: string | null
+          software_name: string
+          software_type: string
+          status?: string | null
+          target_industry: string
+          tech_stack?: Json | null
+        }
+        Update: {
+          ai_generated_description?: string | null
+          ai_generated_meta?: Json | null
+          apk_url?: string | null
+          build_logs?: string | null
+          created_at?: string
+          features?: Json
+          id?: string
+          marketplace_id?: string | null
+          published_at?: string | null
+          scheduled_date?: string | null
+          software_name?: string
+          software_type?: string
+          status?: string | null
+          target_industry?: string
+          tech_stack?: Json | null
+        }
+        Relationships: []
+      }
       backup_logs: {
         Row: {
           backup_type: string | null
@@ -620,6 +674,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      billing_tracker: {
+        Row: {
+          alert_sent_1_day: boolean | null
+          alert_sent_4_days: boolean | null
+          amount: number
+          auto_pay: boolean | null
+          billing_cycle: string | null
+          created_at: string
+          currency: string | null
+          id: string
+          next_due_date: string
+          notes: string | null
+          provider: string | null
+          service_name: string
+          service_type: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          alert_sent_1_day?: boolean | null
+          alert_sent_4_days?: boolean | null
+          amount: number
+          auto_pay?: boolean | null
+          billing_cycle?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          next_due_date: string
+          notes?: string | null
+          provider?: string | null
+          service_name: string
+          service_type: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          alert_sent_1_day?: boolean | null
+          alert_sent_4_days?: boolean | null
+          amount?: number
+          auto_pay?: boolean | null
+          billing_cycle?: string | null
+          created_at?: string
+          currency?: string | null
+          id?: string
+          next_due_date?: string
+          notes?: string | null
+          provider?: string | null
+          service_name?: string
+          service_type?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       categories: {
         Row: {
@@ -673,6 +781,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      client_requests: {
+        Row: {
+          ai_action_taken: string | null
+          ai_response: string | null
+          client_email: string | null
+          client_id: string | null
+          client_name: string
+          completed_at: string | null
+          created_at: string
+          estimated_cost: number | null
+          id: string
+          priority: string | null
+          request_details: string
+          request_type: string
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          ai_action_taken?: string | null
+          ai_response?: string | null
+          client_email?: string | null
+          client_id?: string | null
+          client_name: string
+          completed_at?: string | null
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          priority?: string | null
+          request_details: string
+          request_type: string
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ai_action_taken?: string | null
+          ai_response?: string | null
+          client_email?: string | null
+          client_id?: string | null
+          client_name?: string
+          completed_at?: string | null
+          created_at?: string
+          estimated_cost?: number | null
+          id?: string
+          priority?: string | null
+          request_details?: string
+          request_type?: string
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       debug_logs: {
         Row: {
@@ -1923,6 +2082,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      seo_backlinks: {
+        Row: {
+          ai_generated: boolean | null
+          anchor_text: string | null
+          backlink_type: string | null
+          backlink_url: string
+          created_at: string
+          domain_authority: number | null
+          id: string
+          last_checked_at: string | null
+          product_id: string | null
+          source_type: string | null
+          status: string | null
+          target_url: string
+        }
+        Insert: {
+          ai_generated?: boolean | null
+          anchor_text?: string | null
+          backlink_type?: string | null
+          backlink_url: string
+          created_at?: string
+          domain_authority?: number | null
+          id?: string
+          last_checked_at?: string | null
+          product_id?: string | null
+          source_type?: string | null
+          status?: string | null
+          target_url: string
+        }
+        Update: {
+          ai_generated?: boolean | null
+          anchor_text?: string | null
+          backlink_type?: string | null
+          backlink_url?: string
+          created_at?: string
+          domain_authority?: number | null
+          id?: string
+          last_checked_at?: string | null
+          product_id?: string | null
+          source_type?: string | null
+          status?: string | null
+          target_url?: string
+        }
+        Relationships: []
       }
       seo_data: {
         Row: {
