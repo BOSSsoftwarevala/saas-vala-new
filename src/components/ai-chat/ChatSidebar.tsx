@@ -4,9 +4,6 @@ import {
   PanelLeftClose,
   PanelLeft,
   History,
-  Cloud,
-  Eye,
-  Code2,
   RefreshCw,
   Plus,
   ChevronLeft,
@@ -50,6 +47,8 @@ interface ChatSidebarProps {
   isOpen: boolean;
   onToggle: () => void;
   onOpenHistory?: () => void;
+  onClearChat?: () => void;
+  onExport?: () => void;
   children?: ReactNode;
 }
 
@@ -65,12 +64,13 @@ export function ChatSidebar({
   isOpen,
   onToggle,
   onOpenHistory,
+  onClearChat,
+  onExport,
   children,
 }: ChatSidebarProps) {
   const hasChatPanel = Boolean(children);
   const [activeProjectId, setActiveProjectId] = useState<string>('1');
   const [projects, setProjects] = useState<Project[]>(demoProjects);
-  const [activeView, setActiveView] = useState<'preview' | 'code'>('preview');
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
@@ -121,13 +121,13 @@ export function ChatSidebar({
     <>
       <div
         className={cn(
-          'h-full border-r border-sidebar-border flex flex-col transition-all duration-300 shrink-0 bg-sidebar',
+          'h-full border-r border-border flex flex-col transition-all duration-300 shrink-0 bg-background',
           isOpen ? 'w-[20%] min-w-[280px]' : 'w-0 overflow-hidden',
         )}
       >
         <TooltipProvider delayDuration={200}>
           {/* Row 1: Action Icons */}
-          <div className="h-9 flex items-center justify-between gap-1 px-3 border-b border-sidebar-border/50 shrink-0">
+          <div className="h-9 flex items-center justify-between gap-1 px-3 border-b border-border/50 shrink-0 bg-muted/30">
             <div className="flex items-center gap-1">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -135,69 +135,38 @@ export function ChatSidebar({
                     <History className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">History</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs bg-popover text-popover-foreground border">History</TooltipContent>
               </Tooltip>
+
+              <div className="w-px h-4 bg-border" />
 
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 rounded text-muted-foreground hover:text-foreground">
-                    <Cloud className="h-3.5 w-3.5" />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => window.location.reload()}
+                    className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">Cloud</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs bg-popover text-popover-foreground border">Refresh</TooltipContent>
               </Tooltip>
 
-            <div className="w-px h-4 bg-border" />
+              <div className="w-px h-4 bg-border" />
 
-            {/* Preview/Code Toggle */}
-            <div className="flex items-center bg-muted/50 rounded-md p-0.5">
-              <button
-                onClick={() => setActiveView('preview')}
-                className={cn(
-                  "h-6 px-2 rounded text-[10px] flex items-center gap-1 transition-all",
-                  activeView === 'preview' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-                )}
-              >
-                <Eye className="h-3 w-3" />
-                Preview
-              </button>
-              <button
-                onClick={() => setActiveView('code')}
-                className={cn(
-                  "h-6 px-2 rounded text-[10px] flex items-center gap-1 transition-all",
-                  activeView === 'code' ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
-                )}
-              >
-                <Code2 className="h-3 w-3" />
-                Code
-              </button>
-            </div>
-
-            <div className="w-px h-4 bg-border" />
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground">
-                  <RefreshCw className="h-3.5 w-3.5" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="bottom" className="text-xs">Refresh</TooltipContent>
-            </Tooltip>
-
-            <div className="w-px h-4 bg-border" />
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground">
-                  <MoreVertical className="h-3.5 w-3.5" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-40">
-                <DropdownMenuItem>Export</DropdownMenuItem>
-                <DropdownMenuItem>Settings</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">Clear</DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground">
+                    <MoreVertical className="h-3.5 w-3.5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-40 bg-popover border z-50">
+                  <DropdownMenuItem onClick={onExport}>Export</DropdownMenuItem>
+                  <DropdownMenuItem className="text-destructive" onClick={onClearChat}>Clear</DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             <Button variant="ghost" size="icon" onClick={onToggle} className="h-6 w-6 rounded text-muted-foreground hover:text-foreground">
@@ -206,7 +175,7 @@ export function ChatSidebar({
           </div>
 
           {/* Row 2: Project Icons (scrollable) */}
-          <div className="h-11 flex items-center px-3 gap-1.5 border-b border-sidebar-border shrink-0">
+          <div className="h-11 flex items-center px-3 gap-1.5 border-b border-border shrink-0 bg-muted/20">
             {canScrollLeft && (
               <button onClick={() => scroll('left')} className="h-7 w-7 shrink-0 flex items-center justify-center text-muted-foreground hover:text-foreground">
                 <ChevronLeft className="h-4 w-4" />
@@ -227,16 +196,16 @@ export function ChatSidebar({
                         "shrink-0 h-8 w-8 rounded-full flex items-center justify-center text-white text-xs font-bold transition-all shadow-sm",
                         project.color,
                         activeProjectId === project.id
-                          ? "ring-2 ring-primary ring-offset-2 ring-offset-sidebar scale-110"
+                          ? "ring-2 ring-primary ring-offset-2 ring-offset-background scale-110"
                           : "opacity-80 hover:opacity-100 hover:scale-105"
                       )}
                     >
                       {getInitial(project.name)}
                     </button>
                   </TooltipTrigger>
-                  <TooltipContent side="bottom" className="text-xs">
+                  <TooltipContent side="bottom" className="text-xs bg-popover text-popover-foreground border">
                     <div className="flex items-center gap-1">
-                      {project.isActive && <span className="w-1.5 h-1.5 rounded-full bg-success" />}
+                      {project.isActive && <span className="w-1.5 h-1.5 rounded-full bg-green-500" />}
                       {project.name}
                     </div>
                   </TooltipContent>
@@ -252,7 +221,7 @@ export function ChatSidebar({
                     <Plus className="h-4 w-4" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent side="bottom" className="text-xs">Add Project</TooltipContent>
+                <TooltipContent side="bottom" className="text-xs bg-popover text-popover-foreground border">Add Project</TooltipContent>
               </Tooltip>
             </div>
 
@@ -272,7 +241,7 @@ export function ChatSidebar({
             </div>
           )}
 
-          <div className="shrink-0 py-2 px-3 border-t border-sidebar-border">
+          <div className="shrink-0 py-2 px-3 border-t border-border bg-muted/20">
             <p className="text-[10px] text-center text-muted-foreground">
               Powered by <span className="font-medium text-primary">SoftwareVala™</span>
             </p>
