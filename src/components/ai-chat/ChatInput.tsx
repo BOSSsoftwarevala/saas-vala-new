@@ -185,7 +185,7 @@ export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage, onTempl
   const hasContent = input.trim() || files.length > 0;
 
   return (
-    <div className="border-t border-border bg-background/95 backdrop-blur-sm">
+    <div className="border-t border-border bg-foreground/10 backdrop-blur-sm">
       {/* Hidden File Inputs */}
       <input
         ref={fileInputRef}
