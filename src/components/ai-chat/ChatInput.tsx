@@ -1,13 +1,20 @@
 import { useState, useRef, useEffect, KeyboardEvent, ChangeEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Paperclip, Image, Sparkles, X, FileCode, FileArchive, File, Mic, MicOff, Wand2, Volume2 } from 'lucide-react';
+import { Send, Paperclip, Image, Sparkles, X, FileCode, FileArchive, File, Mic, MicOff, Volume2, Code, Shield, Server, Wrench, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useVoiceConversation } from '@/hooks/useVoiceConversation';
 import { QuickTemplates } from './QuickTemplates';
 
+// Inline compact suggestions data
+const compactSuggestions = [
+  { id: 'analyze', text: 'Analyze this code for issues', icon: Code },
+  { id: 'security', text: 'Run security scan', icon: Shield },
+  { id: 'deploy', text: 'Deploy to my server', icon: Server },
+  { id: 'fix', text: 'Auto-fix all problems', icon: Wrench },
+];
 interface UploadedFile {
   file: File;
   preview?: string;
@@ -20,6 +27,7 @@ interface ChatInputProps {
   disabled?: boolean;
   onVoiceMessage?: (userText: string, aiResponse: string) => void;
   onTemplateSelect?: (template: string) => void;
+  showSuggestions?: boolean;
 }
 
 const getFileType = (file: File): UploadedFile['type'] => {
@@ -41,9 +49,10 @@ const getFileIcon = (type: UploadedFile['type']) => {
   }
 };
 
-export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage, onTemplateSelect }: ChatInputProps) {
+export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage, onTemplateSelect, showSuggestions = true }: ChatInputProps) {
   const [input, setInput] = useState('');
   const [files, setFiles] = useState<UploadedFile[]>([]);
+  const [suggestionsExpanded, setSuggestionsExpanded] = useState(true);
   const [isFocused, setIsFocused] = useState(false);
   const [lastVoiceTranscript, setLastVoiceTranscript] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -173,8 +182,6 @@ export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage, onTempl
     }
   };
 
-  const quickSuggestions: { text: string; icon: typeof FileCode }[] = [];
-
   const hasContent = input.trim() || files.length > 0;
 
   return (
@@ -197,30 +204,50 @@ export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage, onTempl
         className="hidden"
       />
 
-      {/* Quick Suggestions */}
+      {/* Compact Suggestions above input */}
       <AnimatePresence>
-        {!input && files.length === 0 && !isFocused && (
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="px-4 pt-4 flex flex-wrap gap-2 max-w-3xl mx-auto"
+        {showSuggestions && suggestionsExpanded && !isLoading && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="px-2 pt-2 max-w-3xl mx-auto"
           >
-            {quickSuggestions.map((suggestion, index) => (
-              <motion.button
-                key={index}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: index * 0.05 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setInput(suggestion.text)}
-                className="group flex items-center gap-2 text-xs px-3 py-2 rounded-full bg-muted/30 hover:bg-primary/10 text-muted-foreground hover:text-primary border border-border hover:border-primary/30 transition-all duration-200"
-              >
-                <suggestion.icon className="h-3.5 w-3.5" />
-                {suggestion.text}
-              </motion.button>
-            ))}
+            <div className="flex items-center gap-1.5 mb-2">
+              <Sparkles className="h-3.5 w-3.5 text-primary" />
+              <span className="text-[11px] font-medium text-muted-foreground">Suggested next steps</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {compactSuggestions.map((suggestion, index) => (
+                <motion.button
+                  key={suggestion.id}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.03 }}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => {
+                    if (onTemplateSelect) {
+                      onTemplateSelect(suggestion.text);
+                    } else {
+                      setInput(suggestion.text);
+                    }
+                  }}
+                  className={cn(
+                    "group flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg",
+                    "bg-card/50 hover:bg-primary/10 border border-border hover:border-primary/30",
+                    "text-xs text-foreground/80 hover:text-primary",
+                    "transition-all duration-200"
+                  )}
+                >
+                  <div className="h-5 w-5 rounded-md bg-primary/10 group-hover:bg-primary/20 flex items-center justify-center">
+                    <suggestion.icon className="h-3 w-3 text-primary" />
+                  </div>
+                  <span className="text-[11px]">{suggestion.text}</span>
+                  <ArrowRight className="h-3 w-3 text-muted-foreground group-hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                </motion.button>
+              ))}
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -232,7 +259,7 @@ export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage, onTempl
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="px-4 pt-4 max-w-3xl mx-auto overflow-hidden"
+            className="px-2 pt-2 max-w-3xl mx-auto overflow-hidden"
           >
             <div className="flex flex-wrap gap-2">
               {files.map((uploadedFile, index) => (
@@ -241,27 +268,27 @@ export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage, onTempl
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.8 }}
-                  className="relative group flex items-center gap-2.5 bg-muted/50 hover:bg-muted/70 border border-border hover:border-primary/30 rounded-xl p-2.5 pr-9 transition-all duration-200"
+                  className="relative group flex items-center gap-2 bg-muted/50 hover:bg-muted/70 border border-border hover:border-primary/30 rounded-lg p-2 pr-8 transition-all duration-200"
                 >
                   {uploadedFile.type === 'image' && uploadedFile.preview ? (
                     <img
                       src={uploadedFile.preview}
                       alt={uploadedFile.file.name}
-                      className="h-11 w-11 rounded-lg object-cover ring-1 ring-border"
+                      className="h-8 w-8 rounded-md object-cover ring-1 ring-border"
                     />
                   ) : (
-                    <div className="h-11 w-11 rounded-lg bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                    <div className="h-8 w-8 rounded-md bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center">
                       {(() => {
                         const Icon = getFileIcon(uploadedFile.type);
-                        return <Icon className="h-5 w-5 text-primary" />;
+                        return <Icon className="h-4 w-4 text-primary" />;
                       })()}
                     </div>
                   )}
                   <div className="min-w-0">
-                    <p className="text-xs font-medium truncate max-w-[130px]">
+                    <p className="text-[11px] font-medium truncate max-w-[100px]">
                       {uploadedFile.file.name}
                     </p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                    <p className="text-[10px] text-muted-foreground">
                       {(uploadedFile.file.size / 1024).toFixed(1)} KB
                     </p>
                   </div>
@@ -269,21 +296,21 @@ export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage, onTempl
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => removeFile(index)}
-                    className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
+                    className="absolute top-1 right-1 h-5 w-5 rounded-full bg-destructive/10 hover:bg-destructive/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all"
                   >
-                    <X className="h-3.5 w-3.5 text-destructive" />
+                    <X className="h-3 w-3 text-destructive" />
                   </motion.button>
                 </motion.div>
               ))}
             </div>
-            <span className="inline-flex items-center mt-3 px-2 py-0.5 rounded-full border text-[10px] font-medium bg-muted/30">
+            <span className="inline-flex items-center mt-2 px-2 py-0.5 rounded-full border text-[10px] font-medium bg-muted/30">
               {files.length}/10 files attached
             </span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Input Area */}
+      {/* Input Area with stacked buttons */}
       <div className="p-2 max-w-3xl mx-auto">
         <motion.div 
           animate={{ 
@@ -294,9 +321,28 @@ export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage, onTempl
           }}
           className="relative flex items-end gap-2 bg-muted/20 rounded-2xl border border-border p-2 transition-all duration-300"
         >
-          {/* Attachment Buttons */}
-          <div className="flex gap-0.5">
-            {/* Quick Templates */}
+          {/* Stacked buttons: Suggest toggle + Templates */}
+          <div className="flex flex-col gap-0.5">
+            {/* Suggest toggle button */}
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setSuggestionsExpanded(!suggestionsExpanded)}
+                className={cn(
+                  "h-9 w-9 shrink-0 rounded-xl transition-colors",
+                  suggestionsExpanded 
+                    ? "text-primary bg-primary/10 hover:bg-primary/20" 
+                    : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+                )}
+                title={suggestionsExpanded ? "Hide suggestions" : "Show suggestions"}
+              >
+                <Sparkles className="h-5 w-5" />
+              </Button>
+            </motion.div>
+            
+            {/* Quick Templates - icon only */}
             <QuickTemplates onSelectTemplate={(template) => {
               if (onTemplateSelect) {
                 onTemplateSelect(template);
@@ -304,7 +350,10 @@ export function ChatInput({ onSend, isLoading, disabled, onVoiceMessage, onTempl
                 setInput(template);
               }
             }} />
-            
+          </div>
+
+          {/* Attachment buttons */}
+          <div className="flex gap-0.5">
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Button
                 type="button"
