@@ -128,15 +128,14 @@
    return (
      <Sheet open={isOpen} onOpenChange={setIsOpen}>
        <SheetTrigger asChild>
-         <Button
-           variant="ghost"
-           size="sm"
-           className="h-8 px-2 gap-1.5 text-muted-foreground hover:text-primary"
-           title="Quick Templates"
-         >
-           <Zap className="h-4 w-4" />
-           <span className="hidden sm:inline text-xs">Templates</span>
-         </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-xl"
+            title="Quick Templates"
+          >
+            <Zap className="h-5 w-5" />
+          </Button>
        </SheetTrigger>
        <SheetContent side="right" className="w-[400px] sm:w-[480px] p-0">
          <SheetHeader className="p-6 pb-4 border-b border-border">
