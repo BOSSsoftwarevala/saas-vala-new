@@ -18,11 +18,9 @@ import {
   ShoppingCart,
   BarChart3,
   Loader2,
-  ExternalLink,
   Code2
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Progress } from '@/components/ui/progress';
 
 export function SourceCodeCatalogPanel() {
   const {
@@ -329,7 +327,15 @@ School Management | D:/Projects/school-erp | 45000000"
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium">{project.project_name}</span>
+                        {/* Show Vala branded name prominently if available */}
+                        {project.vala_name ? (
+                          <>
+                            <span className="font-bold text-primary">{project.vala_name}</span>
+                            <span className="text-xs text-muted-foreground">({project.project_name})</span>
+                          </>
+                        ) : (
+                          <span className="font-medium">{project.project_name}</span>
+                        )}
                         <Badge variant="outline" className={getStatusColor(project.status)}>
                           {project.status}
                         </Badge>

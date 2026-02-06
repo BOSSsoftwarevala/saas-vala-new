@@ -26,8 +26,8 @@ function getGitHubAccount(accountName: string) {
   };
 }
 
-// AI analyze project to detect tech stack
-async function analyzeProject(projectName: string, fileStructure?: string[]) {
+// AI analyze project and generate Vala branded name
+async function analyzeProject(projectName: string, fileStructure?: string[], existingNames?: string[]) {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) {
     return {
@@ -37,24 +37,37 @@ async function analyzeProject(projectName: string, fileStructure?: string[]) {
       description: `${projectName} - Custom software solution`,
       features: [],
       complexity: 5,
+      vala_name: `Vala ${projectName} Pro`,
     };
   }
 
-  const prompt = `Analyze this software project and provide structured information.
+  const existingList = existingNames?.length ? `\nExisting names to avoid duplicates: ${existingNames.slice(0, 50).join(", ")}` : "";
+
+  const prompt = `Analyze this software project and generate a professional "Vala" branded name.
+
 Project Name: ${projectName}
 ${fileStructure ? `File Structure: ${fileStructure.slice(0, 50).join(", ")}` : ""}
+${existingList}
+
+NAMING RULES:
+1. Format: "Vala [Industry] [Type] [Tier]"
+2. Tiers: Pro (full-featured), Lite (basic), Enterprise (complex/large-scale)
+3. Examples: "Vala Retail POS Pro", "Vala Hotel Booking Lite", "Vala Hospital ERP Enterprise"
+4. If similar name exists, add industry context or change tier
+5. Keep it SHORT (max 5 words)
 
 Respond with JSON only:
 {
+  "vala_name": "Vala Industry Type Tier",
   "tech_stack": {
     "frontend": ["React/Vue/Angular/Flutter/etc"],
     "backend": ["Node/PHP/Python/Java/etc"],
     "database": ["MySQL/PostgreSQL/MongoDB/etc"],
     "languages": ["JavaScript/TypeScript/PHP/Python/etc"]
   },
-  "project_type": "billing/crm/pos/ecommerce/inventory/booking/cms/etc",
-  "target_industry": "retail/healthcare/education/food/transport/etc",
-  "description": "2-3 sentence description",
+  "project_type": "billing/crm/pos/ecommerce/inventory/booking/cms/erp/etc",
+  "target_industry": "retail/healthcare/education/food/transport/hotel/pharmacy/school/etc",
+  "description": "2-3 sentence description for marketplace",
   "features": [
     {"name": "Feature Name", "description": "Brief description", "icon": "IconName"}
   ],
@@ -95,6 +108,7 @@ Respond with JSON only:
     description: projectName,
     features: [],
     complexity: 5,
+    vala_name: `Vala ${projectName} Pro`,
   };
 }
 
@@ -184,12 +198,20 @@ Deno.serve(async (req) => {
           .update({ status: "analyzing" })
           .eq("id", catalogId);
 
-        const analysis = await analyzeProject(projectName, fileStructure);
+        // Get existing vala names to avoid duplicates
+        const { data: existingNames } = await supabase
+          .from("source_code_catalog")
+          .select("vala_name")
+          .not("vala_name", "is", null);
 
-        // Update with analysis results
+        const existingNamesList = existingNames?.map(n => n.vala_name).filter(Boolean) as string[] || [];
+        const analysis = await analyzeProject(projectName, fileStructure, existingNamesList);
+
+        // Update with analysis results including vala_name
         const { error } = await supabase
           .from("source_code_catalog")
           .update({
+            vala_name: analysis.vala_name,
             tech_stack: analysis.tech_stack,
             detected_features: analysis.features,
             project_type: analysis.project_type,
@@ -228,6 +250,14 @@ Deno.serve(async (req) => {
 
         const results: { name: string; status: string }[] = [];
 
+        // Get all existing vala names for duplicate prevention
+        const { data: existingNames } = await supabase
+          .from("source_code_catalog")
+          .select("vala_name")
+          .not("vala_name", "is", null);
+
+        const existingNamesList = existingNames?.map(n => n.vala_name).filter(Boolean) as string[] || [];
+
         for (const project of pending) {
           try {
             await supabase
@@ -235,11 +265,17 @@ Deno.serve(async (req) => {
               .update({ status: "analyzing" })
               .eq("id", project.id);
 
-            const analysis = await analyzeProject(project.project_name);
+            const analysis = await analyzeProject(project.project_name, undefined, existingNamesList);
+
+            // Add new vala_name to list to prevent duplicates in same batch
+            if (analysis.vala_name) {
+              existingNamesList.push(analysis.vala_name);
+            }
 
             await supabase
               .from("source_code_catalog")
               .update({
+                vala_name: analysis.vala_name,
                 tech_stack: analysis.tech_stack,
                 detected_features: analysis.features,
                 project_type: analysis.project_type,
@@ -251,7 +287,7 @@ Deno.serve(async (req) => {
               })
               .eq("id", project.id);
 
-            results.push({ name: project.project_name, status: "analyzed" });
+            results.push({ name: project.project_name, status: "analyzed", vala_name: analysis.vala_name });
           } catch (error) {
             results.push({ name: project.project_name, status: `error: ${error}` });
           }
@@ -309,7 +345,7 @@ Deno.serve(async (req) => {
 
         const { data: analyzed } = await supabase
           .from("source_code_catalog")
-          .select("id, project_name, ai_description")
+          .select("id, project_name, vala_name, ai_description")
           .eq("status", "analyzed")
           .eq("uploaded_to_github", false)
           .limit(limit);
@@ -321,11 +357,13 @@ Deno.serve(async (req) => {
           );
         }
 
-        const results: { name: string; status: string; url?: string }[] = [];
+        const results: { name: string; vala_name?: string; status: string; url?: string }[] = [];
 
         for (const project of analyzed) {
           try {
-            const repoName = project.project_name
+            // Use vala_name for repo, fallback to project_name
+            const displayName = project.vala_name || project.project_name;
+            const repoName = displayName
               .toLowerCase()
               .replace(/[^a-z0-9]+/g, "-")
               .replace(/^-|-$/g, "");
@@ -333,7 +371,7 @@ Deno.serve(async (req) => {
             const repo = await createGitHubRepo(
               accountName || "SaaSVala",
               repoName,
-              project.ai_description || project.project_name
+              project.ai_description || displayName
             );
 
             await supabase
@@ -347,7 +385,12 @@ Deno.serve(async (req) => {
               })
               .eq("id", project.id);
 
-            results.push({ name: project.project_name, status: "uploaded", url: repo.html_url });
+            results.push({ 
+              name: project.project_name, 
+              vala_name: project.vala_name,
+              status: "uploaded", 
+              url: repo.html_url 
+            });
           } catch (error) {
             results.push({ name: project.project_name, status: `error: ${error}` });
           }
