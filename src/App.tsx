@@ -30,6 +30,7 @@ import AuditLogs from "./pages/AuditLogs";
 import SystemHealth from "./pages/SystemHealth";
 import NotFound from "./pages/NotFound";
 import ResellerDashboard from "./pages/ResellerDashboard";
+import Automation from "./pages/Automation";
 
 const queryClient = new QueryClient();
 
@@ -243,6 +244,16 @@ function AppRoutes() {
         element={
           <ProtectedRoute>
             <ResellerDashboard />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/automation"
+        element={
+          <ProtectedRoute>
+            <AdminRoute>
+              <Automation />
+            </AdminRoute>
           </ProtectedRoute>
         }
       />
