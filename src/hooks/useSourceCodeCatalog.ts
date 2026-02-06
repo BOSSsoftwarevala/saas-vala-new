@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 interface CatalogEntry {
   id: string;
   project_name: string;
+  vala_name: string | null;
   slug: string;
   file_path: string | null;
   file_size: number | null;

@@ -2454,6 +2454,7 @@ export type Database = {
           updated_at: string
           uploaded_at: string | null
           uploaded_to_github: boolean | null
+          vala_name: string | null
         }
         Insert: {
           ai_description?: string | null
@@ -2482,6 +2483,7 @@ export type Database = {
           updated_at?: string
           uploaded_at?: string | null
           uploaded_to_github?: boolean | null
+          vala_name?: string | null
         }
         Update: {
           ai_description?: string | null
@@ -2510,6 +2512,7 @@ export type Database = {
           updated_at?: string
           uploaded_at?: string | null
           uploaded_to_github?: boolean | null
+          vala_name?: string | null
         }
         Relationships: []
       }
