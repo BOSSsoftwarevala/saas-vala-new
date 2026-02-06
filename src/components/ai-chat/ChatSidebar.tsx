@@ -1,10 +1,11 @@
-import type { ReactNode } from 'react';
+import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Plus,
   MessageSquare,
   Trash2,
+  Sparkles,
   PanelLeftClose,
   PanelLeft,
   MoreHorizontal,
@@ -32,7 +33,8 @@ interface ChatSidebarProps {
   onDeleteSession: (id: string) => void;
   isOpen: boolean;
   onToggle: () => void;
-  chatSlot?: ReactNode;
+  /** Optional content to render below the sessions list (e.g. chat messages + input). */
+  children?: ReactNode;
 }
 
 export function ChatSidebar({
@@ -43,8 +45,9 @@ export function ChatSidebar({
   onDeleteSession,
   isOpen,
   onToggle,
-  chatSlot,
+  children,
 }: ChatSidebarProps) {
+  const hasChatPanel = Boolean(children);
 
   // Group sessions by date
   const today = new Date();
@@ -126,57 +129,64 @@ export function ChatSidebar({
       <div
         className={cn(
           'h-full bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300 shrink-0',
-          isOpen ? 'w-[380px] min-w-[320px] max-w-[44vw]' : 'w-0 overflow-hidden',
+          isOpen ? 'w-[380px]' : 'w-0 overflow-hidden',
         )}
       >
-        {/* Header - compact */}
-        <div className="p-3 border-b border-sidebar-border flex items-center gap-2">
-          <Button onClick={onNewSession} className="flex-1 gap-2 bg-primary hover:bg-primary/90 h-9">
+        {/* Header */}
+        <div className="p-4 border-b border-sidebar-border">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="h-9 w-9 rounded-xl bg-primary/20 flex items-center justify-center">
+              <Sparkles className="h-5 w-5 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-display font-bold text-sidebar-foreground text-sm truncate">SaaS VALA AI</h2>
+              <p className="text-xs text-muted-foreground truncate">Internal Power</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onToggle}
+              className="h-8 w-8 text-muted-foreground hover:text-foreground shrink-0"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button onClick={onNewSession} className="w-full gap-2 bg-primary hover:bg-primary/90">
             <Plus className="h-4 w-4" />
             New Chat
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onToggle}
-            className="h-9 w-9 text-muted-foreground hover:text-foreground shrink-0"
-          >
-            <PanelLeftClose className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Body */}
         <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          {/* Sessions List (compact) */}
-          <div className="shrink-0">
-            <ScrollArea className={cn(chatSlot ? 'h-[240px]' : 'flex-1')}>
-              <div className="py-1">
-                <SessionGroup title="Today" items={groupedSessions.today} />
-                <SessionGroup title="Yesterday" items={groupedSessions.yesterday} />
-                <SessionGroup title="Last 7 days" items={groupedSessions.lastWeek} />
-                <SessionGroup title="Older" items={groupedSessions.older} />
+          {/* Sessions List - smaller when chat panel exists */}
+          <ScrollArea className={cn(hasChatPanel ? 'shrink-0 max-h-[30vh]' : 'flex-1')}>
+            <div className="py-2">
+              <SessionGroup title="Today" items={groupedSessions.today} />
+              <SessionGroup title="Yesterday" items={groupedSessions.yesterday} />
+              <SessionGroup title="Last 7 days" items={groupedSessions.lastWeek} />
+              <SessionGroup title="Older" items={groupedSessions.older} />
 
-                {sessions.length === 0 && (
-                  <div className="px-4 py-4 text-center">
-                    <MessageSquare className="h-6 w-6 mx-auto mb-1 text-muted-foreground/30" />
-                    <p className="text-xs text-muted-foreground">No chats yet</p>
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          </div>
+              {sessions.length === 0 && (
+                <div className="px-4 py-8 text-center">
+                  <MessageSquare className="h-8 w-8 mx-auto mb-2 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground font-medium">No conversations yet</p>
+                </div>
+              )}
+            </div>
+          </ScrollArea>
 
-          {/* Conversation */}
-          {chatSlot && (
-            <div className="flex-1 min-h-0 border-t border-sidebar-border">
-              {chatSlot}
+          {/* Chat Panel - takes more space */}
+          {hasChatPanel && (
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col bg-background border-t border-sidebar-border">
+              {children}
             </div>
           )}
 
-          {/* Footer - compact */}
-          <div className="shrink-0 py-2 px-3 border-t border-sidebar-border bg-sidebar">
-            <p className="text-[10px] text-center text-muted-foreground">
-              Powered by <span className="font-medium text-primary">SoftwareVala™</span>
+          {/* Footer - always at bottom */}
+          <div className="shrink-0 p-3 border-t border-sidebar-border bg-sidebar">
+            <p className="text-xs text-center text-muted-foreground">
+              Powered by <span className="font-semibold text-primary">SoftwareVala™</span>
             </p>
           </div>
         </div>
