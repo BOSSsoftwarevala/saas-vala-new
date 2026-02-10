@@ -226,68 +226,92 @@ export function AddCreditsModal({ open, onOpenChange, onSuccess }: AddCreditsMod
   const handlePayment = async () => {
     setStep('processing');
     
-    // Simulate payment processing with auto-retry
+    // Process payment with auto-retry (up to 3 attempts)
     const processPayment = async (attempt: number): Promise<boolean> => {
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // Simulate 90% success rate, auto-retry on failure
-      const success = Math.random() > 0.1;
-      
-      if (!success && attempt < 3) {
-        setRetryCount(attempt);
-        return processPayment(attempt + 1);
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: userData } = await supabase.auth.getUser();
+        
+        if (!userData.user) {
+          toast.error('Authentication required');
+          return false;
+        }
+
+        const { data: walletData } = await supabase
+          .from('wallets')
+          .select('id, balance')
+          .eq('user_id', userData.user.id)
+          .maybeSingle();
+
+        if (!walletData) {
+          toast.error('Wallet not found');
+          return false;
+        }
+
+        const newBalance = (walletData.balance || 0) + finalAmount;
+        
+        // Create transaction
+        const { error: txError } = await supabase.from('transactions').insert({
+          wallet_id: walletData.id,
+          type: 'credit',
+          amount: finalAmount,
+          balance_after: newBalance,
+          status: 'completed',
+          description: `Added credits via ${paymentMethod}`,
+          created_by: userData.user.id,
+          meta: { payment_method: paymentMethod }
+        });
+
+        if (txError) {
+          console.error('Transaction insert failed:', txError);
+          if (attempt < 3) {
+            setRetryCount(attempt);
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            return processPayment(attempt + 1);
+          }
+          return false;
+        }
+
+        // Update wallet balance
+        const { error: walletError } = await supabase
+          .from('wallets')
+          .update({ balance: newBalance })
+          .eq('id', walletData.id);
+
+        if (walletError) {
+          console.error('Wallet update failed:', walletError);
+          // Rollback: mark transaction as failed
+          await supabase.from('transactions')
+            .update({ status: 'failed' })
+            .eq('wallet_id', walletData.id)
+            .eq('balance_after', newBalance)
+            .eq('status', 'completed')
+            .order('created_at', { ascending: false })
+            .limit(1);
+          return false;
+        }
+
+        return true;
+      } catch (error) {
+        console.error('Payment processing error:', error);
+        if (attempt < 3) {
+          setRetryCount(attempt);
+          await new Promise(resolve => setTimeout(resolve, 1500));
+          return processPayment(attempt + 1);
+        }
+        return false;
       }
-      
-      return success;
     };
 
     const success = await processPayment(1);
     
     if (success) {
-      // Actually add the credit to wallet via Supabase
-      try {
-        const { supabase } = await import('@/integrations/supabase/client');
-        const { data: userData } = await supabase.auth.getUser();
-        
-        if (userData.user) {
-          const { data: walletData } = await supabase
-            .from('wallets')
-            .select('id, balance')
-            .eq('user_id', userData.user.id)
-            .maybeSingle();
-
-          if (walletData) {
-            const newBalance = (walletData.balance || 0) + finalAmount;
-            
-            // Create transaction
-            await supabase.from('transactions').insert({
-              wallet_id: walletData.id,
-              type: 'credit',
-              amount: finalAmount,
-              balance_after: newBalance,
-              status: 'completed',
-              description: 'Added credits via payment',
-              created_by: userData.user.id,
-              meta: { payment_method: paymentMethod }
-            });
-
-            // Update wallet balance
-            await supabase
-              .from('wallets')
-              .update({ balance: newBalance })
-              .eq('id', walletData.id);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to update wallet:', error);
-      }
-      
       setStep('success');
       onSuccess?.();
     } else {
-      // Even after retries, show success (for demo purposes)
-      setStep('success');
-      onSuccess?.();
+      toast.error('Payment failed after multiple attempts. Please try again.');
+      setStep('method');
+      setRetryCount(0);
     }
   };
 
