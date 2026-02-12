@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,6 +59,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import { useProducts, type Product } from '@/hooks/useProducts';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import {
@@ -99,8 +100,6 @@ interface GitHubRepo {
   html_url: string;
 }
 
-const STORAGE_KEY = 'github_connection';
-
 export default function Products() {
   const { products, categories, loading, createProduct, updateProduct, deleteProduct, suspendProduct, activateProduct } = useProducts();
   const [searchQuery, setSearchQuery] = useState('');
@@ -115,22 +114,7 @@ export default function Products() {
   const [gitRepos, setGitRepos] = useState<GitHubRepo[]>([]);
   const [loadingRepos, setLoadingRepos] = useState(false);
   const [importingRepos, setImportingRepos] = useState<Set<number>>(new Set());
-  const [gitConnected, setGitConnected] = useState(false);
-  const [gitAccessToken, setGitAccessToken] = useState<string | null>(null);
-
-  // Check for existing git connection
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.connected && parsed.accessToken) {
-          setGitConnected(true);
-          setGitAccessToken(parsed.accessToken);
-        }
-      } catch {}
-    }
-  }, []);
+  const [gitConnected] = useState(true); // Always true - uses server tokens
 
   // Form state
   const [formData, setFormData] = useState({
@@ -199,37 +183,21 @@ export default function Products() {
     setDeleteId(null);
   };
 
-  // Git import functions
+  // Git import functions - uses server-side tokens, no OAuth needed
   const openGitImport = async () => {
-    if (!gitConnected || !gitAccessToken) {
-      toast.error('GitHub not connected', {
-        description: 'Go to Servers → Git to connect your GitHub account first.',
-      });
-      return;
-    }
     setGitDialogOpen(true);
     await fetchGitRepos();
   };
 
   const fetchGitRepos = async () => {
-    if (!gitAccessToken) return;
     setLoadingRepos(true);
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/github-oauth?action=repos`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'x-github-token': gitAccessToken,
-          },
-          body: JSON.stringify({}),
-        }
-      );
-      const result = await response.json();
-      if (result.error) throw new Error(result.error);
-      setGitRepos(result.repos || []);
+      const { data, error } = await supabase.functions.invoke('github-connect', {
+        body: { action: 'repos' },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error('Failed to fetch repos');
+      setGitRepos(data.repos || []);
     } catch (error) {
       toast.error('Failed to fetch repositories');
       console.error(error);

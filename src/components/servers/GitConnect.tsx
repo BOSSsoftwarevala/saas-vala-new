@@ -7,21 +7,27 @@ import {
   Github, 
   CheckCircle2, 
   RefreshCw, 
-  Unlink, 
   ChevronRight,
   GitBranch,
   Lock,
-  Globe
+  Globe,
+  Star,
+  AlertCircle,
+  Loader2,
+  Users
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-interface GitHubUser {
-  id: number;
-  login: string;
+interface GitHubAccount {
   name: string;
-  avatar_url: string;
+  email: string;
+  connected: boolean;
+  login: string | null;
+  avatar_url: string | null;
+  public_repos: number;
+  total_private_repos: number;
 }
 
 interface GitHubRepo {
@@ -29,192 +35,82 @@ interface GitHubRepo {
   name: string;
   full_name: string;
   private: boolean;
+  html_url: string;
   description: string;
   default_branch: string;
   updated_at: string;
   language: string;
+  stargazers_count: number;
+  open_issues_count: number;
+  account: string;
 }
 
-interface GitConnection {
-  connected: boolean;
-  user?: GitHubUser;
-  repository?: GitHubRepo;
-  branch?: string;
-  accessToken?: string;
-}
-
-const STORAGE_KEY = 'github_connection';
+const STORAGE_KEY = 'github_connection_v2';
 
 export function GitConnect() {
-  const [connection, setConnection] = useState<GitConnection>({ connected: false });
-  const [isConnecting, setIsConnecting] = useState(false);
+  const [accounts, setAccounts] = useState<GitHubAccount[]>([]);
   const [repos, setRepos] = useState<GitHubRepo[]>([]);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [showRepos, setShowRepos] = useState(false);
   const [loadingRepos, setLoadingRepos] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [selectedRepo, setSelectedRepo] = useState<GitHubRepo | null>(null);
+  const [repoSearch, setRepoSearch] = useState('');
 
-  // Load saved connection on mount
+  // Load saved state
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        setConnection(parsed);
-      } catch (e) {
-        console.error('Failed to parse saved connection:', e);
-      }
-    }
-
-    // Check for OAuth callback
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    const state = urlParams.get('state');
-    
-    if (code && state) {
-      handleOAuthCallback(code);
-      // Clean up URL
-      window.history.replaceState({}, document.title, window.location.pathname);
+        setConnected(parsed.connected || false);
+        setAccounts(parsed.accounts || []);
+        setSelectedRepo(parsed.selectedRepo || null);
+      } catch {}
     }
   }, []);
 
-  // Save connection when it changes
+  // Save state
   useEffect(() => {
-    if (connection.connected) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(connection));
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
+    if (connected) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ connected, accounts, selectedRepo }));
     }
-  }, [connection]);
+  }, [connected, accounts, selectedRepo]);
 
-  const handleConnect = async () => {
+  const handleOneClickConnect = async () => {
     setIsConnecting(true);
-    
     try {
-      const redirectUri = `${window.location.origin}${window.location.pathname}`;
+      const { data, error } = await supabase.functions.invoke('github-connect', {
+        body: { action: 'status' },
+      });
+
+      if (error) throw error;
+      if (!data?.success) throw new Error('Failed to connect');
+
+      const connectedAccounts = (data.accounts || []).filter((a: GitHubAccount) => a.connected);
+      if (connectedAccounts.length === 0) {
+        toast.error('No GitHub accounts configured', {
+          description: 'Contact admin to set up GitHub tokens.',
+        });
+        return;
+      }
+
+      setAccounts(connectedAccounts);
+      setConnected(true);
       
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/github-oauth?action=auth-url`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ data: { redirectUri } }),
-        }
+      const totalRepos = connectedAccounts.reduce(
+        (sum: number, a: GitHubAccount) => sum + a.public_repos + a.total_private_repos, 0
       );
+      
+      toast.success(`✅ GitHub Connected!`, {
+        description: `${connectedAccounts.length} account(s) • ${totalRepos} repositories`,
+      });
 
-      const result = await response.json();
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      if (result.authUrl) {
-        // Store state for verification
-        sessionStorage.setItem('github_oauth_state', result.state);
-        
-        // Open GitHub OAuth in a popup window to avoid iframe restrictions
-        const width = 600;
-        const height = 700;
-        const left = window.screenX + (window.outerWidth - width) / 2;
-        const top = window.screenY + (window.outerHeight - height) / 2;
-        
-        const popup = window.open(
-          result.authUrl,
-          'github-oauth',
-          `width=${width},height=${height},left=${left},top=${top},popup=yes,toolbar=no,menubar=no`
-        );
-
-        // Listen for the popup to complete OAuth and send back the code
-        if (popup) {
-          const checkPopup = setInterval(() => {
-            try {
-              // Check if popup is closed
-              if (popup.closed) {
-                clearInterval(checkPopup);
-                setIsConnecting(false);
-                return;
-              }
-              
-              // Check if we're back on our origin
-              if (popup.location.origin === window.location.origin) {
-                const popupUrl = new URL(popup.location.href);
-                const code = popupUrl.searchParams.get('code');
-                
-                if (code) {
-                  clearInterval(checkPopup);
-                  popup.close();
-                  handleOAuthCallback(code);
-                }
-              }
-            } catch (e) {
-              // Cross-origin access error - popup is still on GitHub, continue waiting
-            }
-          }, 500);
-          
-          // Timeout after 5 minutes
-          setTimeout(() => {
-            clearInterval(checkPopup);
-            if (!popup.closed) {
-              popup.close();
-            }
-            setIsConnecting(false);
-          }, 300000);
-        } else {
-          // Popup blocked - fallback to redirect (will work if opened in new tab)
-          toast.error('Popup blocked!', {
-            description: 'Please allow popups for this site, or click the link below',
-          });
-          window.open(result.authUrl, '_blank');
-          setIsConnecting(false);
-        }
-      }
+      // Auto-fetch repos
+      await fetchRepos();
     } catch (error) {
-      console.error('GitHub OAuth error:', error);
-      toast.error('Failed to connect to GitHub', {
-        description: error instanceof Error ? error.message : 'Please try again',
-      });
-      setIsConnecting(false);
-    }
-  };
-
-  const handleOAuthCallback = async (code: string) => {
-    setIsConnecting(true);
-    
-    try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/github-oauth?action=callback`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({ code }),
-        }
-      );
-
-      const result = await response.json();
-
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      setConnection({
-        connected: true,
-        user: result.user,
-        accessToken: result.access_token,
-      });
-
-      toast.success('GitHub connected!', {
-        description: `Connected as ${result.user.login}`,
-      });
-
-      // Automatically fetch repos
-      fetchRepos(result.access_token);
-    } catch (error) {
-      console.error('OAuth callback error:', error);
-      toast.error('Failed to complete GitHub connection', {
+      console.error('Connection failed:', error);
+      toast.error('Connection failed', {
         description: error instanceof Error ? error.message : 'Please try again',
       });
     } finally {
@@ -222,34 +118,18 @@ export function GitConnect() {
     }
   };
 
-  const fetchRepos = async (token?: string) => {
-    const accessToken = token || connection.accessToken;
-    if (!accessToken) return;
-
+  const fetchRepos = async (accountName?: string) => {
     setLoadingRepos(true);
-    
     try {
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/github-oauth?action=repos`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-            'x-github-token': accessToken,
-          },
-          body: JSON.stringify({}),
-        }
-      );
+      const { data, error } = await supabase.functions.invoke('github-connect', {
+        body: { action: 'repos', accountName },
+      });
 
-      const result = await response.json();
+      if (error) throw error;
 
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      setRepos(result.repos);
+      setRepos(data.repos || []);
       setShowRepos(true);
+      toast.success(`📂 ${data.totalRepos} repositories loaded`);
     } catch (error) {
       console.error('Failed to fetch repos:', error);
       toast.error('Failed to fetch repositories');
@@ -259,23 +139,27 @@ export function GitConnect() {
   };
 
   const selectRepo = (repo: GitHubRepo) => {
-    setConnection(prev => ({
-      ...prev,
-      repository: repo,
-      branch: repo.default_branch,
-    }));
+    setSelectedRepo(repo);
     setShowRepos(false);
-    toast.success('Repository selected!', {
-      description: `${repo.full_name} (${repo.default_branch})`,
-    });
+    toast.success(`Repository selected: ${repo.full_name}`);
   };
 
   const handleDisconnect = () => {
-    setConnection({ connected: false });
+    setConnected(false);
+    setAccounts([]);
     setRepos([]);
+    setSelectedRepo(null);
     setShowRepos(false);
+    localStorage.removeItem(STORAGE_KEY);
+    // Also clear old key
+    localStorage.removeItem('github_connection');
     toast.success('GitHub disconnected');
   };
+
+  const filteredRepos = repos.filter((repo) =>
+    repo.name.toLowerCase().includes(repoSearch.toLowerCase()) ||
+    repo.full_name.toLowerCase().includes(repoSearch.toLowerCase())
+  );
 
   return (
     <Card className="glass-card">
@@ -288,11 +172,11 @@ export function GitConnect() {
             <div>
               <CardTitle className="text-base sm:text-lg">GitHub Connection</CardTitle>
               <CardDescription className="text-xs sm:text-sm">
-                Connect your repository for automatic deployments
+                One-click connect • Auto-sync repositories
               </CardDescription>
             </div>
           </div>
-          {connection.connected && (
+          {connected && (
             <Badge variant="outline" className="bg-success/20 text-success border-success/30 hidden sm:flex">
               <CheckCircle2 className="h-3 w-3 mr-1" />
               Connected
@@ -301,76 +185,87 @@ export function GitConnect() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {connection.connected ? (
+        {connected ? (
           <>
-            {/* Connected User Info */}
-            <div className="glass-card rounded-lg p-4 space-y-3">
-              <div className="flex items-center gap-3">
-                {connection.user?.avatar_url && (
-                  <img 
-                    src={connection.user.avatar_url} 
-                    alt={connection.user.login}
-                    className="h-10 w-10 rounded-full"
-                  />
-                )}
-                <div>
-                  <p className="font-medium text-foreground">{connection.user?.name || connection.user?.login}</p>
-                  <p className="text-xs text-muted-foreground">@{connection.user?.login}</p>
-                </div>
-              </div>
-
-              {connection.repository ? (
-                <>
-                  <div className="flex items-center justify-between pt-2 border-t border-border">
-                    <span className="text-sm text-muted-foreground">Repository</span>
-                    <div className="flex items-center gap-2">
-                      {connection.repository.private ? (
-                        <Lock className="h-3 w-3 text-muted-foreground" />
-                      ) : (
-                        <Globe className="h-3 w-3 text-muted-foreground" />
-                      )}
-                      <span className="text-sm font-medium text-foreground">
-                        {connection.repository.full_name}
-                      </span>
+            {/* Connected Accounts */}
+            <div className="space-y-2">
+              {accounts.map((acc) => (
+                <div key={acc.name} className="glass-card rounded-lg p-3">
+                  <div className="flex items-center gap-3">
+                    {acc.avatar_url && (
+                      <img src={acc.avatar_url} alt={acc.login || acc.name} className="h-10 w-10 rounded-full" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-foreground text-sm">{acc.name}</p>
+                        <Badge variant="outline" className="text-[10px] bg-success/10 text-success border-success/20">
+                          <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />
+                          Live
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground">@{acc.login} • {acc.public_repos + acc.total_private_repos} repos</p>
                     </div>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Branch</span>
-                    <Badge variant="outline" className="border-border text-foreground">
-                      <GitBranch className="h-3 w-3 mr-1" />
-                      {connection.branch}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Status</span>
-                    <span className="text-sm text-success">Auto-sync enabled</span>
-                  </div>
-                </>
-              ) : (
-                <Button 
-                  onClick={() => fetchRepos()}
-                  disabled={loadingRepos}
-                  className="w-full bg-orange-gradient hover:opacity-90 text-white gap-2"
-                >
-                  {loadingRepos ? (
-                    <RefreshCw className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <ChevronRight className="h-4 w-4" />
-                  )}
-                  Select Repository
-                </Button>
-              )}
+                </div>
+              ))}
             </div>
 
-            {/* Repository Selection */}
-            {showRepos && repos.length > 0 && (
-              <div className="glass-card rounded-lg overflow-hidden animate-fade-in">
-                <div className="p-3 border-b border-border">
-                  <p className="text-sm font-medium text-foreground">Select a Repository</p>
+            {/* Selected Repo */}
+            {selectedRepo && (
+              <div className="glass-card rounded-lg p-3 border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    {selectedRepo.private ? <Lock className="h-3 w-3 text-muted-foreground" /> : <Globe className="h-3 w-3 text-muted-foreground" />}
+                    <span className="text-sm font-medium text-foreground">{selectedRepo.full_name}</span>
+                  </div>
+                  <Badge variant="outline" className="text-xs border-border">
+                    <GitBranch className="h-3 w-3 mr-1" />
+                    {selectedRepo.default_branch}
+                  </Badge>
                 </div>
-                <ScrollArea className="h-[250px]">
+                {selectedRepo.language && (
+                  <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
+                    <span>{selectedRepo.language}</span>
+                    <span>•</span>
+                    <span>{selectedRepo.account}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Repo List */}
+            {showRepos && (
+              <div className="glass-card rounded-lg overflow-hidden animate-fade-in">
+                <div className="p-3 border-b border-border space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium text-foreground">
+                      {filteredRepos.length} Repositories
+                    </p>
+                    <div className="flex gap-1">
+                      {accounts.map((acc) => (
+                        <Button
+                          key={acc.name}
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 text-[10px] px-2"
+                          onClick={() => fetchRepos(acc.name)}
+                        >
+                          {acc.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search repos..."
+                    className="w-full h-8 px-3 text-sm rounded-md bg-muted/50 border border-border text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    value={repoSearch}
+                    onChange={(e) => setRepoSearch(e.target.value)}
+                  />
+                </div>
+                <ScrollArea className="h-[300px]">
                   <div className="divide-y divide-border">
-                    {repos.map((repo) => (
+                    {filteredRepos.map((repo) => (
                       <button
                         key={repo.id}
                         onClick={() => selectRepo(repo)}
@@ -384,17 +279,23 @@ export function GitConnect() {
                               ) : (
                                 <Globe className="h-3 w-3 text-muted-foreground shrink-0" />
                               )}
-                              <span className="font-medium text-foreground truncate">{repo.name}</span>
+                              <span className="font-medium text-foreground text-sm truncate">{repo.name}</span>
+                              <Badge variant="outline" className="text-[10px] border-border shrink-0">
+                                {repo.account}
+                              </Badge>
                             </div>
                             {repo.description && (
-                              <p className="text-xs text-muted-foreground mt-1 truncate">{repo.description}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5 truncate">{repo.description}</p>
                             )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0 ml-2">
                             {repo.language && (
-                              <Badge variant="outline" className="text-xs border-border">
-                                {repo.language}
-                              </Badge>
+                              <Badge variant="outline" className="text-[10px] border-border">{repo.language}</Badge>
+                            )}
+                            {repo.stargazers_count > 0 && (
+                              <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
+                                <Star className="h-2.5 w-2.5" />{repo.stargazers_count}
+                              </span>
                             )}
                             <ChevronRight className="h-4 w-4 text-muted-foreground" />
                           </div>
@@ -408,47 +309,47 @@ export function GitConnect() {
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-2">
-              {connection.repository && (
-                <Button 
-                  variant="outline" 
-                  className="border-border gap-2 flex-1"
-                  onClick={() => {
-                    setConnection(prev => ({ ...prev, repository: undefined, branch: undefined }));
-                    fetchRepos();
-                  }}
-                >
-                  <RefreshCw className="h-4 w-4" />
-                  Change Repository
-                </Button>
-              )}
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
+                className="border-border gap-2 flex-1"
+                onClick={() => fetchRepos()}
+                disabled={loadingRepos}
+              >
+                {loadingRepos ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                {showRepos ? 'Refresh Repos' : 'Browse Repos'}
+              </Button>
+              <Button
+                variant="outline"
                 className="border-destructive/30 text-destructive hover:bg-destructive/10 gap-2"
                 onClick={handleDisconnect}
               >
-                <Unlink className="h-4 w-4" />
                 Disconnect
               </Button>
             </div>
           </>
         ) : (
-          <Button 
-            onClick={handleConnect}
-            disabled={isConnecting}
-            className="w-full bg-foreground text-background hover:bg-foreground/90 gap-2 h-12"
-          >
-            {isConnecting ? (
-              <>
-                <RefreshCw className="h-4 w-4 animate-spin" />
-                Connecting...
-              </>
-            ) : (
-              <>
-                <Github className="h-5 w-5" />
-                Connect GitHub
-              </>
-            )}
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={handleOneClickConnect}
+              disabled={isConnecting}
+              className="w-full bg-foreground text-background hover:bg-foreground/90 gap-2 h-12"
+            >
+              {isConnecting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Connecting...
+                </>
+              ) : (
+                <>
+                  <Github className="h-5 w-5" />
+                  One-Click Connect GitHub
+                </>
+              )}
+            </Button>
+            <p className="text-xs text-muted-foreground text-center">
+              Instantly connects to all configured GitHub accounts • No OAuth needed
+            </p>
+          </div>
         )}
       </CardContent>
     </Card>
