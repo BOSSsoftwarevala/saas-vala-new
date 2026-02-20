@@ -1794,51 +1794,103 @@ POWERED BY SOFTWAREVALA™ | THE NAME OF TRUST | VALA AI MASTER BRAIN v6.0 — L
 
     const allMessages = [systemMessage, ...messages];
 
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') ?? '';
+
     console.log(`AI Developer request: ${messages.length} messages, model: ${AI_MODEL}`);
+    console.log(`[DIAG] OpenAI key present: ${OPENAI_API_KEY.length > 0}, Lovable key present: ${LOVABLE_API_KEY.length > 0}`);
 
-    // First API call - may return tool calls
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        messages: allMessages,
-        tools: developerTools,
-        tool_choice: 'auto',
-        max_completion_tokens: 8192,
-        temperature: 0.3,
-        stream: false, // Tool calling requires non-streaming first
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`AI Gateway error [${response.status}]:`, errorText);
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Thoda wait karo aur try karo.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+    // ─── Helper: call a provider ─────────────────────────────────────────────
+    const callProvider = async (useOpenAI: boolean, msgs: any[], withTools: boolean, doStream: boolean) => {
+      if (useOpenAI) {
+        const modelMap: Record<string, string> = {
+          'google/gemini-3-flash-preview': 'gpt-4o-mini',
+          'google/gemini-2.5-flash': 'gpt-4o-mini',
+          'google/gemini-2.5-pro': 'gpt-4o',
+          'openai/gpt-5': 'gpt-4o',
+          'openai/gpt-5-mini': 'gpt-4o-mini',
+          'openai/gpt-5.2': 'gpt-4o',
+        };
+        const openaiModel = modelMap[AI_MODEL] ?? 'gpt-4o-mini';
+        const body: any = {
+          model: openaiModel,
+          messages: msgs,
+          max_tokens: 8192,
+          temperature: 0.3,
+          stream: doStream,
+        };
+        if (withTools) {
+          body.tools = developerTools;
+          body.tool_choice = 'auto';
+        }
+        const r = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        return { response: r, provider: 'openai', modelUsed: openaiModel };
+      } else {
+        const body: any = {
+          model: AI_MODEL,
+          messages: msgs,
+          max_completion_tokens: 8192,
+          temperature: 0.3,
+          stream: doStream,
+        };
+        if (withTools) {
+          body.tools = developerTools;
+          body.tool_choice = 'auto';
+        }
+        const r = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${LOVABLE_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        return { response: r, provider: 'lovable', modelUsed: AI_MODEL };
       }
-      
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI credits khatam ho gaye hain! Please Lovable workspace mein credits add karo: Settings → Workspace → Usage.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      return new Response(
-        JSON.stringify({ error: `AI service error (${response.status})` }),
-        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    };
 
-    let data = await response.json();
+    // ─── Attempt primary + fallback ──────────────────────────────────────────
+    const attemptCall = async (msgs: any[], withTools: boolean, doStream: boolean) => {
+      // Try OpenAI first
+      if (OPENAI_API_KEY) {
+        try {
+          const result = await callProvider(true, msgs, withTools, doStream);
+          if (result.response.ok) {
+            console.log(`[AI] ✅ OpenAI success`);
+            return result;
+          }
+          const status = result.response.status;
+          const errText = await result.response.text();
+          console.warn(`[AI] OpenAI failed [${status}]: ${errText}`);
+          if (status === 401) throw new Error('OpenAI API key invalid (401)');
+        } catch (e) {
+          if (String(e).includes('401')) throw e;
+          console.warn('[AI] OpenAI exception:', String(e));
+        }
+      }
+
+      // Fallback to Lovable AI
+      if (LOVABLE_API_KEY) {
+        console.log('[AI] Falling back to Lovable AI Gateway...');
+        const result = await callProvider(false, msgs, withTools, doStream);
+        if (result.response.ok) {
+          console.log(`[AI] ✅ Lovable AI success`);
+          return result;
+        }
+        const status = result.response.status;
+        const errText = await result.response.text();
+        console.error(`[AI] Lovable also failed [${status}]: ${errText}`);
+        if (status === 402) throw new Error('AI credits exhausted on both providers. Please add OpenAI credits or Lovable credits.');
+        if (status === 429) throw new Error('Rate limit exceeded on both providers. Please wait.');
+        throw new Error(`Both AI providers failed. Last status: ${status}`);
+      }
+
+      throw new Error('No AI provider configured. Add OPENAI_API_KEY or ensure LOVABLE_API_KEY is set.');
+    };
+
+    // ─── First API call (may return tool calls) ───────────────────────────────
+    const firstResult = await attemptCall(allMessages, true, false);
+    let data = await firstResult.response.json();
     let assistantMessage = data.choices?.[0]?.message;
     let toolCalls = assistantMessage?.tool_calls;
     let finalContent = assistantMessage?.content || '';
@@ -1850,11 +1902,9 @@ POWERED BY SOFTWAREVALA™ | THE NAME OF TRUST | VALA AI MASTER BRAIN v6.0 — L
       
       const conversationWithTools: Message[] = [...allMessages, assistantMessage];
       
-      // Execute all tool calls
       for (const toolCall of toolCalls) {
         const result = await executeTool(toolCall, supabase);
         
-        // Safely parse the result content
         let parsedResult: any;
         try {
           parsedResult = JSON.parse(result.content);
@@ -1862,57 +1912,28 @@ POWERED BY SOFTWAREVALA™ | THE NAME OF TRUST | VALA AI MASTER BRAIN v6.0 — L
           parsedResult = { raw: result.content, success: result.success };
         }
         
-        toolResults.push({
-          name: toolCall.function.name,
-          result: parsedResult
-        });
-        
-        conversationWithTools.push({
-          role: 'tool',
-          tool_call_id: toolCall.id,
-          content: result.content
-        });
+        toolResults.push({ name: toolCall.function.name, result: parsedResult });
+        conversationWithTools.push({ role: 'tool', tool_call_id: toolCall.id, content: result.content });
       }
 
-      // Second API call to get final response with tool results
-      const finalResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: AI_MODEL,
-          messages: conversationWithTools,
-          max_completion_tokens: 8192,
-          temperature: 0.3,
-          stream: stream,
-        }),
-      });
-
-      if (!finalResponse.ok) {
-        console.error('Final response error');
-        return new Response(
-          JSON.stringify({ error: 'Failed to process tool results' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+      // Second call with tool results
+      const finalResult = await attemptCall(conversationWithTools, false, stream);
 
       if (stream) {
-        return new Response(finalResponse.body, {
-          headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
+        return new Response(finalResult.response.body, {
+          headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'X-AI-Provider': finalResult.provider },
         });
       }
 
-      const finalData = await finalResponse.json();
+      const finalData = await finalResult.response.json();
       finalContent = finalData.choices?.[0]?.message?.content || '';
     }
 
-    // Return response with tool execution info
     return new Response(
       JSON.stringify({ 
         response: finalContent,
-        model: AI_MODEL,
+        model: firstResult.modelUsed,
+        provider: firstResult.provider,
         tools_used: toolResults.map(t => t.name),
         tool_results: toolResults,
         usage: data.usage
@@ -1923,9 +1944,13 @@ POWERED BY SOFTWAREVALA™ | THE NAME OF TRUST | VALA AI MASTER BRAIN v6.0 — L
   } catch (error: unknown) {
     console.error('AI Developer error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    const statusCode = errorMessage.includes('401') ? 401
+      : errorMessage.includes('credits exhausted') ? 402
+      : errorMessage.includes('Rate limit') ? 429
+      : 500;
     return new Response(
       JSON.stringify({ error: errorMessage }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { status: statusCode, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });
