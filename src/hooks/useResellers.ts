@@ -32,6 +32,7 @@ export function useResellers() {
   const fetchResellers = async (page = 1, limit = 25, search = '') => {
     setLoading(true);
     try {
+      // First fetch resellers
       let query = supabase
         .from('resellers')
         .select('*', { count: 'exact' })
@@ -39,7 +40,7 @@ export function useResellers() {
         .range((page - 1) * limit, page * limit - 1);
 
       if (search) {
-        query = query.or(`company_name.ilike.%${search}%`);
+        query = query.ilike('company_name', `%${search}%`);
       }
 
       const { data, error, count } = await query;
@@ -47,10 +48,35 @@ export function useResellers() {
       if (error) {
         toast.error('Failed to fetch resellers');
         console.error(error);
-      } else {
-        setResellers((data || []) as Reseller[]);
-        setTotal(count || 0);
+        return;
       }
+
+      // Enrich with profile data (full_name, email)
+      const resellerData = data || [];
+      const userIds = resellerData.map((r: any) => r.user_id).filter(Boolean);
+
+      let profileMap: Record<string, { full_name: string | null; email: string | null; phone: string | null }> = {};
+
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, phone')
+          .in('user_id', userIds);
+
+        (profiles || []).forEach((p: any) => {
+          profileMap[p.user_id] = { full_name: p.full_name, email: null, phone: p.phone };
+        });
+      }
+
+      const enriched = resellerData.map((r: any) => ({
+        ...r,
+        profile: profileMap[r.user_id] || null,
+        // Use profile name as display name if company_name is empty
+        company_name: r.company_name || profileMap[r.user_id]?.full_name || 'Unnamed Reseller',
+      }));
+
+      setResellers(enriched as Reseller[]);
+      setTotal(count || 0);
     } finally {
       setLoading(false);
     }
