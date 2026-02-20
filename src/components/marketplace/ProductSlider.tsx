@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
- import { ChevronLeft, ChevronRight, Bell, ShoppingCart, Play, Clock, Download, Heart } from 'lucide-react';
+ import { ChevronLeft, ChevronRight, Bell, ShoppingCart, Play, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import * as LucideIcons from 'lucide-react';
@@ -128,8 +128,6 @@ export function ProductSlider({ title, products, onBuyNow, onFavorite, onNotify,
         >
           {products.map((product, index) => {
             const IconComponent = getIconComponent(categoryName);
-            const originalPrice = product.originalPrice || Math.round(product.price * 1.67);
-            const discount = product.discount || 40;
             const features = product.features || ['Feature 1', 'Feature 2', 'Feature 3'];
             
             return (
@@ -232,84 +230,62 @@ export function ProductSlider({ title, products, onBuyNow, onFavorite, onNotify,
                      )}
  
                     {/* Price */}
-                    <div className="flex items-center gap-2 mb-4 mt-auto">
-                       {showTechStack ? (
-                         <>
-                           <span className="text-xs text-muted-foreground line-through">${Math.round(originalPrice / 80)}</span>
-                           <span className="font-bold text-lg text-primary">$5</span>
-                           <Badge className="bg-destructive/20 text-destructive border-0 text-[10px]">90% OFF</Badge>
-                         </>
-                       ) : (
-                         <>
-                           <span className="text-xs text-muted-foreground line-through">₹{originalPrice.toLocaleString()}</span>
-                           <span className="font-bold text-lg text-primary">₹{product.price.toLocaleString()}</span>
-                           <Badge className="bg-destructive/20 text-destructive border-0 text-[10px]">{discount}% OFF</Badge>
-                         </>
-                       )}
+                    <div className="flex items-center gap-2 mb-3 mt-auto">
+                      <span className="text-sm line-through text-muted-foreground">$10</span>
+                      <span className="font-black text-[26px] text-primary leading-none">$5</span>
+                      <Badge className="bg-destructive/20 text-destructive border-0 text-[10px]">90% OFF</Badge>
+                      <span className="ml-auto text-[11px] font-bold text-yellow-400">★ 4.9</span>
                     </div>
 
-                    {/* Action Buttons */}
-                     <div className={cn("flex", showTechStack ? "gap-1.5" : "gap-2")}>
+                    {/* Action Buttons — DEMO | ❤️ ADD TO CART | BUY */}
+                    <div className="flex gap-2">
                       {product.status === 'upcoming' ? (
                         <>
-                          <Button 
-                            variant="outline"
+                          <Button
                             size="sm"
-                            className="flex-1 h-9 text-xs gap-1.5"
-                            disabled
-                          >
-                            <Clock className="h-3.5 w-3.5" />
-                            COMING SOON
-                          </Button>
-                          <Button 
-                            size="sm"
-                            className="flex-1 h-9 text-xs gap-1.5 bg-destructive hover:bg-destructive/90"
+                            className="flex-1 h-10 text-[11px] gap-1.5 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl"
                             onClick={() => onNotify?.(product)}
                           >
                             <Bell className="h-3.5 w-3.5" />
                             NOTIFY ME
                           </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-10 w-11 p-0 rounded-xl border-pink-400/40 text-pink-400 hover:bg-pink-500/10"
+                            onClick={() => onFavorite?.(product)}
+                            title="Add to Cart"
+                          >
+                            <Heart className="h-4 w-4" />
+                          </Button>
                         </>
                       ) : (
                         <>
-                           {showTechStack && product.apkUrl && (
-                             <Button 
-                               variant="outline"
-                               size="sm"
-                               className="h-8 w-8 p-0 border-primary/30 text-primary hover:bg-primary/10"
-                               onClick={(e) => { e.stopPropagation(); onDownloadApk?.(product); }}
-                               title="Download APK"
-                             >
-                               <Download className="h-3.5 w-3.5" />
-                             </Button>
-                           )}
-                          <Button 
+                          <Button
                             variant="outline"
                             size="sm"
-                             className={cn("flex-1 border-primary text-primary hover:bg-primary/10", showTechStack ? "h-8 text-[10px] gap-1" : "h-9 text-xs gap-1.5")}
-                             onClick={(e) => { e.stopPropagation(); onLiveDemo?.(product); }}
+                            className="flex-1 h-10 text-[11px] gap-1.5 rounded-xl border-border hover:border-primary/50 hover:text-primary font-bold"
+                            onClick={(e) => { e.stopPropagation(); onLiveDemo?.(product); }}
                           >
                             <Play className="h-3.5 w-3.5" />
-                             DEMO
+                            DEMO
                           </Button>
-                           {showTechStack && (
-                             <Button 
-                               variant="outline"
-                               size="sm"
-                               className="h-8 w-8 p-0 border-pink-500/30 text-pink-500 hover:bg-pink-500/10"
-                               onClick={(e) => { e.stopPropagation(); onFavorite?.(product); }}
-                               title="Favourite"
-                             >
-                               <Heart className="h-3.5 w-3.5" />
-                             </Button>
-                           )}
-                          <Button 
+                          <Button
                             size="sm"
-                             className={cn("flex-1", showTechStack ? "h-8 text-[10px] gap-1" : "h-9 text-xs gap-1.5")}
-                             onClick={(e) => { e.stopPropagation(); onBuyNow?.(product); }}
+                            variant="outline"
+                            className="h-10 w-11 p-0 rounded-xl border-pink-400/40 text-pink-400 hover:bg-pink-500/10"
+                            onClick={(e) => { e.stopPropagation(); onFavorite?.(product); }}
+                            title="Add to Cart"
+                          >
+                            <Heart className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            className="flex-1 h-10 text-[11px] gap-1.5 rounded-xl font-black"
+                            onClick={(e) => { e.stopPropagation(); onBuyNow?.(product); }}
                           >
                             <ShoppingCart className="h-3.5 w-3.5" />
-                             {showTechStack ? "BUY $5" : "BUY NOW"}
+                            BUY $5
                           </Button>
                         </>
                       )}
