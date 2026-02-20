@@ -2,6 +2,12 @@ import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { ProductSlider } from '@/components/marketplace/ProductSlider';
+import { UpcomingSection } from '@/components/marketplace/UpcomingSection';
+import { OnDemandSection } from '@/components/marketplace/OnDemandSection';
+import { TopSellingSection } from '@/components/marketplace/TopSellingSection';
+import { PopularProductsSection } from '@/components/marketplace/PopularProductsSection';
+import { EducationSection } from '@/components/marketplace/EducationSection';
+import { MarketplaceSectionDivider } from '@/components/marketplace/MarketplaceSectionDivider';
 import { row1Software, row2Software, row3Software, row4Software } from '@/data/topSoftwareData';
 import { useMarketplaceProducts } from '@/hooks/useMarketplaceProducts';
 import { toast } from 'sonner';
@@ -158,91 +164,49 @@ export default function Marketplace() {
           </div>
         </motion.div>
 
-        {/* Row 1 */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <ProductSlider
-            title="🔥 TOP SOFTWARE ROW 1"
-            products={row1Software}
-            onBuyNow={handleBuyNow}
-            onFavorite={handleFavorite}
-            onNotify={handleNotify}
-            onDownloadApk={handleDownloadApk}
-            showTechStack={true}
-          />
+        {/* ━━━ SECTION 1: UPCOMING SOFTWARE ━━━ */}
+        <UpcomingSection />
+
+        <MarketplaceSectionDivider label="on-demand" />
+
+        {/* ━━━ SECTION 2: ON-DEMAND SOFTWARE ━━━ */}
+        <OnDemandSection onBuyNow={handleBuyNow} />
+
+        <MarketplaceSectionDivider label="this week" />
+
+        {/* ━━━ SECTION 3: THIS WEEK TOP SELLING ━━━ */}
+        <TopSellingSection onBuyNow={handleBuyNow} />
+
+        <MarketplaceSectionDivider label="popular" />
+
+        {/* ━━━ SECTION 4: POPULAR PRODUCTS ━━━ */}
+        <PopularProductsSection onBuyNow={handleBuyNow} />
+
+        <MarketplaceSectionDivider label="education" />
+
+        {/* ━━━ SECTION 5: EDUCATION & SKILL DEVELOPMENT ━━━ */}
+        <EducationSection onBuyNow={handleBuyNow} />
+
+        <MarketplaceSectionDivider label="all software" />
+
+        {/* ━━━ FEATURED TOP SOFTWARE ROWS ━━━ */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+          <ProductSlider title="🔥 TOP SOFTWARE ROW 1" products={row1Software} onBuyNow={handleBuyNow} onFavorite={handleFavorite} onNotify={handleNotify} onDownloadApk={handleDownloadApk} showTechStack={true} />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
+          <ProductSlider title="⚡ TOP SOFTWARE ROW 2" products={row2Software} onBuyNow={handleBuyNow} onFavorite={handleFavorite} onNotify={handleNotify} onDownloadApk={handleDownloadApk} showTechStack={true} />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+          <ProductSlider title="💼 TOP SOFTWARE ROW 3" products={row3Software} onBuyNow={handleBuyNow} onFavorite={handleFavorite} onNotify={handleNotify} onDownloadApk={handleDownloadApk} showTechStack={true} />
+        </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
+          <ProductSlider title="🚀 TOP SOFTWARE ROW 4" products={row4Software} onBuyNow={handleBuyNow} onFavorite={handleFavorite} onNotify={handleNotify} onDownloadApk={handleDownloadApk} showTechStack={true} />
         </motion.div>
 
-        {/* Row 2 */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <ProductSlider
-            title="⚡ TOP SOFTWARE ROW 2"
-            products={row2Software}
-            onBuyNow={handleBuyNow}
-            onFavorite={handleFavorite}
-            onNotify={handleNotify}
-            onDownloadApk={handleDownloadApk}
-            showTechStack={true}
-          />
-        </motion.div>
-
-        {/* Row 3 */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-        >
-          <ProductSlider
-            title="💼 TOP SOFTWARE ROW 3"
-            products={row3Software}
-            onBuyNow={handleBuyNow}
-            onFavorite={handleFavorite}
-            onNotify={handleNotify}
-            onDownloadApk={handleDownloadApk}
-            showTechStack={true}
-          />
-        </motion.div>
-
-        {/* Row 4 */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <ProductSlider
-            title="🚀 TOP SOFTWARE ROW 4"
-            products={row4Software}
-            onBuyNow={handleBuyNow}
-            onFavorite={handleFavorite}
-            onNotify={handleNotify}
-            onDownloadApk={handleDownloadApk}
-            showTechStack={true}
-          />
-        </motion.div>
-
-        {/* Database Product Rows — Real 503+ products from GitHub */}
+        {/* ━━━ DATABASE CATALOG ROWS ━━━ */}
         {allRows.map((row, rowIndex) => (
-          <motion.div
-            key={`db-row-${rowIndex}`}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: (rowIndex + 5) * 0.05 }}
-          >
-            <ProductSlider
-              title={`📦 SOFTWARE CATALOG ROW ${rowIndex + 1}`}
-              products={row}
-              onBuyNow={handleBuyNow}
-              onFavorite={handleFavorite}
-              onNotify={handleNotify}
-              onDownloadApk={handleDownloadApk}
-              showTechStack={true}
-            />
+          <motion.div key={`db-row-${rowIndex}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (rowIndex + 5) * 0.05 }}>
+            <ProductSlider title={`📦 SOFTWARE CATALOG ROW ${rowIndex + 1}`} products={row} onBuyNow={handleBuyNow} onFavorite={handleFavorite} onNotify={handleNotify} onDownloadApk={handleDownloadApk} showTechStack={true} />
           </motion.div>
         ))}
       </main>
