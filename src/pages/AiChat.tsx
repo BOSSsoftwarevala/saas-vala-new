@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { ChatSidebar } from '@/components/ai-chat/ChatSidebar';
 import { ChatHeader } from '@/components/ai-chat/ChatHeader';
-import { AiWorkingPanel } from '@/components/ai-chat/AiWorkingPanel';
 import { ChatMessage, Message, FileAttachment } from '@/components/ai-chat/ChatMessage';
 import { ChatInput } from '@/components/ai-chat/ChatInput';
 import { ThinkingIndicator } from '@/components/ai-chat/ThinkingIndicator';
@@ -765,9 +764,7 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
         onExport={handleExport}
       />
 
-      {/* Main Chat Area + Right Working Panel */}
-      <div className="flex-1 flex min-w-0 overflow-hidden">
-      {/* Center: Chat */}
+      {/* Main Chat Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden" style={{ minWidth: 0 }}>
         <ChatHeader
           title={activeSession?.title || 'VALA AI'}
@@ -862,15 +859,6 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
             <ChatInput onSend={handleSend} isLoading={isLoading} onVoiceMessage={handleVoiceMessage} />
           </div>
         </div>
-      </div>
-
-        {/* Right: AI Working Panel */}
-        <AiWorkingPanel
-          isLoading={isLoading}
-          tokensReceived={aiStatus.tokensReceived}
-          elapsedTime={aiStatus.elapsedTime}
-          model={selectedModel.split('/').pop() || 'gemini-3-flash'}
-        />
       </div>
 
       {/* History Panel */}
