@@ -83,12 +83,14 @@ export default function Resellers() {
   });
 
   const filteredResellers = resellers.filter((reseller) => {
-    const matchesSearch = reseller.company_name?.toLowerCase().includes(searchQuery.toLowerCase());
-    if (activeTab === 'all') return true;
+    const name = (reseller.company_name || '').toLowerCase();
+    const profileName = (reseller.profile?.full_name || '').toLowerCase();
+    const matchesSearch = !searchQuery || name.includes(searchQuery.toLowerCase()) || profileName.includes(searchQuery.toLowerCase());
+    if (!matchesSearch) return false;
     if (activeTab === 'active') return reseller.is_active;
     if (activeTab === 'suspended') return !reseller.is_active;
     if (activeTab === 'verified') return reseller.is_verified;
-    return matchesSearch;
+    return true;
   });
 
   const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
@@ -287,13 +289,16 @@ export default function Resellers() {
                     <TableRow key={reseller.id} className="border-border hover:bg-muted/30">
                       <TableCell>
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                            <Users className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <span className="font-medium text-foreground">{reseller.company_name || 'No Name'}</span>
-                          </div>
-                        </div>
+                           <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                             <Users className="h-5 w-5 text-primary" />
+                           </div>
+                           <div>
+                             <span className="font-medium text-foreground block">{reseller.company_name || reseller.profile?.full_name || 'Unnamed'}</span>
+                             {reseller.profile?.full_name && reseller.company_name !== reseller.profile.full_name && (
+                               <span className="text-xs text-muted-foreground">{reseller.profile.full_name}</span>
+                             )}
+                           </div>
+                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
