@@ -16,25 +16,24 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, stream = false, model } = await req.json() as {
+    const body = await req.json();
+    const { messages, stream = false, model, diagnostic = false } = body as {
       messages: Message[];
       stream?: boolean;
       model?: string;
+      diagnostic?: boolean;
     };
 
-    const SUPPORTED_MODELS = [
-      'gpt-4o',
-      'gpt-4o-mini',
-      'gpt-4-turbo',
-      'gpt-3.5-turbo',
-      'google/gemini-3-flash-preview',
-      'google/gemini-2.5-flash',
-      'google/gemini-2.5-pro',
-      'openai/gpt-5',
-      'openai/gpt-5-mini',
-    ];
+    // ============================================================
+    // DIAGNOSTIC RUNTIME VALUES
+    // ============================================================
+    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') ?? '';
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY') ?? '';
 
-    // Map Lovable model names to OpenAI model names
+    const keyDetected = OPENAI_API_KEY.length > 0;
+    const keyLast4 = keyDetected ? OPENAI_API_KEY.slice(-4) : 'N/A';
+    const API_BASE_URL = 'https://api.openai.com/v1/chat/completions';
+
     const modelMap: Record<string, string> = {
       'openai/gpt-5': 'gpt-4o',
       'openai/gpt-5-mini': 'gpt-4o-mini',
@@ -42,11 +41,19 @@ serve(async (req) => {
       'google/gemini-2.5-flash': 'gpt-4o-mini',
       'google/gemini-2.5-pro': 'gpt-4o',
     };
+    const AI_MODEL = model ? (modelMap[model] ?? model) : 'gpt-4o-mini';
 
-    let AI_MODEL = 'gpt-4o-mini'; // default cheap + fast
-    if (model) {
-      AI_MODEL = modelMap[model] || (SUPPORTED_MODELS.includes(model) ? model : 'gpt-4o-mini');
-    }
+    // Print all diagnostic values
+    console.log('=== RUNTIME DIAGNOSTIC START ===');
+    console.log('[1] MODEL NAME:', AI_MODEL);
+    console.log('[2] API BASE URL:', API_BASE_URL);
+    console.log('[3] ORGANIZATION ID: Not applicable (Pay-as-you-go key, no Org ID)');
+    console.log('[4] OPENAI API KEY DETECTED:', keyDetected);
+    console.log('[5] API KEY LAST 4 CHARS:', keyLast4);
+    console.log('[6] ENVIRONMENT MODE:', Deno.env.get('DENO_ENV') ?? 'production (edge runtime)');
+    console.log('[7] REQUEST SIDE: server-side (Supabase Edge Function)');
+    console.log('[8] LOVABLE_API_KEY detected:', LOVABLE_API_KEY.length > 0);
+    // ============================================================
 
     if (!messages || !Array.isArray(messages)) {
       return new Response(
@@ -55,16 +62,13 @@ serve(async (req) => {
       );
     }
 
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
-    if (!OPENAI_API_KEY) {
-      console.error('OPENAI_API_KEY is not configured');
+    if (!keyDetected) {
+      console.error('[ERROR] OPENAI_API_KEY not found in environment');
       return new Response(
-        JSON.stringify({ error: 'AI service not configured. Please contact admin.' }),
+        JSON.stringify({ error: 'AI service not configured. OPENAI_API_KEY missing.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    console.log(`Processing AI chat: ${messages.length} messages, stream: ${stream}, model: ${AI_MODEL}`);
 
     const systemMessage: Message = {
       role: 'system',
@@ -79,67 +83,104 @@ serve(async (req) => {
 - **License Management**: Generate, validate, and manage software licenses
 
 ## Response Guidelines
-1. Be precise and accurate - verify information before responding
+1. Be precise and accurate
 2. Use proper code formatting with syntax highlighting
 3. Provide step-by-step instructions for complex tasks
-4. Include error handling and edge cases in code examples
-5. Always explain the "why" behind recommendations
-6. Use markdown tables for structured data
-7. Break complex answers into clear sections
-
-## Code Quality Standards
-- Follow best practices for the language being discussed
-- Include type annotations where applicable
-- Add comments for complex logic
-- Consider security implications
-- Optimize for performance
+4. Include error handling in code examples
+5. Use markdown tables for structured data
 
 Powered by SoftwareVala™ Technology | Enterprise Grade AI`
     };
 
     const allMessages = [systemMessage, ...messages];
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    // [8] Full request payload log (without API key)
+    const requestPayload = {
+      model: AI_MODEL,
+      messages: allMessages,
+      max_tokens: 8192,
+      temperature: 0.3,
+      stream: stream,
+    };
+    console.log('[8] REQUEST PAYLOAD (no key):', JSON.stringify({
+      model: requestPayload.model,
+      message_count: requestPayload.messages.length,
+      max_tokens: requestPayload.max_tokens,
+      temperature: requestPayload.temperature,
+      stream: requestPayload.stream,
+    }));
+
+    const response = await fetch(API_BASE_URL, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${OPENAI_API_KEY}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: AI_MODEL,
-        messages: allMessages,
-        max_tokens: 8192,
-        temperature: 0.3,
-        stream: stream,
-      }),
+      body: JSON.stringify(requestPayload),
     });
 
+    // [10] Log full error object if not OK
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`OpenAI error [${response.status}]:`, errorText);
+      let errorObj: Record<string, unknown> = {};
+      try { errorObj = JSON.parse(errorText); } catch { errorObj = { raw: errorText }; }
 
-      if (response.status === 429) {
+      console.error('[10] HTTP STATUS:', response.status);
+      console.error('[10] RESPONSE HEADERS:', JSON.stringify(Object.fromEntries(response.headers.entries())));
+      console.error('[10] ERROR BODY:', errorText);
+      console.error('[10] error.message:', (errorObj as { error?: { message?: string } })?.error?.message ?? 'N/A');
+      console.error('[10] error.code:', (errorObj as { error?: { code?: string } })?.error?.code ?? 'N/A');
+      console.error('[10] error.type:', (errorObj as { error?: { type?: string } })?.error?.type ?? 'N/A');
+
+      // [11] Explicit error detection
+      if (response.status === 401) {
+        console.error('[11] ERROR TYPE: 401 - INVALID API KEY');
         return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again in a moment.' }),
+          JSON.stringify({ error: '401: Invalid API Key. Check OPENAI_API_KEY secret.', diagnostic: { status: 401, type: 'invalid_key', last4: keyLast4 } }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (response.status === 403) {
+        console.error('[11] ERROR TYPE: 403 - PERMISSION DENIED');
+        return new Response(
+          JSON.stringify({ error: '403: Permission denied. Key may not have access to this model.' }),
+          { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+      if (response.status === 429) {
+        console.error('[11] ERROR TYPE: 429 - RATE LIMIT / QUOTA EXCEEDED');
+        return new Response(
+          JSON.stringify({ error: '429: Rate limit or quota exceeded. Check billing at platform.openai.com.' }),
           { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-      if (response.status === 402 || response.status === 401) {
+      if (response.status >= 500) {
+        console.error('[11] ERROR TYPE: 500+ - OPENAI SERVER ERROR');
+        // [17] Retry once with minimal payload
+        console.log('[17] RETRYING with minimal payload...');
+        const retryResp = await fetch(API_BASE_URL, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: 'Hello' }], max_tokens: 10 }),
+        });
+        const retryText = await retryResp.text();
+        console.log('[17] RETRY STATUS:', retryResp.status);
+        console.log('[17] RETRY RESPONSE:', retryText);
         return new Response(
-          JSON.stringify({ error: 'OpenAI API key invalid or credits depleted. Please check your OpenAI account.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ error: 'OpenAI server error. Retry result logged in console.', retry_status: retryResp.status }),
+          { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
 
       return new Response(
-        JSON.stringify({ error: 'AI service temporarily unavailable. Please try again.' }),
-        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: `HTTP ${response.status}: ${errorText}` }),
+        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
     // Streaming response
     if (stream) {
-      console.log('Streaming response started');
+      console.log('[INFO] Streaming response started');
       return new Response(response.body, {
         headers: { ...corsHeaders, 'Content-Type': 'text/event-stream' },
       });
@@ -147,30 +188,66 @@ Powered by SoftwareVala™ Technology | Enterprise Grade AI`
 
     // Non-streaming response
     const data = await response.json();
-    console.log('AI response received:', data.usage || 'no usage data');
+
+    // [9] Full response object log
+    console.log('[9] FULL OPENAI RESPONSE:', JSON.stringify({
+      id: data.id,
+      object: data.object,
+      model: data.model,
+      created: data.created,
+      finish_reason: data.choices?.[0]?.finish_reason,
+      usage: data.usage,
+      choices_count: data.choices?.length,
+    }));
+
+    // [15] Token usage
+    if (data.usage) {
+      console.log('[15] TOKEN USAGE — input:', data.usage.prompt_tokens, '| output:', data.usage.completion_tokens, '| total:', data.usage.total_tokens);
+    }
+
+    // [14] Model confirmation
+    console.log('[14] MODEL USED IN RESPONSE:', data.model);
 
     const assistantMessage = data.choices?.[0]?.message?.content;
 
     if (!assistantMessage) {
-      console.error('No content in AI response:', JSON.stringify(data));
+      console.error('[ERROR] Empty response from OpenAI:', JSON.stringify(data));
       return new Response(
         JSON.stringify({ error: 'AI returned empty response. Please try again.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    console.log('=== RUNTIME DIAGNOSTIC END — STATUS: SUCCESS ===');
+
     return new Response(
       JSON.stringify({
         response: assistantMessage,
         model: AI_MODEL,
-        usage: data.usage
+        usage: data.usage,
+        ...(diagnostic ? {
+          _diagnostic: {
+            model_requested: AI_MODEL,
+            model_used: data.model,
+            api_url: API_BASE_URL,
+            key_detected: keyDetected,
+            key_last4: keyLast4,
+            environment: 'production (edge runtime)',
+            side: 'server-side',
+            input_tokens: data.usage?.prompt_tokens,
+            output_tokens: data.usage?.completion_tokens,
+            total_tokens: data.usage?.total_tokens,
+          }
+        } : {})
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 
   } catch (error: unknown) {
-    console.error('AI chat error:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+    const errorStack = error instanceof Error ? error.stack : '';
+    console.error('[10] CAUGHT EXCEPTION — message:', errorMessage);
+    console.error('[10] CAUGHT EXCEPTION — stack:', errorStack);
     return new Response(
       JSON.stringify({ error: errorMessage }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
