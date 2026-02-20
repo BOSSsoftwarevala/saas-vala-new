@@ -718,7 +718,7 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
 
   return (
     <div className="h-screen flex bg-background overflow-hidden">
-      {/* Left Sidebar - Sessions + Chat */}
+      {/* Left Sidebar - Sessions list only */}
       <ChatSidebar
         sessions={sessions}
         activeSessionId={activeSessionId}
@@ -733,39 +733,12 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
         onOpenHistory={() => setShowHistoryPanel(true)}
         onClearChat={clearCurrentChat}
         onExport={handleExport}
-      >
-        {/* Chat Panel (messages + input) */}
-        <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-y-auto">
-            {activeSession && activeSession.messages.length > 0 ? (
-              <div className="pb-4">
-                {activeSession.messages.map((message, index) => (
-                  <div key={message.id} id={`message-${message.id}`}>
-                    <ChatMessage
-                      message={message}
-                      index={index}
-                      isPinned={pinnedMessages.has(message.id)}
-                      onPin={handlePinMessage}
-                      onUnpin={handleUnpinMessage}
-                    />
-                  </div>
-                ))}
-                {isLoading && activeSession.messages[activeSession.messages.length - 1]?.role === 'user' && (
-                  <ThinkingIndicator isActive={true} context={thinkingContext} />
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            ) : null}
-          </div>
+      />
 
-          <ChatInput onSend={handleSend} isLoading={isLoading} onVoiceMessage={handleVoiceMessage} />
-        </div>
-      </ChatSidebar>
-
-      {/* Main Screen Area - Output/Display only */}
+      {/* Main Chat Area - Full messages display like Lovable */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         <ChatHeader
-          title={activeSession?.title || 'SaaS VALA AI'}
+          title={activeSession?.title || 'VALA AI'}
           onExport={handleExport}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           sidebarOpen={sidebarOpen}
@@ -777,7 +750,7 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
           onModelChange={setSelectedModel}
         />
 
-        {/* AI Status Bar - Shows real-time AI status */}
+        {/* AI Status Bar */}
         <AiStatusBar
           isLoading={isLoading}
           isConnected={true}
@@ -787,10 +760,63 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
           model={selectedModel.split('/').pop() || 'gemini-3-flash'}
         />
 
-        {/* Clean empty area - no content */}
-        <div className="flex-1 overflow-y-auto" />
-      </div>
+        {/* Messages Area */}
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          {activeSession && activeSession.messages.length > 0 ? (
+            <div className="max-w-4xl mx-auto px-4 pb-4 pt-2">
+              {activeSession.messages.map((message, index) => (
+                <div key={message.id} id={`message-${message.id}`}>
+                  <ChatMessage
+                    message={message}
+                    index={index}
+                    isPinned={pinnedMessages.has(message.id)}
+                    onPin={handlePinMessage}
+                    onUnpin={handleUnpinMessage}
+                  />
+                </div>
+              ))}
+              {isLoading && activeSession.messages[activeSession.messages.length - 1]?.role === 'user' && (
+                <ThinkingIndicator isActive={true} context={thinkingContext} />
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          ) : (
+            /* Welcome screen when no messages */
+            <div className="flex-1 flex flex-col items-center justify-center h-full text-center px-8">
+              <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-6">
+                <span className="text-3xl">🤖</span>
+              </div>
+              <h2 className="text-2xl font-bold text-foreground mb-2">VALA AI</h2>
+              <p className="text-muted-foreground mb-8 max-w-md">
+                Full-Stack Developer + Business Automation Expert. Kuch bhi poocho — code, deploy, analyze, audit.
+              </p>
+              <div className="grid grid-cols-2 gap-3 max-w-lg w-full">
+                {[
+                  '🔍 GitHub repos audit karo',
+                  '🚀 Server status check karo',
+                  '💡 New product idea suggest karo',
+                  '🛡️ Security scan karo',
+                ].map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    onClick={() => handleSuggestionClick(suggestion)}
+                    className="text-left p-3 rounded-xl border border-border/50 bg-card/50 hover:bg-card hover:border-primary/30 transition-all text-sm text-muted-foreground hover:text-foreground"
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
+        {/* Chat Input at bottom of main area */}
+        <div className="border-t border-border/50 bg-background/80 backdrop-blur-sm">
+          <div className="max-w-4xl mx-auto">
+            <ChatInput onSend={handleSend} isLoading={isLoading} onVoiceMessage={handleVoiceMessage} />
+          </div>
+        </div>
+      </div>
 
       {/* History Panel */}
       <ChatHistoryPanel
@@ -799,8 +825,6 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
         messages={activeSession?.messages || []}
         onRestore={restoreToMessage}
       />
-
-      {/* DEPRECATED: Legacy hosting modal removed - Using VALA Server Agent */}
 
       {/* Search Dialog */}
       <ChatSearch
@@ -816,9 +840,8 @@ ${result.tests?.details?.map((t: string) => `  ${t}`).join('\n') || ''}
         onClose={() => setShowShortcuts(false)}
       />
 
-      {/* Working Developer Indicator (forced by AI loading state) */}
+      {/* Working Developer Indicator */}
       <WorkingDeveloperIndicator forceWorking={isLoading} />
-
     </div>
   );
 }
