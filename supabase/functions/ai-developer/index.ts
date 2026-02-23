@@ -2377,7 +2377,13 @@ async function executeSetupDomain(args: any, supabase: any): Promise<ToolResult>
       console.log(`[TOOL] Auto-selected server: ${server.name}`);
     }
   } else {
-    const { data } = await supabase.from('servers').select('id, name, status, agent_url, agent_token, ip_address').eq('id', server_id).single();
+    // Try by UUID first, then by IP address
+    let { data } = await supabase.from('servers').select('id, name, status, agent_url, agent_token, ip_address').eq('id', server_id).single();
+    if (!data) {
+      // Fallback: try matching by IP address
+      const { data: ipMatch } = await supabase.from('servers').select('id, name, status, agent_url, agent_token, ip_address').eq('ip_address', server_id).single();
+      data = ipMatch;
+    }
     server = data;
   }
 
