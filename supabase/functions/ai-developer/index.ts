@@ -3469,45 +3469,58 @@ POWERED BY SOFTWAREVALA™ | VALA AI AUTONOMOUS EVOLUTION ENGINE v8.0 — LOCKED
       throw new Error('Both OpenAI and Lovable AI failed. Check API keys and account billing.');
     };
 
-    // ─── First API call (may return tool calls) ───────────────────────────────
-    const firstResult = await attemptCall(allMessages, true, false);
-    let data = await firstResult.response.json();
-    let assistantMessage = data.choices?.[0]?.message;
-    let toolCalls = assistantMessage?.tool_calls;
-    let finalContent = assistantMessage?.content || '';
+    // ─── Tool-execution loop (multi-step autonomous chain) ───────────────────
+    const MAX_TOOL_ROUNDS = 6;
     const toolResults: { name: string; result: any }[] = [];
+    const conversationWithTools: Message[] = [...allMessages];
 
-    // Process tool calls if any
-    if (toolCalls && toolCalls.length > 0) {
-      console.log(`Processing ${toolCalls.length} tool calls`);
-      
-      const conversationWithTools: Message[] = [...allMessages, assistantMessage];
-      
+    let currentResult = await attemptCall(allMessages, true, false);
+    let data = await currentResult.response.json();
+    let assistantMessage = data.choices?.[0]?.message;
+    let finalContent = assistantMessage?.content || '';
+    let finalProvider = currentResult.provider;
+    let finalModelUsed = currentResult.modelUsed;
+    let finalUsage = data.usage;
+
+    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+      if (!assistantMessage) break;
+
+      conversationWithTools.push(assistantMessage);
+      const toolCalls = assistantMessage.tool_calls;
+
+      if (!toolCalls || toolCalls.length === 0) {
+        finalContent = assistantMessage.content || finalContent;
+        break;
+      }
+
+      console.log(`Processing ${toolCalls.length} tool calls (round ${round + 1}/${MAX_TOOL_ROUNDS})`);
+
       for (const toolCall of toolCalls) {
         const result = await executeTool(toolCall, supabase);
-        
+
         let parsedResult: any;
         try {
           parsedResult = JSON.parse(result.content);
         } catch {
           parsedResult = { raw: result.content, success: result.success };
         }
-        
+
         toolResults.push({ name: toolCall.function.name, result: parsedResult });
         conversationWithTools.push({ role: 'tool', tool_call_id: toolCall.id, content: result.content });
       }
 
-      // Second call with tool results
-      const finalResult = await attemptCall(conversationWithTools, false, stream);
-
-      if (stream) {
-        return new Response(finalResult.response.body, {
-          headers: { ...corsHeaders, 'Content-Type': 'text/event-stream', 'X-AI-Provider': finalResult.provider },
-        });
+      if (round === MAX_TOOL_ROUNDS - 1) {
+        finalContent = 'Tool execution stopped after safety limit. Please continue from this state.';
+        break;
       }
 
-      const finalData = await finalResult.response.json();
-      finalContent = finalData.choices?.[0]?.message?.content || '';
+      const nextResult = await attemptCall(conversationWithTools, true, false);
+      finalProvider = nextResult.provider;
+      finalModelUsed = nextResult.modelUsed;
+      data = await nextResult.response.json();
+      finalUsage = data.usage;
+      assistantMessage = data.choices?.[0]?.message;
+      finalContent = assistantMessage?.content || finalContent;
     }
 
     // ─── POST-PROCESS: Remove all "NOT TESTED" patterns ──────────────────────
@@ -3624,11 +3637,11 @@ POWERED BY SOFTWAREVALA™ | VALA AI AUTONOMOUS EVOLUTION ENGINE v8.0 — LOCKED
     return new Response(
       JSON.stringify({ 
         response: finalContent,
-        model: firstResult.modelUsed,
-        provider: firstResult.provider,
+        model: finalModelUsed,
+        provider: finalProvider,
         tools_used: toolResults.map(t => t.name),
         tool_results: toolResults,
-        usage: data.usage,
+        usage: finalUsage,
         memory_used: usedMemoryIds.length,
         memory_ids: usedMemoryIds
       }),
