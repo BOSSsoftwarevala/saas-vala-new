@@ -511,8 +511,130 @@ const categoryProducts: Record<string, string[]> = {
   ],
 };
 
+// Maps category IDs to the 40 slugs from the master spec
+export const CATEGORY_SLUG_MAP: Record<string, string> = {
+  upcoming: 'upcoming-products',
+  on_demand: 'on-demand-solutions',
+  top_selling: 'this-week-top-products',
+  popular: 'evergreen-software',
+  education: 'education-edtech',
+  healthcare: 'healthcare-medical-services',
+  real_estate: 'real-estate-property-services',
+  ecommerce: 'ecommerce-online-marketplaces',
+  retail: 'retail-local-commerce',
+  restaurant: 'food-beverage-services',
+  hotel: 'hospitality-tourism',
+  transport: 'transportation-mobility',
+  logistics: 'logistics-supply-chain',
+  finance: 'finance-banking-insurance',
+  investment: 'investment-trading-wealth-management',
+  manufacturing: 'manufacturing-industrial-production',
+  construction: 'construction-infrastructure',
+  agriculture: 'agriculture-dairy-fisheries',
+  energy: 'energy-utilities',
+  telecom: 'telecom-internet-services',
+  cybersecurity: 'cybersecurity-data-protection',
+  data_analytics: 'information-technology-software',
+  iot_factory: 'cloud-computing-devops',
+  mlm: 'artificial-intelligence-automation',
+  billing: 'marketing-advertising-branding',
+  fashion: 'beauty-fashion-lifestyle',
+  salon_spa: 'home-facility-services',
+  gym_sports: 'sports-fitness-wellness',
+  legal: 'legal-professional-services',
+  government: 'government-public-administration',
+  ngo: 'ngo-social-development',
+  hrms: 'media-entertainment-gaming',
+  payroll: 'wholesale-distribution',
+  warehouse: 'security-surveillance',
+  pharmacy: 'pharmaceuticals-biotechnology',
+  clinic: 'research-innovation',
+  dairy: 'environment-sustainability',
+  mining: 'mining-natural-resources',
+  crypto_forex: 'investment-infrastructure-capital-projects',
+  insurance: 'insurance-insurtech',
+};
+
+const ROW_NUMBERS: Record<string, number> = {
+  upcoming: 1, on_demand: 2, top_selling: 3, popular: 4, education: 5,
+  healthcare: 6, real_estate: 7, ecommerce: 8, retail: 9, restaurant: 10,
+  hotel: 11, transport: 12, logistics: 13, finance: 14, investment: 15,
+  manufacturing: 16, construction: 17, agriculture: 18, energy: 19, telecom: 20,
+  cybersecurity: 21, data_analytics: 22, iot_factory: 23, mlm: 24, billing: 25,
+  fashion: 26, salon_spa: 27, gym_sports: 28, legal: 29, government: 30,
+  ngo: 31, hrms: 32, payroll: 33, warehouse: 34, pharmacy: 35,
+  clinic: 36, dairy: 37, mining: 38, crypto_forex: 39, insurance: 40,
+};
+
 function generateDescription(name: string, category: string): string {
   return `Enterprise-grade ${name.toLowerCase()} solution with full analytics, reports, role-based access control, and seamless integrations for ${category.toLowerCase()} businesses.`;
+}
+
+export interface ProductGitHubMeta {
+  row: number;
+  product: number;
+  category: string;
+  slug: string;
+  github: string;
+  marketplace: string;
+  api: string;
+  demo: string;
+  buy: string;
+  price: number;
+  old_price: number;
+  discount: string;
+  rating: number;
+  badges: string[];
+  features: string[];
+  techStack: { frontend: string; backend: string; database: string; ai: string; auth: string; payments: string };
+  repoStructure: string[];
+  deployment: string;
+  monetization: string;
+}
+
+export function getProductGitHubMeta(categoryId: string, productIndex: number): ProductGitHubMeta {
+  const categorySlug = CATEGORY_SLUG_MAP[categoryId] || categoryId;
+  const rowNumber = ROW_NUMBERS[categoryId] || 1;
+  const productNumber = productIndex + 1;
+  const cleanSlug = `ai-${categorySlug}-software-${productNumber}`;
+
+  return {
+    row: rowNumber,
+    product: productNumber,
+    category: categorySlug,
+    slug: cleanSlug,
+    github: `https://github.com/saasvala/${cleanSlug}`,
+    marketplace: `/saasvala/${categorySlug}/${rowNumber}/${productNumber}`,
+    api: `/api/${categorySlug}/${productNumber}`,
+    demo: `/demo/${categorySlug}/${productNumber}`,
+    buy: `/buy/${categorySlug}/${productNumber}`,
+    price: 5,
+    old_price: 10,
+    discount: '90%',
+    rating: 4.9,
+    badges: ['LIVE DEMO'],
+    features: ['APK Download', 'License Key', 'Auto Updates', '24/7 Support'],
+    techStack: {
+      frontend: 'React',
+      backend: 'Node.js',
+      database: 'PostgreSQL',
+      ai: 'Integrated',
+      auth: 'JWT',
+      payments: 'Stripe',
+    },
+    repoStructure: [
+      `${cleanSlug}/`,
+      '├── frontend/',
+      '├── backend/',
+      '├── database/',
+      '├── docs/',
+      '├── .env.example',
+      '├── README.md',
+      '└── package.json',
+    ],
+    deployment: 'Production Ready',
+    monetization: 'License Key + APK + SaaS Subscription',
+  };
 }
 
 export function generateCategoryProducts(
@@ -525,6 +647,8 @@ export function generateCategoryProducts(
 
   for (let i = 0; i < count; i++) {
     const name = names[i % names.length] || `${categoryLabel.toUpperCase()} SOFTWARE ${i + 1}`;
+    const meta = getProductGitHubMeta(categoryId, i);
+
     products.push({
       id: `gen-${categoryId}-${i}`,
       title: name,
@@ -536,6 +660,8 @@ export function generateCategoryProducts(
       techStack: defaultTechStack,
       category: categoryLabel,
       businessType: categoryId,
+      gitRepoUrl: meta.github,
+      demoUrl: meta.demo,
       featured: i < 3,
       trending: i < 5,
       isAvailable: true,
@@ -557,7 +683,6 @@ export function fillToTarget(
 ): MarketplaceProduct[] {
   if (dbProducts.length >= target) return dbProducts.slice(0, target);
   const generated = generateCategoryProducts(categoryId, categoryLabel, target);
-  // Use DB products first, then fill with generated (skip those whose names overlap)
   const dbTitles = new Set(dbProducts.map(p => p.title));
   const fillers = generated.filter(p => !dbTitles.has(p.title));
   return [...dbProducts, ...fillers].slice(0, target);
