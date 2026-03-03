@@ -95,28 +95,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const fetchUserRole = async (userId: string): Promise<void> => {
+  const fetchUserRole = async (userId: string, retries = 2): Promise<void> => {
     setRoleLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId)
-        .single();
+    for (let attempt = 0; attempt <= retries; attempt++) {
+      try {
+        const { data, error } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', userId)
+          .single();
 
-      if (error) {
-        console.error('Error fetching role:', error);
-        setRole(null);
+        if (error) {
+          if (attempt < retries) {
+            await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+            continue;
+          }
+          console.error('Error fetching role:', error);
+          setRole(null);
+          return;
+        }
+
+        setRole(data?.role as AppRole);
         return;
+      } catch (err) {
+        if (attempt < retries) {
+          await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        console.error('Error in fetchUserRole:', err);
+        setRole(null);
       }
-
-      setRole(data?.role as AppRole);
-    } catch (err) {
-      console.error('Error in fetchUserRole:', err);
-      setRole(null);
-    } finally {
-      setRoleLoading(false);
     }
+    setRoleLoading(false);
   };
 
   const ensureUserRole = (userId: string): Promise<void> => {
