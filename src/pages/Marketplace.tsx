@@ -37,6 +37,7 @@ import { DesignCreativeSection } from '@/components/marketplace/DesignCreativeSe
 import { TravelBookingSection } from '@/components/marketplace/TravelBookingSection';
 import { FoodDeliveryPlatformSection } from '@/components/marketplace/FoodDeliveryPlatformSection';
 import { HealthcareTelemedicineSection } from '@/components/marketplace/HealthcareTelemedicineSection';
+import { EducationElearningSection } from '@/components/marketplace/EducationElearningSection';
 import { MarketplaceSectionDivider } from '@/components/marketplace/MarketplaceSectionDivider';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
