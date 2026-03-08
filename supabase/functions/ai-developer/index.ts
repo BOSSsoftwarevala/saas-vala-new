@@ -539,13 +539,12 @@ const developerTools = [
     type: "function",
     function: {
       name: "factory_deploy",
-      description: "Deploy an app via VPS Factory (Hostinger). Clones repo, installs deps, builds, and starts with PM2. Returns live URL and port.",
+      description: "Deploy an app to Vercel. Connects GitHub repo, triggers build and returns live .vercel.app URL.",
       parameters: {
         type: "object",
         properties: {
           repo_url: { type: "string", description: "GitHub repo URL to deploy" },
-          app_name: { type: "string", description: "App name for PM2 process" },
-          port: { type: "number", description: "Port number to run on (auto-assign if empty)" }
+          app_name: { type: "string", description: "App/project name on Vercel" }
         },
         required: ["repo_url", "app_name"]
       }
@@ -3505,34 +3504,63 @@ async function executeSetupDemo(args: any, supabase: any): Promise<ToolResult> {
 }
 
 async function executeFactoryDeploy(args: any, _supabase: any): Promise<ToolResult> {
-  const { repo_url, app_name, port } = args;
-  console.log(`[TOOL] factory_deploy: ${app_name} from ${repo_url}`);
+  const { repo_url, app_name } = args;
+  console.log(`[TOOL] factory_deploy (Vercel): ${app_name} from ${repo_url}`);
 
-  const FACTORY_URL = Deno.env.get('FACTORY_URL');
-  const FACTORY_TOKEN = Deno.env.get('FACTORY_TOKEN');
+  const VERCEL_TOKEN = Deno.env.get('VERCEL_TOKEN');
 
-  if (!FACTORY_URL || !FACTORY_TOKEN) {
-    return { tool_call_id: '', content: JSON.stringify({ error: 'Factory not configured. Set FACTORY_URL and FACTORY_TOKEN secrets.' }), success: false };
+  if (!VERCEL_TOKEN) {
+    return { tool_call_id: '', content: JSON.stringify({ error: 'Vercel not configured. Set VERCEL_TOKEN secret.' }), success: false };
   }
 
   try {
-    const res = await fetch(`${FACTORY_URL.replace(/\/$/, '')}/deploy`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${FACTORY_TOKEN}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ repo_url, app_name, port })
+    // Parse GitHub URL
+    const match = repo_url.match(/github\.com\/([^\/]+)\/([^\/\.]+)/);
+    if (!match) {
+      return { tool_call_id: '', content: JSON.stringify({ error: 'Invalid GitHub URL' }), success: false };
+    }
+    const [, owner, repo] = match;
+    const projectName = (app_name || repo).toLowerCase().replace(/[^a-z0-9-]/g, '-');
+
+    const headers = { 'Authorization': `Bearer ${VERCEL_TOKEN}`, 'Content-Type': 'application/json' };
+
+    // Create Vercel project linked to GitHub repo
+    const createRes = await fetch('https://api.vercel.com/v10/projects', {
+      method: 'POST', headers,
+      body: JSON.stringify({
+        name: projectName,
+        framework: null,
+        gitRepository: { type: 'github', repo: `${owner}/${repo}` },
+      }),
     });
 
-    const data = await res.json();
+    const createData = await createRes.json();
+    const vercelProjectId = createData.id || createData.error?.projectId;
+    const deployUrl = `https://${projectName}.vercel.app`;
+
+    // Trigger deployment
+    const deployRes = await fetch('https://api.vercel.com/v13/deployments', {
+      method: 'POST', headers,
+      body: JSON.stringify({
+        name: projectName,
+        gitSource: { type: 'github', ref: 'main', repoId: `${owner}/${repo}` },
+      }),
+    });
+
+    const deployData = await deployRes.json();
+    const liveUrl = deployData.url ? `https://${deployData.url}` : deployUrl;
+
     return { tool_call_id: '', content: JSON.stringify({
-      success: res.ok, method: 'vps_factory',
-      app_name, repo_url, port: port || 'auto',
-      factory_response: data,
-      message: res.ok
-        ? `✅ Factory deploy: ${app_name} | Repo: ${repo_url} | ${JSON.stringify(data).slice(0, 200)}`
-        : `❌ Factory deploy failed: ${JSON.stringify(data).slice(0, 200)}`
-    }, null, 2), success: res.ok };
+      success: true, method: 'vercel',
+      app_name: projectName, repo_url,
+      deploy_url: liveUrl,
+      project_id: vercelProjectId,
+      deployment_id: deployData.id,
+      status: deployData.readyState || 'queued',
+      message: `✅ Vercel deploy: ${projectName} → ${liveUrl}`
+    }, null, 2), success: true };
   } catch (e: any) {
-    return { tool_call_id: '', content: JSON.stringify({ error: `Factory unreachable: ${e.message}` }), success: false };
+    return { tool_call_id: '', content: JSON.stringify({ error: `Vercel deploy failed: ${e.message}` }), success: false };
   }
 }
 
