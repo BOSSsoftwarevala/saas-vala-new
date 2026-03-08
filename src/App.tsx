@@ -45,6 +45,7 @@ import TransportPwa from "./pages/TransportPwa";
 import LogisticsPwa from "./pages/LogisticsPwa";
 import FinancePwa from "./pages/FinancePwa";
 import MediaPwa from "./pages/MediaPwa";
+import SocialPwa from "./pages/SocialPwa";
 import InvestPwa from "./pages/InvestPwa";
 import ManufacturingPwa from "./pages/ManufacturingPwa";
 import ConstructionPwa from "./pages/ConstructionPwa";
