@@ -147,17 +147,25 @@ export function MarketplaceProductCard({
   const hasDemoAvailable = getDemoUrl() !== null;
 
   const handleDemo = () => {
-    if (!hasDemoAvailable) {
+    const demoUrl = getDemoUrl();
+    if (!demoUrl) {
       toast.info(`Live demo for ${product.title} will be available soon.`);
       return;
     }
-    setDemoOpen(true);
-    toast.success(`Loading live demo for ${product.title}`);
+    // GitHub or non-iframeable URLs → open in new tab
+    if (!isIframeable(demoUrl)) {
+      window.open(demoUrl, '_blank', 'noopener,noreferrer');
+      toast.success(`Opening ${product.title} demo`);
+    } else {
+      // Actual deployed app → open in iframe dialog
+      setDemoOpen(true);
+      toast.success(`Loading live demo for ${product.title}`);
+    }
     if (isUuid(product.id)) {
       supabase.from('activity_logs').insert({
         entity_type: 'demo', entity_id: product.id, action: 'demo_opened',
         performed_by: user?.id || null,
-        details: { product_id: product.id, product_name: product.title, demo_url: getDemoUrl() },
+        details: { product_id: product.id, product_name: product.title, demo_url: demoUrl },
       });
     }
   };
