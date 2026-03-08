@@ -14,7 +14,7 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "system-ui", "sans-serif"],
+        sans: ["Plus Jakarta Sans", "system-ui", "sans-serif"],
         display: ["Space Grotesk", "sans-serif"],
         mono: ["JetBrains Mono", "monospace"],
       },
@@ -74,8 +74,8 @@ export default {
         purple: "hsl(var(--purple))",
         green: "hsl(var(--green))",
         gold: "hsl(var(--gold))",
-        "neon-blue": "hsl(var(--neon-blue))",
-        "neon-pink": "hsl(var(--neon-pink))",
+        "neon-blue": "hsl(var(--royal-blue-light))",
+        "neon-pink": "hsl(var(--secondary))",
       },
       borderRadius: {
         lg: "var(--radius)",
@@ -129,12 +129,12 @@ export default {
       backgroundImage: {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "gradient-conic": "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
-        "navy-gradient": "linear-gradient(135deg, hsl(222, 47%, 5%) 0%, hsl(222, 41%, 8%) 100%)",
-        "card-gradient": "linear-gradient(145deg, hsl(222, 41%, 10%) 0%, hsl(222, 41%, 6%) 100%)",
-        "orange-gradient": "linear-gradient(135deg, hsl(25, 95%, 53%) 0%, hsl(38, 92%, 50%) 100%)",
-        "cyan-gradient": "linear-gradient(135deg, hsl(187, 85%, 53%) 0%, hsl(187, 85%, 40%) 100%)",
-        "purple-gradient": "linear-gradient(135deg, hsl(270, 70%, 55%) 0%, hsl(270, 70%, 40%) 100%)",
-        "mesh-gradient": "radial-gradient(at 40% 20%, hsl(25, 95%, 53%, 0.08) 0px, transparent 50%), radial-gradient(at 80% 0%, hsl(187, 85%, 53%, 0.06) 0px, transparent 50%), radial-gradient(at 0% 50%, hsl(270, 70%, 55%, 0.06) 0px, transparent 50%)",
+        "navy-gradient": "linear-gradient(135deg, hsl(215, 65%, 18%) 0%, hsl(215, 65%, 12%) 100%)",
+        "card-gradient": "linear-gradient(145deg, hsl(0, 0%, 100%) 0%, hsl(220, 20%, 98%) 100%)",
+        "orange-gradient": "linear-gradient(135deg, hsl(215, 75%, 42%) 0%, hsl(215, 80%, 55%) 100%)",
+        "cyan-gradient": "linear-gradient(135deg, hsl(195, 85%, 45%) 0%, hsl(195, 85%, 35%) 100%)",
+        "purple-gradient": "linear-gradient(135deg, hsl(255, 60%, 55%) 0%, hsl(255, 60%, 42%) 100%)",
+        "mesh-gradient": "radial-gradient(at 40% 20%, hsl(215, 75%, 42%, 0.04) 0px, transparent 50%), radial-gradient(at 80% 0%, hsl(195, 85%, 45%, 0.03) 0px, transparent 50%), radial-gradient(at 0% 50%, hsl(255, 60%, 55%, 0.03) 0px, transparent 50%)",
       },
     },
   },
