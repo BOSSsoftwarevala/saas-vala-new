@@ -40,6 +40,7 @@ import { HealthcareTelemedicineSection } from '@/components/marketplace/Healthca
 import { EducationElearningSection } from '@/components/marketplace/EducationElearningSection';
 import { FinanceFintechSection } from '@/components/marketplace/FinanceFintechSection';
 import { RecruitmentJobSection } from '@/components/marketplace/RecruitmentJobSection';
+import { RealEstatePropertySection } from '@/components/marketplace/RealEstatePropertySection';
 import { MarketplaceSectionDivider } from '@/components/marketplace/MarketplaceSectionDivider';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
