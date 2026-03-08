@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  ShoppingCart, Bell, Heart, Star, Info,
+  ShoppingCart, Bell, Heart, Star, Info, Download,
   Package, Play, Box, Copy, ExternalLink
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -117,24 +117,32 @@ export function MarketplaceProductCard({
   // Helper: check if an ID looks like a valid UUID
   const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-  // Generate demo URL - prioritize live subdomain
-  const getDemoUrl = (): string => {
+  // Generate demo URL - prioritize explicit demo/git URLs
+  const getDemoUrl = (): string | null => {
+    // 1. Explicit demo URL from database
     const demoUrl = (product as any).demoUrl || (product as any).demo_url;
     if (demoUrl && demoUrl.startsWith('http')) return demoUrl;
-    const slug = (product as any).slug || product.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const cleanSlug = slug.replace(/^[a-z_]+-/, '');
-    return `https://${cleanSlug}.saasvala.com`;
+    // 2. GitHub repo (real source code link — works as demo for open-source)
+    const gitRepo = (product as any).github_repo || (product as any).gitRepoUrl || (product as any).git_repo_url;
+    if (gitRepo && gitRepo.startsWith('http')) return gitRepo;
+    // 3. APK URL means product exists but no web demo
+    const apkUrl = (product as any).apkUrl || (product as any).apk_url;
+    if (apkUrl) return null; // has APK but no web demo
+    // 4. No demo available for generated/placeholder products
+    return null;
   };
 
-  const _getSourceUrl = (): string => {
-    const gitRepo = (product as any).github_repo || (product as any).gitRepoUrl || (product as any).git_repo_url;
-    if (gitRepo) return gitRepo;
-    const slug = (product as any).slug || product.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const cleanSlug = slug.replace(/^[a-z_]+-/, '');
-    return `https://github.com/saasvala/${cleanSlug}`;
+  const getApkUrl = (): string | null => {
+    return (product as any).apkUrl || (product as any).apk_url || null;
   };
+
+  const hasDemoAvailable = getDemoUrl() !== null;
 
   const handleDemo = () => {
+    if (!hasDemoAvailable) {
+      toast.info(`Live demo for ${product.title} will be available soon.`);
+      return;
+    }
     setDemoOpen(true);
     toast.success(`Loading live demo for ${product.title}`);
     if (isUuid(product.id)) {
@@ -144,6 +152,20 @@ export function MarketplaceProductCard({
         details: { product_id: product.id, product_name: product.title, demo_url: getDemoUrl() },
       });
     }
+  };
+
+  const handleDownloadApk = () => {
+    const apkUrl = getApkUrl();
+    if (!apkUrl) {
+      toast.info('APK download will be available soon.');
+      return;
+    }
+    if (!user) {
+      toast.error('Please sign in to download APK');
+      return;
+    }
+    window.open(apkUrl, '_blank');
+    toast.success(`Downloading APK for ${product.title}`);
   };
 
   const handleCopy = (text: string, label: string) => {
@@ -352,11 +374,14 @@ export function MarketplaceProductCard({
                   <Button
                     size="sm"
                     variant="outline"
-                    className="flex-1 h-10 text-[12px] font-bold gap-1.5 rounded-xl border-border hover:border-primary/50 hover:text-primary"
+                    className={cn(
+                      "flex-1 h-10 text-[12px] font-bold gap-1.5 rounded-xl border-border",
+                      hasDemoAvailable ? "hover:border-primary/50 hover:text-primary" : "opacity-70"
+                    )}
                     onClick={handleDemo}
                   >
                     <Play style={{ width: 14, height: 14 }} />
-                    DEMO
+                    {hasDemoAvailable ? 'DEMO' : 'DEMO SOON'}
                   </Button>
                   <Button
                     size="sm"
@@ -380,16 +405,27 @@ export function MarketplaceProductCard({
                   </Button>
                 </div>
               )}
-              {/* FEATURES & ADVANTAGES BUTTON */}
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border hover:border-accent hover:bg-accent/10"
-                onClick={() => setFeaturesOpen(true)}
-              >
-                <Info style={{ width: 13, height: 13 }} />
-                FEATURES & ADVANTAGES
-              </Button>
+              {/* DOWNLOAD APK + FEATURES BUTTONS */}
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border hover:border-green-500/50 hover:text-green-500"
+                  onClick={handleDownloadApk}
+                >
+                  <Download style={{ width: 13, height: 13 }} />
+                  {getApkUrl() ? 'DOWNLOAD APK' : 'APK SOON'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border hover:border-accent hover:bg-accent/10"
+                  onClick={() => setFeaturesOpen(true)}
+                >
+                  <Info style={{ width: 13, height: 13 }} />
+                  FEATURES
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -410,44 +446,60 @@ export function MarketplaceProductCard({
 
           {/* iFrame Demo */}
           <div className="flex-1 relative bg-muted/30 overflow-hidden">
-            <iframe
-              src={getDemoUrl()}
-              className="w-full h-full border-0"
-              title={`${product.title} Live Demo`}
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-              loading="lazy"
-              onLoad={() => setIframeLoaded(true)}
-            />
-            {!iframeLoaded && (
-              <div className="absolute inset-0 flex items-center justify-center bg-background/80 pointer-events-none">
-                <div className="text-center space-y-2">
-                  <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
-                  <p className="text-sm text-muted-foreground">Loading demo...</p>
+            {getDemoUrl() ? (
+              <>
+                <iframe
+                  src={getDemoUrl()!}
+                  className="w-full h-full border-0"
+                  title={`${product.title} Live Demo`}
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                  loading="lazy"
+                  onLoad={() => setIframeLoaded(true)}
+                />
+                {!iframeLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-background/80 pointer-events-none">
+                    <div className="text-center space-y-2">
+                      <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+                      <p className="text-sm text-muted-foreground">Loading demo...</p>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center space-y-3 p-8">
+                  <div className="text-5xl">🚧</div>
+                  <p className="text-lg font-bold text-foreground">Live demo will be available soon</p>
+                  <p className="text-sm text-muted-foreground">This product is being prepared for launch. Check back later!</p>
                 </div>
               </div>
             )}
           </div>
 
           {/* Bottom bar */}
-          <div className="px-4 py-3 border-t border-border flex items-center gap-3 shrink-0 flex-wrap">
-            <div className="flex items-center gap-2 flex-1 min-w-0">
-              <code className="text-xs bg-muted px-2 py-1 rounded truncate max-w-[200px] md:max-w-[400px]">{getDemoUrl()}</code>
-              <Button size="sm" variant="outline" className="h-7 px-2 shrink-0" onClick={() => handleCopy(getDemoUrl(), 'Demo URL')}>
-                <Copy style={{ width: 12, height: 12 }} />
-              </Button>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => handleCopy('demo@softwarevala.com', 'Email')}>
-                📧 Copy Login
-              </Button>
-              <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => handleCopy('Demo@2026', 'Password')}>
-                🔑 Copy Password
-              </Button>
-              <Button size="sm" className="h-8 text-xs gap-1 font-bold" onClick={() => window.open(getDemoUrl(), '_blank', 'noopener,noreferrer')}>
-                <ExternalLink style={{ width: 13, height: 13 }} />
-                Open Full Screen
-              </Button>
-            </div>
+          <div className="px-4 py-3 border-t border-border flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 shrink-0">
+            {getDemoUrl() && (
+              <>
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <code className="text-xs bg-muted px-2 py-1 rounded truncate max-w-[200px] md:max-w-[400px]">{getDemoUrl()}</code>
+                  <Button size="sm" variant="outline" className="h-7 px-2 shrink-0" onClick={() => handleCopy(getDemoUrl()!, 'Demo URL')}>
+                    <Copy style={{ width: 12, height: 12 }} />
+                  </Button>
+                </div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => handleCopy('demo@softwarevala.com', 'Email')}>
+                    📧 Copy Login
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => handleCopy('Demo@2026', 'Password')}>
+                    🔑 Copy Password
+                  </Button>
+                  <Button size="sm" className="h-8 text-xs gap-1 font-bold" onClick={() => window.open(getDemoUrl()!, '_blank', 'noopener,noreferrer')}>
+                    <ExternalLink style={{ width: 13, height: 13 }} />
+                    Open Full Screen
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         </DialogContent>
       </Dialog>
