@@ -26,31 +26,33 @@ const statusConfig = {
 /* ─── Product Card ─── */
 function EduProductCard({ product, onBuyNow }: { product: EducationProduct; onBuyNow: (p: EducationProduct) => void }) {
   const [wishlisted, setWishlisted] = useState(false);
+  const [demoOpen, setDemoOpen] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { user } = useAuth();
   const isPipeline = product.status === 'upcoming';
   const discount = Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
 
+  // Build live demo URL (not GitHub)
+  const getDemoUrl = (): string => {
+    if (product.demoUrl && !product.demoUrl.includes('github.com')) return product.demoUrl;
+    return `https://${product.slug}.saasvala.com`;
+  };
+
   const handleDemo = () => {
-    const url = product.demoUrl || product.github_repo;
-    if (url) {
-      window.open(url, '_blank', 'noopener,noreferrer');
-      toast.success(`Opening demo for ${product.title}`);
-    } else {
-      const fallback = `https://github.com/saasvala/${product.slug}`;
-      window.open(fallback, '_blank', 'noopener,noreferrer');
-      toast.success(`Opening demo for ${product.title}`);
-    }
+    setDemoOpen(true);
+    setShowPassword(false);
   };
 
   const handleDownload = () => {
-    if (!user) {
-      toast.error('Please sign in to download');
-      return;
-    }
-    // Open the GitHub repo for download / clone
+    if (!user) { toast.error('Please sign in to download'); return; }
     const url = product.github_repo || `https://github.com/saasvala/${product.slug}`;
     window.open(url, '_blank', 'noopener,noreferrer');
-    toast.success(`Opening download page for ${product.title}`);
+    toast.success(`Opening source code for ${product.title}`);
+  };
+
+  const handleCopy = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success(`${label} copied!`);
   };
 
   const handleWishlist = async () => {
