@@ -597,7 +597,7 @@ export default function Marketplace() {
                     Complete Purchase
                   </DialogTitle>
                   <DialogDescription>
-                    {selectedProduct?.title} — ₹{selectedProduct?.price?.toLocaleString() ?? ''}
+                    {selectedProduct?.title} — ${selectedProduct?.price ?? ''}
                   </DialogDescription>
                 </DialogHeader>
 
