@@ -19,6 +19,7 @@ import { MediaStreamingSection } from '@/components/marketplace/MediaStreamingSe
 import { SocialMediaSection } from '@/components/marketplace/SocialMediaSection';
 import { AiAutomationSection } from '@/components/marketplace/AiAutomationSection';
 import { DevToolsSection } from '@/components/marketplace/DevToolsSection';
+import { ProductivitySection } from '@/components/marketplace/ProductivitySection';
 import { MarketplaceSectionDivider } from '@/components/marketplace/MarketplaceSectionDivider';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
