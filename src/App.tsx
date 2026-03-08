@@ -49,6 +49,7 @@ import SocialPwa from "./pages/SocialPwa";
 import AiToolsPwa from "./pages/AiToolsPwa";
 import DevToolsPwa from "./pages/DevToolsPwa";
 import ProductivityPwa from "./pages/ProductivityPwa";
+import CyberSecurityPwa from "./pages/CyberSecurityPwa";
 import InvestPwa from "./pages/InvestPwa";
 import ManufacturingPwa from "./pages/ManufacturingPwa";
 import ConstructionPwa from "./pages/ConstructionPwa";
