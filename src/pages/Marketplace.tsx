@@ -281,8 +281,13 @@ export default function Marketplace() {
         {/* ━━━ SECTION 11: HOSPITALITY & HOTEL BOOKING SYSTEMS ━━━ */}
         <HospitalitySection onBuyNow={handleBuyNow} />
 
-        {/* ━━━ DYNAMIC CATEGORY ROWS (Rows 12–40) ━━━ */}
-        {MARKETPLACE_CATEGORIES.filter(cat => !['healthcare', 'real_estate', 'ecommerce', 'retail', 'restaurant', 'hotel'].includes(cat.id)).map((cat, idx) => (
+        <MarketplaceSectionDivider label="transport" />
+
+        {/* ━━━ SECTION 12: TRANSPORTATION & RIDE SHARING APPS ━━━ */}
+        <TransportationSection onBuyNow={handleBuyNow} />
+
+        {/* ━━━ DYNAMIC CATEGORY ROWS (Rows 13–40) ━━━ */}
+        {MARKETPLACE_CATEGORIES.filter(cat => !['healthcare', 'real_estate', 'ecommerce', 'retail', 'restaurant', 'hotel', 'transport'].includes(cat.id)).map((cat, idx) => (
           <motion.div key={cat.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (idx + 6) * 0.03 }}>
             <MarketplaceCategoryRow category={cat} onBuyNow={handleBuyNow} />
             {idx < MARKETPLACE_CATEGORIES.length - 1 && (
