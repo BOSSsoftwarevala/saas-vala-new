@@ -6,7 +6,25 @@ import { SectionHeader } from './SectionHeader';
 
 const TOP_5_DEVTOOLS_CLONES = [
   {
-    id: 'devtools-clone-1', title: 'GitHub Developer Platform Clone',
+    id: 'devtools-clone-1', title: 'Vala Test API Platform',
+    subtitle: 'Real SaaS Vala Node.js API project for rapid backend prototyping.',
+    category: 'Developer Tools', description: 'A simple yet powerful Node.js API project for building and testing RESTful services.',
+    features: ['REST API Builder', 'Node.js Backend', 'API Testing', 'JSON Response', 'Quick Deploy'],
+    techStack: ['Node.js', 'JavaScript', 'Express'],
+    github_repo: 'https://github.com/saasvala/test-vala-api',
+    price: 5, old_price: 10, rating: 4.9, isAvailable: true, status: 'active', slug: 'test-vala-api',
+  },
+  {
+    id: 'devtools-clone-2', title: 'Simple Node Starter Project',
+    subtitle: 'Real SaaS Vala Node.js starter template for demonstration and learning.',
+    category: 'Developer Tools', description: 'A simple Node.js project for demonstration purposes — perfect starter template.',
+    features: ['Node.js Setup', 'Project Scaffolding', 'Quick Start', 'Demo Ready', 'Documentation'],
+    techStack: ['Node.js', 'JavaScript'],
+    github_repo: 'https://github.com/saasvala/simple-node-project',
+    price: 5, old_price: 10, rating: 4.9, isAvailable: true, status: 'active', slug: 'simple-node-project',
+  },
+  {
+    id: 'devtools-clone-3', title: 'GitHub Developer Platform Clone',
     subtitle: 'Collaborative code hosting platform with repositories, pull requests, and issues.',
     category: 'Developer Tools', description: 'Collaborative code hosting platform with repositories, pull requests, and issues.',
     features: ['Git Repository Hosting', 'Pull Requests', 'Code Reviews', 'Issue Tracking', 'Project Boards'],
