@@ -27,6 +27,7 @@ import { TelemedicineSection } from '@/components/marketplace/TelemedicineSectio
 import { RealEstateMarketplaceSection } from '@/components/marketplace/RealEstateMarketplaceSection';
 import { GamingPlatformSection } from '@/components/marketplace/GamingPlatformSection';
 import { MarketingGrowthSection } from '@/components/marketplace/MarketingGrowthSection';
+import { CustomerSupportSection } from '@/components/marketplace/CustomerSupportSection';
 import { MarketplaceSectionDivider } from '@/components/marketplace/MarketplaceSectionDivider';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
