@@ -77,8 +77,8 @@ export function AutoSubdomain() {
       const batchSize = 10;
       const allResults: SubdomainResult[] = [];
 
-      for (let i = 0; i < allSaasValaRepos.length; i += batchSize) {
-        const batch = allSaasValaRepos.slice(i, i + batchSize).map(r => ({ slug: r.slug, owner: 'saasvala' }));
+      for (let i = 0; i < allRepos.length; i += batchSize) {
+        const batch = allRepos.slice(i, i + batchSize).map(r => ({ slug: r.slug, owner: 'saasvala' }));
 
         const { data, error } = await supabase.functions.invoke('factory-deploy', {
           body: {
