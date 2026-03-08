@@ -14,12 +14,12 @@ const PFX = 'health-pwa';
 
 const PRODUCTS = [
   {
-    id: 'health-1', name: 'Practo Healthcare Clone',
-    repo: 'https://github.com/saasvala/practo-healthcare-clone-software',
+    id: 'health-1', name: 'Smart Hospital Management System',
+    repo: 'https://github.com/saasvala/smarthospital-software',
     price: 5, old_price: 10, rating: 4.9,
-    description: 'Full-stack healthcare platform for patient care, appointments, and doctor management.',
+    description: 'Complete smart hospital management system — real SaaS Vala product with patient records, appointments, and billing.',
     features: ['Patient Management', 'Appointment Scheduling', 'EHR System', 'Billing & Invoices', 'Lab Reports', 'Doctor Dashboard'],
-    demoFolder: 'practo-healthcare',
+    demoFolder: 'smarthospital',
   },
   {
     id: 'health-2', name: 'HealthifyMe Clone',
