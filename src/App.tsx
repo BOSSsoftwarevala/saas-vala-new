@@ -43,6 +43,7 @@ import FoodPwa from "./pages/FoodPwa";
 import HospitalityPwa from "./pages/HospitalityPwa";
 import TransportPwa from "./pages/TransportPwa";
 import LogisticsPwa from "./pages/LogisticsPwa";
+import FinancePwa from "./pages/FinancePwa";
 
 const queryClient = new QueryClient();
 
