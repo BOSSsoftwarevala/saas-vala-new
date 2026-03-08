@@ -59,6 +59,7 @@ import EnergyPwa from "./pages/EnergyPwa";
 import TelecomPwa from "./pages/TelecomPwa";
 import ItSoftwarePwa from "./pages/ItSoftwarePwa";
 import CloudDevopsPwa from "./pages/CloudDevopsPwa";
+import AnalyticsPwa from "./pages/AnalyticsPwa";
 
 const queryClient = new QueryClient();
 
@@ -135,6 +136,7 @@ function AppRoutes() {
       <Route path="/telecom-pwa" element={<TelecomPwa />} />
       <Route path="/it-software-pwa" element={<ItSoftwarePwa />} />
       <Route path="/cloud-devops-pwa" element={<CloudDevopsPwa />} />
+      <Route path="/analytics-pwa" element={<AnalyticsPwa />} />
 
       {/* Protected routes */}
       <Route
