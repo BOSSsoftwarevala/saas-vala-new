@@ -31,6 +31,7 @@ import { CustomerSupportSection } from '@/components/marketplace/CustomerSupport
 import { HrRecruitmentSection } from '@/components/marketplace/HrRecruitmentSection';
 import { LegalTechSection } from '@/components/marketplace/LegalTechSection';
 import { LogisticsDeliverySection } from '@/components/marketplace/LogisticsDeliverySection';
+import { IoTSmartDeviceSection } from '@/components/marketplace/IoTSmartDeviceSection';
 import { MarketplaceSectionDivider } from '@/components/marketplace/MarketplaceSectionDivider';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
@@ -358,8 +359,11 @@ export default function Marketplace() {
         {/* ━━━ SECTION 29: LOGISTICS & DELIVERY MANAGEMENT ━━━ */}
         <LogisticsDeliverySection onBuyNow={handleBuyNow} />
 
-        {/* ━━━ DYNAMIC CATEGORY ROWS (Rows 30–40) ━━━ */}
-        {MARKETPLACE_CATEGORIES.filter(cat => !['healthcare', 'real_estate', 'ecommerce', 'retail', 'restaurant', 'hotel', 'transport', 'finance', 'media_gaming', 'marketing', 'ai_automation', 'cloud_devops', 'it_software', 'cybersecurity', 'investment', 'logistics', 'manufacturing', 'construction', 'automotive', 'agriculture', 'energy', 'telecom', 'legal', 'beauty_fashion'].includes(cat.id)).map((cat, idx) => (
+        {/* ━━━ SECTION 30: IoT & SMART DEVICE PLATFORMS ━━━ */}
+        <IoTSmartDeviceSection onBuyNow={handleBuyNow} />
+
+        {/* ━━━ DYNAMIC CATEGORY ROWS (Rows 31–40) ━━━ */}
+        {MARKETPLACE_CATEGORIES.filter(cat => !['healthcare', 'real_estate', 'ecommerce', 'retail', 'restaurant', 'hotel', 'transport', 'finance', 'media_gaming', 'marketing', 'ai_automation', 'cloud_devops', 'it_software', 'cybersecurity', 'investment', 'logistics', 'manufacturing', 'construction', 'automotive', 'agriculture', 'energy', 'telecom', 'legal', 'beauty_fashion', 'home_services'].includes(cat.id)).map((cat, idx) => (
           <motion.div key={cat.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (idx + 6) * 0.03 }}>
             <MarketplaceCategoryRow category={cat} onBuyNow={handleBuyNow} />
             {idx < MARKETPLACE_CATEGORIES.length - 1 && (
