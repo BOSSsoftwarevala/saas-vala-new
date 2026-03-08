@@ -117,49 +117,19 @@ export function MarketplaceProductCard({
   // Helper: check if an ID looks like a valid UUID
   const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-  // Generate a demo URL from the product title/slug
-  // Generate demo URL from slug
-  const generateDemoUrl = (title: string): string => {
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    return `https://${slug}-software.saasvala.com`;
-  };
-
-  // ── DEMO BUTTON — open live demo directly ──
-  const handleDemo = () => {
+  // Generate a demo/source URL from the product
+  const getDemoUrl = (): string => {
+    // Priority 1: explicit GitHub repo URL
+    const gitRepo = (product as any).github_repo || (product as any).gitRepoUrl;
+    if (gitRepo) return gitRepo;
+    
+    // Priority 2: explicit demoUrl that's a real link
     const demoUrl = (product as any).demoUrl;
-    const slug = (product as any).slug;
-    const liveUrl = demoUrl && !demoUrl.includes('github.com') 
-      ? demoUrl 
-      : slug 
-        ? `https://${slug}.saasvala.com`
-        : generateDemoUrl(product.title);
-
-    // Open live demo URL directly in new tab
-    window.open(liveUrl, '_blank', 'noopener,noreferrer');
-    toast.success(`Opening live demo for ${product.title}`);
-
-    // Also open credentials dialog so user knows login info
-    setDemoOpen(true);
-
-    // Fire-and-forget activity log
-    if (isUuid(product.id)) {
-      supabase.from('activity_logs').insert({
-        entity_type: 'demo',
-        entity_id: product.id,
-        action: 'demo_opened',
-        performed_by: user?.id || null,
-        details: { product_id: product.id, product_name: product.title, demo_url: liveUrl },
-      });
-    }
-  };
-
-  // Get current demo URL for dialog
-  const getCurrentDemoUrl = (): string => {
-    const demoUrl = (product as any).demoUrl;
-    const slug = (product as any).slug;
-    if (demoUrl && !demoUrl.includes('github.com')) return demoUrl;
-    if (slug) return `https://${slug}.saasvala.com`;
-    return generateDemoUrl(product.title);
+    if (demoUrl && demoUrl.startsWith('http')) return demoUrl;
+    
+    // Priority 3: generate GitHub URL from slug
+    const slug = (product as any).slug || product.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    return `https://github.com/saasvala/${slug}`;
   };
 
   const handleCopy = (text: string, label: string) => {
