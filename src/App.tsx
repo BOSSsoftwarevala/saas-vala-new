@@ -104,6 +104,7 @@ function AppRoutes() {
       <Route path="/hospitality-pwa" element={<HospitalityPwa />} />
       <Route path="/transport-pwa" element={<TransportPwa />} />
       <Route path="/logistics-pwa" element={<LogisticsPwa />} />
+      <Route path="/finance-pwa" element={<FinancePwa />} />
 
       {/* Protected routes */}
       <Route
