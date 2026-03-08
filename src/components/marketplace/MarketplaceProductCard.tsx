@@ -402,16 +402,27 @@ export function MarketplaceProductCard({
                   </Button>
                 </div>
               )}
-              {/* FEATURES & ADVANTAGES BUTTON */}
-              <Button
-                size="sm"
-                variant="outline"
-                className="w-full h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border hover:border-accent hover:bg-accent/10"
-                onClick={() => setFeaturesOpen(true)}
-              >
-                <Info style={{ width: 13, height: 13 }} />
-                FEATURES & ADVANTAGES
-              </Button>
+              {/* DOWNLOAD APK + FEATURES BUTTONS */}
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border hover:border-green-500/50 hover:text-green-500"
+                  onClick={handleDownloadApk}
+                >
+                  <Download style={{ width: 13, height: 13 }} />
+                  {getApkUrl() ? 'DOWNLOAD APK' : 'APK SOON'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border hover:border-accent hover:bg-accent/10"
+                  onClick={() => setFeaturesOpen(true)}
+                >
+                  <Info style={{ width: 13, height: 13 }} />
+                  FEATURES
+                </Button>
+              </div>
             </div>
           </div>
         </div>
