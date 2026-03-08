@@ -34,10 +34,15 @@ export function useApkPurchase() {
     return `TXN-${cleanId.substring(0, 8)}-${cleanId.substring(cleanId.length - 4)}`;
   };
 
+  // Helper: check if an ID looks like a valid UUID
+  const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
   const purchaseApk = async (product: ApkProduct): Promise<PurchaseResult> => {
     if (!user) {
       return { success: false, error: 'Please sign in to download APK' };
     }
+
+    const isGeneratedProduct = !isUuid(product.id);
 
     setProcessing(true);
 
@@ -100,29 +105,33 @@ export function useApkPurchase() {
         .update({ balance: newBalance, updated_at: new Date().toISOString() })
         .eq('id', wallet.id);
 
-      // Step 6: Create APK download record
-      await supabase.from('apk_downloads').insert({
-        user_id: user.id,
-        product_id: product.id,
-        transaction_id: transaction.id,
-        license_key: licenseKey,
-        is_verified: true,
-        verification_attempts: 0,
-        is_blocked: false
-      });
-
-      // Step 7: Create marketplace order
-      await supabase
-        .from('marketplace_orders')
-        .insert({
-          buyer_id: user.id,
-          seller_id: user.id,
-          amount: product.price,
-          status: 'completed',
-          payment_method: 'wallet',
+      // Step 6: Create APK download record (only for real DB products)
+      if (!isGeneratedProduct) {
+        await supabase.from('apk_downloads').insert({
+          user_id: user.id,
+          product_id: product.id,
           transaction_id: transaction.id,
-          completed_at: new Date().toISOString()
+          license_key: licenseKey,
+          is_verified: true,
+          verification_attempts: 0,
+          is_blocked: false
         });
+      }
+
+      // Step 7: Create marketplace order (only for real DB products)
+      if (!isGeneratedProduct) {
+        await supabase
+          .from('marketplace_orders')
+          .insert({
+            buyer_id: user.id,
+            seller_id: user.id,
+            amount: product.price,
+            status: 'completed',
+            payment_method: 'wallet',
+            transaction_id: transaction.id,
+            completed_at: new Date().toISOString()
+          });
+      }
 
       // Step 8: Log activity
       await supabase.from('activity_logs').insert({
@@ -135,7 +144,8 @@ export function useApkPurchase() {
           product_title: product.title,
           license_key: licenseKey,
           amount: product.price,
-          transaction_id: transaction.id
+          transaction_id: transaction.id,
+          is_generated: isGeneratedProduct
         }
       });
 
