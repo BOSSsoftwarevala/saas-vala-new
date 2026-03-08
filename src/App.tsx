@@ -49,6 +49,7 @@ import SocialPwa from "./pages/SocialPwa";
 import AiToolsPwa from "./pages/AiToolsPwa";
 import DevToolsPwa from "./pages/DevToolsPwa";
 import ProductivityPwa from "./pages/ProductivityPwa";
+import CyberSecurityPwa from "./pages/CyberSecurityPwa";
 import InvestPwa from "./pages/InvestPwa";
 import ManufacturingPwa from "./pages/ManufacturingPwa";
 import ConstructionPwa from "./pages/ConstructionPwa";
@@ -124,6 +125,7 @@ function AppRoutes() {
       <Route path="/ai-tools-pwa" element={<AiToolsPwa />} />
       <Route path="/devtools-pwa" element={<DevToolsPwa />} />
       <Route path="/productivity-pwa" element={<ProductivityPwa />} />
+      <Route path="/cybersecurity-pwa" element={<CyberSecurityPwa />} />
       <Route path="/invest-pwa" element={<InvestPwa />} />
       <Route path="/manufacturing-pwa" element={<ManufacturingPwa />} />
       <Route path="/construction-pwa" element={<ConstructionPwa />} />
