@@ -117,24 +117,32 @@ export function MarketplaceProductCard({
   // Helper: check if an ID looks like a valid UUID
   const isUuid = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-  // Generate demo URL - prioritize live subdomain
-  const getDemoUrl = (): string => {
+  // Generate demo URL - prioritize explicit demo/git URLs
+  const getDemoUrl = (): string | null => {
+    // 1. Explicit demo URL from database
     const demoUrl = (product as any).demoUrl || (product as any).demo_url;
     if (demoUrl && demoUrl.startsWith('http')) return demoUrl;
-    const slug = (product as any).slug || product.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const cleanSlug = slug.replace(/^[a-z_]+-/, '');
-    return `https://${cleanSlug}.saasvala.com`;
+    // 2. GitHub repo (real source code link — works as demo for open-source)
+    const gitRepo = (product as any).github_repo || (product as any).gitRepoUrl || (product as any).git_repo_url;
+    if (gitRepo && gitRepo.startsWith('http')) return gitRepo;
+    // 3. APK URL means product exists but no web demo
+    const apkUrl = (product as any).apkUrl || (product as any).apk_url;
+    if (apkUrl) return null; // has APK but no web demo
+    // 4. No demo available for generated/placeholder products
+    return null;
   };
 
-  const _getSourceUrl = (): string => {
-    const gitRepo = (product as any).github_repo || (product as any).gitRepoUrl || (product as any).git_repo_url;
-    if (gitRepo) return gitRepo;
-    const slug = (product as any).slug || product.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-    const cleanSlug = slug.replace(/^[a-z_]+-/, '');
-    return `https://github.com/saasvala/${cleanSlug}`;
+  const getApkUrl = (): string | null => {
+    return (product as any).apkUrl || (product as any).apk_url || null;
   };
+
+  const hasDemoAvailable = getDemoUrl() !== null;
 
   const handleDemo = () => {
+    if (!hasDemoAvailable) {
+      toast.info(`Live demo for ${product.title} will be available soon.`);
+      return;
+    }
     setDemoOpen(true);
     toast.success(`Loading live demo for ${product.title}`);
     if (isUuid(product.id)) {
@@ -144,6 +152,20 @@ export function MarketplaceProductCard({
         details: { product_id: product.id, product_name: product.title, demo_url: getDemoUrl() },
       });
     }
+  };
+
+  const handleDownloadApk = () => {
+    const apkUrl = getApkUrl();
+    if (!apkUrl) {
+      toast.info('APK download will be available soon.');
+      return;
+    }
+    if (!user) {
+      toast.error('Please sign in to download APK');
+      return;
+    }
+    window.open(apkUrl, '_blank');
+    toast.success(`Downloading APK for ${product.title}`);
   };
 
   const handleCopy = (text: string, label: string) => {
