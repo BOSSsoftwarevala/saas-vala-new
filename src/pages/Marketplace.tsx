@@ -20,6 +20,7 @@ import { SocialMediaSection } from '@/components/marketplace/SocialMediaSection'
 import { AiAutomationSection } from '@/components/marketplace/AiAutomationSection';
 import { DevToolsSection } from '@/components/marketplace/DevToolsSection';
 import { ProductivitySection } from '@/components/marketplace/ProductivitySection';
+import { CybersecuritySection } from '@/components/marketplace/CybersecuritySection';
 import { MarketplaceSectionDivider } from '@/components/marketplace/MarketplaceSectionDivider';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
