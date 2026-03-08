@@ -21,6 +21,7 @@ import { AiAutomationSection } from '@/components/marketplace/AiAutomationSectio
 import { DevToolsSection } from '@/components/marketplace/DevToolsSection';
 import { ProductivitySection } from '@/components/marketplace/ProductivitySection';
 import { CybersecuritySection } from '@/components/marketplace/CybersecuritySection';
+import { DataAnalyticsSection } from '@/components/marketplace/DataAnalyticsSection';
 import { MarketplaceSectionDivider } from '@/components/marketplace/MarketplaceSectionDivider';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
