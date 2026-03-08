@@ -38,6 +38,7 @@ import Install from "./pages/Install";
 import HealthPwa from "./pages/HealthPwa";
 import RealEstatePwa from "./pages/RealEstatePwa";
 import EcomPwa from "./pages/EcomPwa";
+import RetailPwa from "./pages/RetailPwa";
 
 const queryClient = new QueryClient();
 
@@ -93,6 +94,7 @@ function AppRoutes() {
       <Route path="/health-pwa" element={<HealthPwa />} />
       <Route path="/realestate-pwa" element={<RealEstatePwa />} />
       <Route path="/ecom-pwa" element={<EcomPwa />} />
+      <Route path="/retail-pwa" element={<RetailPwa />} />
 
       {/* Protected routes */}
       <Route
