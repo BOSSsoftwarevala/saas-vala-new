@@ -1674,7 +1674,7 @@ export type Database = {
           notes: string | null
           owner_email: string | null
           owner_name: string | null
-          product_id: string
+          product_id: string | null
           status: Database["public"]["Enums"]["key_status"] | null
           updated_at: string | null
         }
@@ -1694,7 +1694,7 @@ export type Database = {
           notes?: string | null
           owner_email?: string | null
           owner_name?: string | null
-          product_id: string
+          product_id?: string | null
           status?: Database["public"]["Enums"]["key_status"] | null
           updated_at?: string | null
         }
@@ -1714,7 +1714,7 @@ export type Database = {
           notes?: string | null
           owner_email?: string | null
           owner_name?: string | null
-          product_id?: string
+          product_id?: string | null
           status?: Database["public"]["Enums"]["key_status"] | null
           updated_at?: string | null
         }
