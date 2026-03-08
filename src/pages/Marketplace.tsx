@@ -11,6 +11,7 @@ import { HealthcareSection } from '@/components/marketplace/HealthcareSection';
 import { RealEstateSection } from '@/components/marketplace/RealEstateSection';
 import { EcommerceSection } from '@/components/marketplace/EcommerceSection';
 import { RetailSection } from '@/components/marketplace/RetailSection';
+import { FoodDeliverySection } from '@/components/marketplace/FoodDeliverySection';
 import { MarketplaceSectionDivider } from '@/components/marketplace/MarketplaceSectionDivider';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
