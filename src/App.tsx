@@ -38,6 +38,7 @@ import Install from "./pages/Install";
 import HealthPwa from "./pages/HealthPwa";
 import RealEstatePwa from "./pages/RealEstatePwa";
 import EcomPwa from "./pages/EcomPwa";
+import RetailPwa from "./pages/RetailPwa";
 
 const queryClient = new QueryClient();
 
