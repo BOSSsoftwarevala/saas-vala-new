@@ -30,6 +30,7 @@ import { MarketingGrowthSection } from '@/components/marketplace/MarketingGrowth
 import { CustomerSupportSection } from '@/components/marketplace/CustomerSupportSection';
 import { HrRecruitmentSection } from '@/components/marketplace/HrRecruitmentSection';
 import { LegalTechSection } from '@/components/marketplace/LegalTechSection';
+import { LogisticsDeliverySection } from '@/components/marketplace/LogisticsDeliverySection';
 import { MarketplaceSectionDivider } from '@/components/marketplace/MarketplaceSectionDivider';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
