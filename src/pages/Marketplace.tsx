@@ -32,6 +32,7 @@ import { HrRecruitmentSection } from '@/components/marketplace/HrRecruitmentSect
 import { LegalTechSection } from '@/components/marketplace/LegalTechSection';
 import { LogisticsDeliverySection } from '@/components/marketplace/LogisticsDeliverySection';
 import { IoTSmartDeviceSection } from '@/components/marketplace/IoTSmartDeviceSection';
+import { BlockchainWeb3Section } from '@/components/marketplace/BlockchainWeb3Section';
 import { MarketplaceSectionDivider } from '@/components/marketplace/MarketplaceSectionDivider';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
