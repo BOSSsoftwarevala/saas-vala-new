@@ -28,6 +28,7 @@ import { RealEstateMarketplaceSection } from '@/components/marketplace/RealEstat
 import { GamingPlatformSection } from '@/components/marketplace/GamingPlatformSection';
 import { MarketingGrowthSection } from '@/components/marketplace/MarketingGrowthSection';
 import { CustomerSupportSection } from '@/components/marketplace/CustomerSupportSection';
+import { HrRecruitmentSection } from '@/components/marketplace/HrRecruitmentSection';
 import { MarketplaceSectionDivider } from '@/components/marketplace/MarketplaceSectionDivider';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
@@ -346,8 +347,11 @@ export default function Marketplace() {
         {/* ━━━ SECTION 26: CUSTOMER SUPPORT & HELP DESK ━━━ */}
         <CustomerSupportSection onBuyNow={handleBuyNow} />
 
-        {/* ━━━ DYNAMIC CATEGORY ROWS (Rows 27–40) ━━━ */}
-        {MARKETPLACE_CATEGORIES.filter(cat => !['healthcare', 'real_estate', 'ecommerce', 'retail', 'restaurant', 'hotel', 'transport', 'finance', 'media_gaming', 'marketing', 'ai_automation', 'cloud_devops', 'it_software', 'cybersecurity', 'investment', 'logistics', 'manufacturing', 'construction', 'automotive', 'agriculture', 'energy'].includes(cat.id)).map((cat, idx) => (
+        {/* ━━━ SECTION 27: HR & RECRUITMENT ━━━ */}
+        <HrRecruitmentSection onBuyNow={handleBuyNow} />
+
+        {/* ━━━ DYNAMIC CATEGORY ROWS (Rows 28–40) ━━━ */}
+        {MARKETPLACE_CATEGORIES.filter(cat => !['healthcare', 'real_estate', 'ecommerce', 'retail', 'restaurant', 'hotel', 'transport', 'finance', 'media_gaming', 'marketing', 'ai_automation', 'cloud_devops', 'it_software', 'cybersecurity', 'investment', 'logistics', 'manufacturing', 'construction', 'automotive', 'agriculture', 'energy', 'telecom'].includes(cat.id)).map((cat, idx) => (
           <motion.div key={cat.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (idx + 6) * 0.03 }}>
             <MarketplaceCategoryRow category={cat} onBuyNow={handleBuyNow} />
             {idx < MARKETPLACE_CATEGORIES.length - 1 && (
