@@ -74,7 +74,7 @@ export function Sidebar() {
       <div 
         className="absolute top-0 left-0 w-full h-32 pointer-events-none opacity-30"
         style={{
-          background: 'radial-gradient(ellipse at 50% 0%, hsl(25, 95%, 53%, 0.1) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse at 50% 0%, hsl(215, 80%, 60%, 0.15) 0%, transparent 70%)',
         }}
       />
 
