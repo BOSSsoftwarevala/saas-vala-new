@@ -35,6 +35,7 @@ import Automation from "./pages/Automation";
 import AddProduct from "./pages/AddProduct";
 import EduPwa from "./pages/EduPwa";
 import Install from "./pages/Install";
+import HealthPwa from "./pages/HealthPwa";
 
 const queryClient = new QueryClient();
 
@@ -87,6 +88,7 @@ function AppRoutes() {
       <Route path="/marketplace" element={<Marketplace />} />
       <Route path="/edu-pwa" element={<EduPwa />} />
       <Route path="/install" element={<Install />} />
+      <Route path="/health-pwa" element={<HealthPwa />} />
 
       {/* Protected routes */}
       <Route
