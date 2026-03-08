@@ -205,6 +205,14 @@ function AppRoutes() {
         }
       />
       <Route
+        path="/vala-builder"
+        element={
+          <ProtectedRoute>
+            <ValaBuilder />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path="/ai-chat"
         element={
           <ProtectedRoute>
