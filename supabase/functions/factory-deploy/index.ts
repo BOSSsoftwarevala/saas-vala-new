@@ -11,110 +11,202 @@ serve(async (req) => {
   }
 
   try {
-    const { action, app_name, repo_url, port, lines } = await req.json();
+    const { action, app_name, repo_url, project_id } = await req.json();
 
-    const FACTORY_URL = Deno.env.get("FACTORY_URL");
-    const FACTORY_TOKEN = Deno.env.get("FACTORY_TOKEN");
+    const VERCEL_TOKEN = Deno.env.get("VERCEL_TOKEN");
 
-    if (!FACTORY_URL || !FACTORY_TOKEN) {
+    if (!VERCEL_TOKEN) {
       return new Response(
-        JSON.stringify({ success: false, error: "Factory not configured. Set FACTORY_URL and FACTORY_TOKEN." }),
+        JSON.stringify({ success: false, error: "Vercel not configured. Set VERCEL_TOKEN secret." }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
     const headers = {
-      "Authorization": `Bearer ${FACTORY_TOKEN}`,
+      "Authorization": `Bearer ${VERCEL_TOKEN}`,
       "Content-Type": "application/json",
     };
 
-    let endpoint = "";
-    let method = "POST";
-    let body: string | undefined;
-    // Deploy gets 5min, everything else 30s
-    let timeoutMs = 30000;
-
     switch (action) {
-      case "deploy":
-        endpoint = "/deploy";
-        body = JSON.stringify({ repo_url, app_name, port });
-        timeoutMs = 300000;
-        break;
-      case "list":
-        endpoint = "/apps";
-        method = "GET";
-        break;
-      case "restart":
-        endpoint = "/restart";
-        body = JSON.stringify({ app_name });
-        break;
-      case "stop":
-        endpoint = "/stop";
-        body = JSON.stringify({ app_name });
-        break;
-      case "delete":
-        endpoint = "/delete";
-        body = JSON.stringify({ app_name });
-        break;
-      case "logs":
-        endpoint = `/logs/${app_name}?lines=${lines || 50}`;
-        method = "GET";
-        break;
-      case "status":
-        endpoint = "/status";
-        method = "GET";
-        break;
-      case "health":
-        endpoint = "/health";
-        method = "GET";
-        timeoutMs = 10000;
-        break;
+      case "deploy": {
+        // Create a new Vercel project from a GitHub repo
+        if (!repo_url) {
+          return new Response(
+            JSON.stringify({ success: false, error: "repo_url is required for deploy" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // Parse GitHub URL → owner/repo
+        const match = repo_url.match(/github\.com\/([^\/]+)\/([^\/\.]+)/);
+        if (!match) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Invalid GitHub URL. Expected: https://github.com/owner/repo" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const [, owner, repo] = match;
+        const projectName = app_name || repo;
+
+        // Step 1: Create or get project
+        const createRes = await fetch("https://api.vercel.com/v10/projects", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            name: projectName.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+            framework: null,
+            gitRepository: {
+              type: "github",
+              repo: `${owner}/${repo}`,
+            },
+          }),
+        });
+
+        const createData = await createRes.json();
+
+        if (!createRes.ok && createData.error?.code !== "project_already_exists") {
+          return new Response(
+            JSON.stringify({ success: false, error: createData.error?.message || "Failed to create Vercel project", details: createData }),
+            { status: createRes.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const vercelProjectId = createData.id || createData.error?.projectId;
+        const deployUrl = `https://${projectName.toLowerCase().replace(/[^a-z0-9-]/g, "-")}.vercel.app`;
+
+        // Step 2: Trigger deployment via Vercel Deploy Hook or just return project info
+        // Vercel auto-deploys on git push when connected. For manual trigger:
+        const deployRes = await fetch("https://api.vercel.com/v13/deployments", {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            name: projectName.toLowerCase().replace(/[^a-z0-9-]/g, "-"),
+            gitSource: {
+              type: "github",
+              ref: "main",
+              repoId: `${owner}/${repo}`,
+            },
+          }),
+        });
+
+        const deployData = await deployRes.json();
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            method: "vercel",
+            project_name: projectName,
+            project_id: vercelProjectId,
+            deploy_url: deployData.url ? `https://${deployData.url}` : deployUrl,
+            deployment_id: deployData.id,
+            status: deployData.readyState || "queued",
+            message: `✅ Deployed ${projectName} to Vercel → ${deployData.url ? `https://${deployData.url}` : deployUrl}`,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case "list": {
+        const res = await fetch("https://api.vercel.com/v9/projects?limit=50", { headers });
+        const data = await res.json();
+        const projects = (data.projects || []).map((p: any) => ({
+          name: p.name,
+          id: p.id,
+          url: `https://${p.name}.vercel.app`,
+          framework: p.framework,
+          updated: p.updatedAt,
+          repo: p.link?.repo,
+        }));
+        return new Response(
+          JSON.stringify({ success: true, projects, total: projects.length }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case "status": {
+        const pid = project_id || app_name;
+        if (!pid) {
+          return new Response(
+            JSON.stringify({ success: false, error: "project_id or app_name required" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        const res = await fetch(`https://api.vercel.com/v9/projects/${encodeURIComponent(pid)}`, { headers });
+        const data = await res.json();
+        return new Response(
+          JSON.stringify({
+            success: res.ok,
+            project: res.ok ? {
+              name: data.name,
+              id: data.id,
+              url: `https://${data.name}.vercel.app`,
+              framework: data.framework,
+              latest_deployment: data.latestDeployments?.[0]?.url,
+              status: data.latestDeployments?.[0]?.readyState,
+            } : data,
+          }),
+          { status: res.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case "delete": {
+        const pid = project_id || app_name;
+        if (!pid) {
+          return new Response(
+            JSON.stringify({ success: false, error: "project_id or app_name required" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        const res = await fetch(`https://api.vercel.com/v9/projects/${encodeURIComponent(pid)}`, {
+          method: "DELETE",
+          headers,
+        });
+        return new Response(
+          JSON.stringify({ success: res.ok, message: res.ok ? `Project ${pid} deleted` : "Delete failed" }),
+          { status: res.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case "logs": {
+        const pid = project_id || app_name;
+        if (!pid) {
+          return new Response(
+            JSON.stringify({ success: false, error: "project_id or app_name required" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        // Get latest deployments
+        const res = await fetch(`https://api.vercel.com/v6/deployments?projectId=${encodeURIComponent(pid)}&limit=5`, { headers });
+        const data = await res.json();
+        return new Response(
+          JSON.stringify({
+            success: res.ok,
+            deployments: (data.deployments || []).map((d: any) => ({
+              id: d.uid,
+              url: `https://${d.url}`,
+              state: d.readyState || d.state,
+              created: d.created,
+              meta: d.meta,
+            })),
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      case "health": {
+        const res = await fetch("https://api.vercel.com/v9/projects?limit=1", { headers });
+        return new Response(
+          JSON.stringify({ success: res.ok, platform: "vercel", status: res.ok ? "connected" : "error" }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       default:
         return new Response(
           JSON.stringify({ success: false, error: `Unknown action: ${action}` }),
           { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
-    }
-
-    const url = `${FACTORY_URL.replace(/\/$/, "")}${endpoint}`;
-    
-    // Use AbortController for timeout
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), timeoutMs);
-
-    try {
-      const fetchOptions: RequestInit = { method, headers, signal: controller.signal };
-      if (body && method === "POST") fetchOptions.body = body;
-
-      const response = await fetch(url, fetchOptions);
-      clearTimeout(timeout);
-      const data = await response.json();
-
-      return new Response(
-        JSON.stringify(data),
-        { status: response.status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    } catch (fetchError) {
-      clearTimeout(timeout);
-      
-      const isTimeout = fetchError.name === 'AbortError';
-      const errorMsg = isTimeout 
-        ? `VPS Factory unreachable (timeout ${timeoutMs/1000}s). Check: 1) VPS online at ${FACTORY_URL} 2) Nginx proxy active 3) PM2 vala-factory running`
-        : `VPS connection failed: ${fetchError.message}. Run on VPS: pm2 restart vala-factory && sudo systemctl reload nginx`;
-
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: errorMsg,
-          debug: {
-            factory_url: FACTORY_URL,
-            endpoint,
-            timeout_ms: timeoutMs,
-            error_type: isTimeout ? 'TIMEOUT' : 'CONNECTION_ERROR'
-          }
-        }),
-        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
     }
   } catch (error) {
     return new Response(
