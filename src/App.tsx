@@ -33,6 +33,8 @@ import NotFound from "./pages/NotFound";
 import ResellerDashboard from "./pages/ResellerDashboard";
 import Automation from "./pages/Automation";
 import AddProduct from "./pages/AddProduct";
+import EduPwa from "./pages/EduPwa";
+import Install from "./pages/Install";
 
 const queryClient = new QueryClient();
 
