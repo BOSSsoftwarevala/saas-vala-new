@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   User, 
@@ -11,7 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import saasValaLogo from '@/assets/saas-vala-logo.jpg';
 
@@ -24,15 +25,48 @@ const languages = [
 ];
 
 const navLinks = [
-  { label: 'Marketplace', href: '/' },
-  { label: 'Pricing', href: '/#pricing' },
-  { label: 'Demo', href: '/#demo' },
-  { label: 'Contact', href: '/#contact' },
+  { label: 'Marketplace', target: 'marketplace-top' },
+  { label: 'Pricing', target: 'pricing' },
+  { label: 'Demo', target: 'demo' },
+  { label: 'Contact', target: 'contact' },
 ];
 
 export function MarketplaceHeader() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+
+  const scrollToSection = (target: string) => {
+    // If not on marketplace page, navigate there first
+    if (location.pathname !== '/') {
+      navigate('/');
+      // Wait for navigation then scroll
+      setTimeout(() => {
+        const el = document.getElementById(target);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 300);
+      return;
+    }
+    if (target === 'marketplace-top') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+    const el = document.getElementById(target);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
+  // Handle hash on mount
+  useEffect(() => {
+    const hash = location.hash.replace('#', '');
+    if (hash) {
+      setTimeout(() => {
+        const el = document.getElementById(hash);
+        el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 500);
+    }
+  }, [location.hash]);
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 h-16 bg-background/95 backdrop-blur-md border-b border-border">
@@ -40,7 +74,7 @@ export function MarketplaceHeader() {
         {/* Left - Logo */}
         <div 
           className="flex items-center gap-3 cursor-pointer"
-          onClick={() => navigate('/')}
+          onClick={() => { navigate('/'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
         >
           <img 
             src={saasValaLogo} 
@@ -57,7 +91,7 @@ export function MarketplaceHeader() {
           {navLinks.map((link) => (
             <button
               key={link.label}
-              onClick={() => navigate(link.href)}
+              onClick={() => scrollToSection(link.target)}
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
             >
               {link.label}
