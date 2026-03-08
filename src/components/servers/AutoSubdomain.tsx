@@ -71,7 +71,7 @@ export function AutoSubdomain() {
 
     try {
       // Import repo mapping dynamically
-      const { allSaasValaRepos } = await import('@/data/saasvalaRepoMapping');
+      const { allRepos } = await import('@/data/saasvalaRepoMapping');
       
       // Process in batches of 10
       const batchSize = 10;
