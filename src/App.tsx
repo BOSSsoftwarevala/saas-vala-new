@@ -36,6 +36,7 @@ import AddProduct from "./pages/AddProduct";
 import EduPwa from "./pages/EduPwa";
 import Install from "./pages/Install";
 import HealthPwa from "./pages/HealthPwa";
+import RealEstatePwa from "./pages/RealEstatePwa";
 
 const queryClient = new QueryClient();
 
