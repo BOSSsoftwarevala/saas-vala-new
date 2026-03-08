@@ -7,12 +7,98 @@ import { GraduationCap } from 'lucide-react';
 
 const subCats = ['All', 'School', 'College', 'Coaching', 'E-Learning', 'Skill Training', 'University', 'Library', 'Examination'];
 
+// Top 5 Education Software Clones — Row 05 featured products
+const TOP_5_EDUCATION_CLONES = [
+  {
+    id: 'edu-clone-1',
+    title: 'Google Classroom Clone',
+    subtitle: 'Cloud classroom platform for assignments, grading, and student collaboration.',
+    category: 'Education',
+    description: 'Cloud classroom platform for assignments, grading, and student collaboration.',
+    features: ['Assignment Manager', 'Classroom Streams', 'Student Submission', 'Gradebook', 'Teacher Dashboard', 'Google Drive Integration'],
+    techStack: ['React', 'Node.js', 'PostgreSQL', 'JWT Auth'],
+    github_repo: 'https://github.com/saasvala/googleclassroom-clone-software',
+    price: 5,
+    old_price: 10,
+    rating: 4.9,
+    isAvailable: true,
+    status: 'active',
+    slug: 'googleclassroom-clone-software',
+  },
+  {
+    id: 'edu-clone-2',
+    title: 'Moodle LMS Clone',
+    subtitle: 'Open-source learning management system for schools and universities.',
+    category: 'Education',
+    description: 'Open-source learning management system for schools and universities.',
+    features: ['Course Builder', 'Quiz System', 'Certificates', 'Student Progress Tracking', 'Teacher Dashboard'],
+    techStack: ['React', 'Node.js', 'PostgreSQL'],
+    github_repo: 'https://github.com/saasvala/moodle-lms-clone-software',
+    price: 5,
+    old_price: 10,
+    rating: 4.9,
+    isAvailable: true,
+    status: 'active',
+    slug: 'moodle-lms-clone-software',
+  },
+  {
+    id: 'edu-clone-3',
+    title: 'Canvas LMS Clone',
+    subtitle: 'Modern LMS used by universities for course delivery and grading.',
+    category: 'Education',
+    description: 'Modern LMS used by universities for course delivery and grading.',
+    features: ['Course Modules', 'Assignments', 'Discussion Boards', 'Grade Analytics', 'Mobile Learning'],
+    techStack: ['Next.js', 'Node.js', 'PostgreSQL'],
+    github_repo: 'https://github.com/saasvala/canvas-lms-clone-software',
+    price: 5,
+    old_price: 10,
+    rating: 4.9,
+    isAvailable: true,
+    status: 'active',
+    slug: 'canvas-lms-clone-software',
+  },
+  {
+    id: 'edu-clone-4',
+    title: 'Blackboard Learn Clone',
+    subtitle: 'Enterprise education system for universities and online learning.',
+    category: 'Education',
+    description: 'Enterprise education system for universities and online learning.',
+    features: ['Virtual Classroom', 'Content Library', 'Exams & Assessments', 'Instructor Tools', 'Student Dashboard'],
+    techStack: ['React', 'Node.js', 'PostgreSQL'],
+    github_repo: 'https://github.com/saasvala/blackboard-learn-clone-software',
+    price: 5,
+    old_price: 10,
+    rating: 4.9,
+    isAvailable: true,
+    status: 'active',
+    slug: 'blackboard-learn-clone-software',
+  },
+  {
+    id: 'edu-clone-5',
+    title: 'Schoology LMS Clone',
+    subtitle: 'Social learning platform combining classroom and collaboration tools.',
+    category: 'Education',
+    description: 'Social learning platform combining classroom and collaboration tools.',
+    features: ['Social Classroom Feed', 'Assignments', 'Attendance', 'Gradebook', 'Parent Portal'],
+    techStack: ['React', 'Node.js', 'PostgreSQL'],
+    github_repo: 'https://github.com/saasvala/schoology-lms-clone-software',
+    price: 5,
+    old_price: 10,
+    rating: 4.9,
+    isAvailable: true,
+    status: 'active',
+    slug: 'schoology-lms-clone-software',
+  },
+];
+
 export function EducationSection({ onBuyNow }: { onBuyNow: (p: any) => void }) {
   const { products: dbProducts } = useProductsByCategory([
     'education', 'school', 'college', 'coaching', 'elearning', 'e-learning', 'training', 'skill', 'university', 'library', 'examination'
   ]);
 
-  const displayProducts = fillToTarget(dbProducts as any, 'education', 'Education', 50);
+  const generatedProducts = fillToTarget(dbProducts as any, 'education', 'Education', 45);
+  // Merge top 5 clones at the front, then fill remaining
+  const displayProducts = [...TOP_5_EDUCATION_CLONES as any[], ...generatedProducts];
 
   return (
     <section className="py-4">
