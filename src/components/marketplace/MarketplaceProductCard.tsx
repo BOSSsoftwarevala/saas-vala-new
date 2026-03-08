@@ -139,7 +139,7 @@ export function MarketplaceProductCard({
     return true;
   };
 
-  const getApkUrl = (): string | null => {
+  const _getApkUrl = (): string | null => {
     return (product as any).apkUrl || (product as any).apk_url || null;
   };
 
@@ -169,18 +169,51 @@ export function MarketplaceProductCard({
     }
   };
 
-  const handleDownloadApk = () => {
-    const apkUrl = getApkUrl();
-    if (!apkUrl) {
-      toast.info('APK download will be available soon.');
-      return;
-    }
+  const [downloadChecking, setDownloadChecking] = useState(false);
+
+  const handleDownloadApk = async () => {
     if (!user) {
       toast.error('Please sign in to download APK');
       return;
     }
-    window.open(apkUrl, '_blank');
-    toast.success(`Downloading APK for ${product.title}`);
+
+    setDownloadChecking(true);
+
+    try {
+      // Check if user has purchased this product (has a valid license)
+      const { data: license } = await supabase
+        .from('apk_downloads')
+        .select('license_key')
+        .eq('user_id', user.id)
+        .eq('product_id', product.id)
+        .eq('is_blocked', false)
+        .maybeSingle();
+
+      if (!license) {
+        toast.error('Please purchase this software first to download the APK');
+        setDownloadChecking(false);
+        return;
+      }
+
+      // User has license → trigger secure download via edge function
+      const { data, error } = await supabase.functions.invoke('download-apk', {
+        body: { product_id: product.id, license_key: license.license_key },
+      });
+
+      if (error || !data?.success) {
+        // Fallback: if no APK file uploaded yet
+        toast.info('APK file will be available for download soon. Your license key is valid.');
+        setDownloadChecking(false);
+        return;
+      }
+
+      // Open signed download URL
+      window.open(data.download_url, '_blank');
+      toast.success(`Downloading APK for ${product.title}`);
+    } catch {
+      toast.info('APK download will be available soon.');
+    }
+    setDownloadChecking(false);
   };
 
   const handleCopy = (text: string, label: string) => {
@@ -427,9 +460,10 @@ export function MarketplaceProductCard({
                   variant="outline"
                   className="flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border hover:border-green-500/50 hover:text-green-500"
                   onClick={handleDownloadApk}
+                  disabled={downloadChecking}
                 >
                   <Download style={{ width: 13, height: 13 }} />
-                  {getApkUrl() ? 'DOWNLOAD APK' : 'APK SOON'}
+                  {downloadChecking ? 'CHECKING...' : 'DOWNLOAD APK'}
                 </Button>
                 <Button
                   size="sm"
