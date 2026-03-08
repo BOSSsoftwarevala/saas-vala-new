@@ -35,6 +35,7 @@ import Automation from "./pages/Automation";
 import AddProduct from "./pages/AddProduct";
 import EduPwa from "./pages/EduPwa";
 import Install from "./pages/Install";
+import HealthPwa from "./pages/HealthPwa";
 
 const queryClient = new QueryClient();
 
