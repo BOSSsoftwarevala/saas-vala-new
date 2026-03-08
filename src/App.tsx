@@ -41,6 +41,7 @@ import EcomPwa from "./pages/EcomPwa";
 import RetailPwa from "./pages/RetailPwa";
 import FoodPwa from "./pages/FoodPwa";
 import HospitalityPwa from "./pages/HospitalityPwa";
+import TransportPwa from "./pages/TransportPwa";
 
 const queryClient = new QueryClient();
 
