@@ -120,4 +120,5 @@ export const SectionSlider = React.forwardRef<HTMLDivElement, SectionSliderProps
       )}
     </div>
   );
-}
+});
+SectionSlider.displayName = 'SectionSlider';
