@@ -2,7 +2,6 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
-import { ProductSlider } from '@/components/marketplace/ProductSlider';
 import { UpcomingSection } from '@/components/marketplace/UpcomingSection';
 import { OnDemandSection } from '@/components/marketplace/OnDemandSection';
 import { TopSellingSection } from '@/components/marketplace/TopSellingSection';
@@ -111,7 +110,7 @@ export default function Marketplace() {
   const { checkUserStatus } = useFraudDetection();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { allRows } = useMarketplaceProducts();
+  useMarketplaceProducts(); // warm cache
 
   const logPaymentAttempt = async (
     product: Product, 
@@ -219,15 +218,15 @@ export default function Marketplace() {
     toast.success(`${label} copied!`);
   };
 
-  const handleFavorite = (product: Product) => {
+  const _handleFavorite = (product: Product) => {
     toast.success(`${product.title} added to favorites`);
   };
 
-  const handleNotify = (product: Product) => {
+  const _handleNotify = (product: Product) => {
     toast.success(`You'll be notified when ${product.title} launches`);
   };
 
-  const handleDownloadApk = (product: Product) => {
+  const _handleDownloadApk = (product: Product) => {
     if (!user) {
       toast.error('Please sign in to download APK');
       return;
@@ -597,7 +596,7 @@ export default function Marketplace() {
                     Complete Purchase
                   </DialogTitle>
                   <DialogDescription>
-                    {selectedProduct?.title} — ₹{selectedProduct?.price?.toLocaleString() ?? ''}
+                    {selectedProduct?.title} — ${selectedProduct?.price ?? ''}
                   </DialogDescription>
                 </DialogHeader>
 
@@ -631,7 +630,7 @@ export default function Marketplace() {
                     {paymentSubmitting || processing ? (
                       <><Loader2 className="h-4 w-4 animate-spin" /> Processing... Do not close</>
                     ) : (
-                      <><ShoppingCart className="h-4 w-4" /> Pay ₹{selectedProduct?.price?.toLocaleString()} from Wallet</>
+                      <><ShoppingCart className="h-4 w-4" /> Pay ${selectedProduct?.price} from Wallet</>
                     )}
                   </Button>
                 )}
@@ -676,7 +675,7 @@ export default function Marketplace() {
                               <Copy className="h-3 w-3 inline mr-1" />Copy
                             </button>
                           </div>
-                          <p className="text-xs text-muted-foreground">Send ₹{selectedProduct?.price?.toLocaleString()} → enter Transaction ID below</p>
+                          <p className="text-xs text-muted-foreground">Send ${selectedProduct?.price} → enter Transaction ID below</p>
                           <Input placeholder="UPI Transaction ID" value={manualTxnRef} onChange={e => setManualTxnRef(e.target.value)} onClick={e => e.stopPropagation()} />
                           <Button className="w-full h-10" onClick={handleManualPayment} disabled={paymentSubmitting || !manualTxnRef.trim()}>
                             {paymentSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Submit UPI Payment'}
