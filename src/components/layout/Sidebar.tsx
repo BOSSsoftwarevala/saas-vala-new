@@ -67,14 +67,14 @@ export function Sidebar() {
         collapsed ? 'w-16' : 'w-64'
       )}
       style={{
-        background: 'linear-gradient(180deg, hsl(222, 47%, 4%) 0%, hsl(222, 47%, 3%) 100%)',
+        background: 'linear-gradient(180deg, hsl(215, 65%, 18%) 0%, hsl(215, 65%, 14%) 100%)',
       }}
     >
       {/* Subtle ambient glow on sidebar */}
       <div 
         className="absolute top-0 left-0 w-full h-32 pointer-events-none opacity-30"
         style={{
-          background: 'radial-gradient(ellipse at 50% 0%, hsl(25, 95%, 53%, 0.1) 0%, transparent 70%)',
+          background: 'radial-gradient(ellipse at 50% 0%, hsl(215, 80%, 60%, 0.15) 0%, transparent 70%)',
         }}
       />
 
@@ -126,8 +126,8 @@ export function Sidebar() {
                     layoutId="sidebar-active"
                     className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[60%] rounded-r-full"
                     style={{
-                      background: 'linear-gradient(180deg, hsl(25, 95%, 53%), hsl(38, 92%, 50%))',
-                      boxShadow: '0 0 12px hsl(25, 95%, 53%, 0.6)',
+                      background: 'linear-gradient(180deg, hsl(215, 80%, 60%), hsl(215, 75%, 42%))',
+                      boxShadow: '0 0 12px hsl(215, 80%, 60%, 0.5)',
                     }}
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
