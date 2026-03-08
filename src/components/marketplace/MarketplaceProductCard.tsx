@@ -127,7 +127,7 @@ export function MarketplaceProductCard({
     return `https://${cleanSlug}.saasvala.com`;
   };
 
-  const getSourceUrl = (): string => {
+  const _getSourceUrl = (): string => {
     const gitRepo = (product as any).github_repo || (product as any).gitRepoUrl || (product as any).git_repo_url;
     if (gitRepo) return gitRepo;
     const slug = (product as any).slug || product.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
