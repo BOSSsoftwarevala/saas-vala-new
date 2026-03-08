@@ -70,7 +70,7 @@ export default function ValaBuilder() {
       updateStep('plan', 'running');
       addOutput('📋 AI Planner analyzing requirements...');
 
-      const { data, error } = await supabase.functions.invoke('ai-developer', {
+      const { error } = await supabase.functions.invoke('ai-developer', {
         body: {
           messages: [{ role: 'user', content: `Create a complete app called "${appName}": ${prompt}` }],
           tools: ['generate_code'],
