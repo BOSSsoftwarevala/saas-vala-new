@@ -50,6 +50,7 @@ import ConstructionPwa from "./pages/ConstructionPwa";
 import AutomotivePwa from "./pages/AutomotivePwa";
 import AgriculturePwa from "./pages/AgriculturePwa";
 import EnergyPwa from "./pages/EnergyPwa";
+import TelecomPwa from "./pages/TelecomPwa";
 
 const queryClient = new QueryClient();
 
@@ -117,6 +118,7 @@ function AppRoutes() {
       <Route path="/automotive-pwa" element={<AutomotivePwa />} />
       <Route path="/agriculture-pwa" element={<AgriculturePwa />} />
       <Route path="/energy-pwa" element={<EnergyPwa />} />
+      <Route path="/telecom-pwa" element={<TelecomPwa />} />
 
       {/* Protected routes */}
       <Route
