@@ -6,49 +6,49 @@ import { SectionHeader } from './SectionHeader';
 
 const TOP_5_TRAVEL_CLONES = [
   {
-    id: 'travel-clone-1', title: 'Booking.com Hotel Booking Clone',
-    subtitle: 'Online travel platform for booking hotels, apartments, and vacation stays.',
-    category: 'Travel', description: 'Online travel platform for booking hotels, apartments, and vacation stays.',
-    features: ['Hotel Listings', 'Booking System', 'Guest Reviews', 'Map Search', 'Booking Dashboard'],
+    id: 'travel-clone-1', title: 'Airbnb Rental Marketplace Clone',
+    subtitle: 'Vacation rental marketplace connecting hosts with travelers worldwide.',
+    category: 'Travel', description: 'Vacation rental marketplace connecting hosts with travelers worldwide.',
+    features: ['Property Listings', 'Booking System', 'Host Dashboard', 'Reviews & Ratings', 'Payment Integration'],
     techStack: ['React', 'Node.js', 'PostgreSQL'],
+    github_repo: 'https://github.com/saasvala/airbnb-rental-clone-software',
+    price: 5, old_price: 10, rating: 4.9, isAvailable: true, status: 'active', slug: 'airbnb-rental-clone-software',
+  },
+  {
+    id: 'travel-clone-2', title: 'Booking.com Hotel Platform Clone',
+    subtitle: 'Hotel booking platform offering global accommodation listings.',
+    category: 'Travel', description: 'Hotel booking platform offering global accommodation listings.',
+    features: ['Hotel Listings', 'Booking System', 'Customer Reviews', 'Payment Integration', 'Booking Dashboard'],
+    techStack: ['Next.js', 'Node.js', 'PostgreSQL'],
     github_repo: 'https://github.com/saasvala/booking-hotel-clone-software',
     price: 5, old_price: 10, rating: 4.9, isAvailable: true, status: 'active', slug: 'booking-hotel-clone-software',
   },
   {
-    id: 'travel-clone-2', title: 'Expedia Travel Booking Clone',
-    subtitle: 'Travel booking platform offering flights, hotels, and vacation packages.',
-    category: 'Travel', description: 'Travel booking platform offering flights, hotels, and vacation packages.',
-    features: ['Flight Search', 'Hotel Booking', 'Travel Packages', 'Booking Management', 'Travel Dashboard'],
-    techStack: ['Next.js', 'Node.js', 'PostgreSQL'],
+    id: 'travel-clone-3', title: 'Expedia Travel Booking Clone',
+    subtitle: 'Travel booking platform for flights, hotels, and travel packages.',
+    category: 'Travel', description: 'Travel booking platform for flights, hotels, and travel packages.',
+    features: ['Flight Search', 'Hotel Booking', 'Travel Packages', 'Booking Management', 'Payment Integration'],
+    techStack: ['React', 'Node.js', 'PostgreSQL'],
     github_repo: 'https://github.com/saasvala/expedia-travel-clone-software',
     price: 5, old_price: 10, rating: 4.9, isAvailable: true, status: 'active', slug: 'expedia-travel-clone-software',
   },
   {
-    id: 'travel-clone-3', title: 'TripAdvisor Travel Reviews Clone',
-    subtitle: 'Travel platform providing reviews for hotels, restaurants, and attractions.',
-    category: 'Travel', description: 'Travel platform providing reviews for hotels, restaurants, and attractions.',
-    features: ['Travel Reviews', 'Hotel Listings', 'Rating System', 'Travel Guides', 'User Profiles'],
+    id: 'travel-clone-4', title: 'TripAdvisor Reviews & Travel Clone',
+    subtitle: 'Travel discovery platform featuring reviews and booking integrations.',
+    category: 'Travel', description: 'Travel discovery platform featuring reviews and booking integrations.',
+    features: ['Travel Listings', 'Reviews & Ratings', 'Booking Links', 'Travel Guides', 'User Profiles'],
     techStack: ['React', 'Node.js', 'PostgreSQL'],
     github_repo: 'https://github.com/saasvala/tripadvisor-travel-clone-software',
     price: 5, old_price: 10, rating: 4.9, isAvailable: true, status: 'active', slug: 'tripadvisor-travel-clone-software',
   },
   {
-    id: 'travel-clone-4', title: 'Airbnb Travel Marketplace Clone',
-    subtitle: 'Global travel marketplace for booking unique stays and experiences.',
-    category: 'Travel', description: 'Global travel marketplace for booking unique stays and experiences.',
-    features: ['Property Listings', 'Booking System', 'Host Dashboard', 'Guest Reviews', 'Payment Integration'],
+    id: 'travel-clone-5', title: 'Agoda Hotel Booking Clone',
+    subtitle: 'Online hotel booking platform offering deals on accommodations worldwide.',
+    category: 'Travel', description: 'Online hotel booking platform offering deals on accommodations worldwide.',
+    features: ['Hotel Listings', 'Booking System', 'Payment Integration', 'Reviews & Ratings', 'Booking Dashboard'],
     techStack: ['React', 'Node.js', 'PostgreSQL'],
-    github_repo: 'https://github.com/saasvala/airbnb-travel-clone-software',
-    price: 5, old_price: 10, rating: 4.9, isAvailable: true, status: 'active', slug: 'airbnb-travel-clone-software',
-  },
-  {
-    id: 'travel-clone-5', title: 'MakeMyTrip Travel Booking Clone',
-    subtitle: 'Indian travel booking platform for flights, hotels, and holiday packages.',
-    category: 'Travel', description: 'Indian travel booking platform for flights, hotels, and holiday packages.',
-    features: ['Flight Booking', 'Hotel Booking', 'Travel Packages', 'Booking Dashboard', 'Travel Deals'],
-    techStack: ['React', 'Node.js', 'PostgreSQL'],
-    github_repo: 'https://github.com/saasvala/makemytrip-travel-clone-software',
-    price: 5, old_price: 10, rating: 4.9, isAvailable: true, status: 'active', slug: 'makemytrip-travel-clone-software',
+    github_repo: 'https://github.com/saasvala/agoda-booking-clone-software',
+    price: 5, old_price: 10, rating: 4.9, isAvailable: true, status: 'active', slug: 'agoda-booking-clone-software',
   },
 ];
 
@@ -62,7 +62,7 @@ export function TravelBookingSection({ onBuyNow }: { onBuyNow: (p: any) => void 
       <SectionHeader
         icon="✈️"
         title="Travel & Booking Platforms"
-        subtitle="Hotel Booking, Flight Search, Travel Packages & Booking Management."
+        subtitle="Property Listings, Booking Systems, Travel Search & Payment Integration."
         badge="TRAVEL"
         badgeVariant="trending"
         totalCount={displayProducts.length}
