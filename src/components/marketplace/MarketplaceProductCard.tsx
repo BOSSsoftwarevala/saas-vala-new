@@ -231,58 +231,84 @@ export function MarketplaceProductCard({
 
   const cardRank = rank ?? index + 1;
 
-  return (
+    return (
     <>
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 24 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: index * 0.04, type: 'spring', stiffness: 280, damping: 26 }}
-        whileHover={{ scale: 1.015, zIndex: 10 }}
+        transition={{ delay: index * 0.04, type: 'spring', stiffness: 260, damping: 24 }}
+        whileHover={{ y: -8, zIndex: 10 }}
         className="flex-shrink-0"
         style={{ width: '340px' }}
       >
         <div
-          className="rounded-2xl overflow-hidden border border-border/50 shadow-xl h-full flex flex-col"
-          style={{ background: 'hsl(var(--card))' }}
+          className="rounded-2xl overflow-hidden h-full flex flex-col relative group"
+          style={{
+            background: 'hsl(var(--card))',
+            border: '1px solid hsl(var(--border) / 0.5)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08)',
+            transition: 'box-shadow 0.3s ease, border-color 0.3s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.boxShadow = '0 8px 32px rgba(37,99,235,0.12), 0 16px 48px rgba(0,0,0,0.14), 0 2px 8px rgba(37,99,235,0.08)';
+            e.currentTarget.style.borderColor = 'rgba(37,99,235,0.3)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.06), 0 8px 24px rgba(0,0,0,0.08)';
+            e.currentTarget.style.borderColor = 'hsl(var(--border) / 0.5)';
+          }}
         >
-          {/* ── TOP ICON AREA ── */}
+          {/* ── TOP ICON AREA — Premium Gradient ── */}
           <div
-            className="relative flex items-center justify-between px-5 py-5"
-            style={{ backgroundColor: cat.bg, minHeight: '100px' }}
+            className="relative flex items-center justify-between px-5 py-5 overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg, ${cat.bg} 0%, ${cat.bg}ee 40%, hsl(215, 50%, 18%) 100%)`,
+              minHeight: '110px',
+            }}
           >
-            {/* Orange icon box — left */}
+            {/* Subtle mesh overlay */}
             <div
-              className="flex items-center justify-center rounded-xl shadow-lg"
+              className="absolute inset-0 pointer-events-none opacity-20"
               style={{
-                width: 64,
-                height: 64,
-                background: 'rgba(249,115,22,0.25)',
+                background: 'radial-gradient(circle at 20% 50%, rgba(255,255,255,0.08) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(255,255,255,0.05) 0%, transparent 50%)',
+              }}
+            />
+
+            {/* Glowing icon container */}
+            <div
+              className="relative flex items-center justify-center rounded-xl"
+              style={{
+                width: 68,
+                height: 68,
+                background: 'linear-gradient(135deg, rgba(249,115,22,0.3) 0%, rgba(249,115,22,0.1) 100%)',
                 border: '1.5px solid rgba(249,115,22,0.4)',
+                boxShadow: '0 0 20px rgba(249,115,22,0.2), inset 0 1px 0 rgba(255,255,255,0.1)',
+                backdropFilter: 'blur(8px)',
               }}
             >
-              <Box
-                className="text-orange-400"
-                style={{ width: 30, height: 30, color: '#f97316' }}
-              />
+              <Box style={{ width: 32, height: 32, color: '#f97316', filter: 'drop-shadow(0 0 6px rgba(249,115,22,0.4))' }} />
             </div>
 
-            {/* LIVE DEMO badge — center */}
+            {/* LIVE DEMO badge — center with glow */}
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
               {!isPipeline ? (
                 <span
-                  className="flex items-center gap-1.5 font-black text-white text-[11px] px-3 py-1 rounded-full"
-                  style={{ background: '#16a34a', boxShadow: '0 0 12px rgba(22,163,74,0.5)' }}
+                  className="flex items-center gap-1.5 font-black text-white text-[11px] px-4 py-1.5 rounded-full"
+                  style={{
+                    background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                    boxShadow: '0 0 16px rgba(22,163,74,0.5), 0 2px 4px rgba(0,0,0,0.2)',
+                  }}
                 >
                   <span
                     className="inline-block rounded-full animate-pulse"
-                    style={{ width: 6, height: 6, background: '#fff' }}
+                    style={{ width: 6, height: 6, background: '#fff', boxShadow: '0 0 6px #fff' }}
                   />
                   LIVE DEMO
                 </span>
               ) : (
                 <span
-                  className="flex items-center gap-1.5 font-black text-black text-[11px] px-3 py-1 rounded-full"
-                  style={{ background: '#eab308' }}
+                  className="flex items-center gap-1.5 font-black text-black text-[11px] px-4 py-1.5 rounded-full"
+                  style={{ background: 'linear-gradient(135deg, #eab308, #ca8a04)', boxShadow: '0 2px 8px rgba(234,179,8,0.3)' }}
                 >
                   ON PIPELINE
                 </span>
@@ -290,14 +316,14 @@ export function MarketplaceProductCard({
             </div>
 
             {/* Rank — right */}
-            <span className="text-xs font-bold text-white/50 self-start">#{cardRank}</span>
+            <span className="text-xs font-bold text-white/40 self-start select-none">#{cardRank}</span>
           </div>
 
           {/* ── CARD BODY ── */}
           <div className="flex flex-col flex-1 p-5 gap-2">
 
             {/* Product name */}
-            <h3 className="font-black text-[15px] text-foreground uppercase leading-tight">
+            <h3 className="font-black text-[15px] text-foreground uppercase leading-tight tracking-wide">
               {product.title}
             </h3>
 
@@ -322,22 +348,24 @@ export function MarketplaceProductCard({
               <button
                 onClick={() => setActiveTab('features')}
                 className={cn(
-                  'text-[11px] font-bold px-3 py-1 rounded-full border transition-all',
+                  'text-[11px] font-bold px-3 py-1 rounded-full border transition-all duration-200',
                   activeTab === 'features'
-                    ? 'bg-primary text-primary-foreground border-primary'
+                    ? 'text-white border-transparent'
                     : 'border-border/60 text-muted-foreground hover:border-primary/50 hover:text-primary'
                 )}
+                style={activeTab === 'features' ? { background: 'linear-gradient(135deg, #2563eb, #4f46e5)', boxShadow: '0 2px 8px rgba(37,99,235,0.3)' } : undefined}
               >
                 Features
               </button>
               <button
                 onClick={() => setActiveTab('tech')}
                 className={cn(
-                  'text-[11px] font-bold px-3 py-1 rounded-full border transition-all',
+                  'text-[11px] font-bold px-3 py-1 rounded-full border transition-all duration-200',
                   activeTab === 'tech'
-                    ? 'bg-primary text-primary-foreground border-primary'
+                    ? 'text-white border-transparent'
                     : 'border-border/60 text-muted-foreground hover:border-primary/50 hover:text-primary'
                 )}
+                style={activeTab === 'tech' ? { background: 'linear-gradient(135deg, #2563eb, #4f46e5)', boxShadow: '0 2px 8px rgba(37,99,235,0.3)' } : undefined}
               >
                 Tech Stack
               </button>
@@ -349,8 +377,8 @@ export function MarketplaceProductCard({
                 ? showFeatures.map((f, i) => (
                     <span
                       key={i}
-                      className="inline-flex items-center gap-1 text-[11px] border border-border/50 text-foreground px-2 py-0.5 rounded-md"
-                      style={{ background: 'rgba(255,255,255,0.04)' }}
+                      className="inline-flex items-center gap-1 text-[11px] text-foreground px-2.5 py-1 rounded-lg"
+                      style={{ background: 'hsl(var(--muted))', border: '1px solid hsl(var(--border) / 0.6)' }}
                     >
                       <Box style={{ width: 11, height: 11, color: '#9ca3af' }} />
                       {f}
@@ -359,12 +387,12 @@ export function MarketplaceProductCard({
                 : techStack.map((t, i) => (
                     <span
                       key={i}
-                      className="text-[11px] font-semibold px-2 py-0.5 rounded-md border"
+                      className="text-[11px] font-semibold px-2.5 py-1 rounded-lg border"
                       style={
-                        i === 0 ? { background: 'rgba(59,130,246,0.15)', color: '#60a5fa', borderColor: 'rgba(59,130,246,0.3)' }
-                        : i === 1 ? { background: 'rgba(34,197,94,0.15)', color: '#4ade80', borderColor: 'rgba(34,197,94,0.3)' }
-                        : i === 2 ? { background: 'rgba(249,115,22,0.15)', color: '#fb923c', borderColor: 'rgba(249,115,22,0.3)' }
-                        : { background: 'rgba(255,255,255,0.05)', color: '#9ca3af', borderColor: 'rgba(255,255,255,0.1)' }
+                        i === 0 ? { background: 'rgba(59,130,246,0.12)', color: '#3b82f6', borderColor: 'rgba(59,130,246,0.25)' }
+                        : i === 1 ? { background: 'rgba(34,197,94,0.12)', color: '#22c55e', borderColor: 'rgba(34,197,94,0.25)' }
+                        : i === 2 ? { background: 'rgba(249,115,22,0.12)', color: '#f97316', borderColor: 'rgba(249,115,22,0.25)' }
+                        : { background: 'hsl(var(--muted))', color: 'hsl(var(--muted-foreground))', borderColor: 'hsl(var(--border) / 0.5)' }
                       }
                     >
                       {t}
@@ -375,17 +403,24 @@ export function MarketplaceProductCard({
 
             {/* ── PRICE ── */}
             <div className="flex items-center gap-2 mt-1">
-              <span className="text-sm line-through text-muted-foreground">$10</span>
-              <span className="text-[28px] font-black text-primary leading-none">$5</span>
+              <span className="text-sm line-through text-muted-foreground/60">$10</span>
+              <motion.span
+                className="text-[28px] font-black leading-none"
+                style={{ color: '#2563eb', textShadow: '0 0 20px rgba(37,99,235,0.15)' }}
+                whileHover={{ scale: 1.08 }}
+                transition={{ type: 'spring', stiffness: 400 }}
+              >
+                $5
+              </motion.span>
               <span
-                className="text-[11px] font-black px-2 py-0.5 rounded-full"
-                style={{ background: 'rgba(239,68,68,0.2)', color: '#f87171', border: '1px solid rgba(239,68,68,0.3)' }}
+                className="text-[11px] font-black px-2.5 py-0.5 rounded-full"
+                style={{ background: 'linear-gradient(135deg, rgba(239,68,68,0.15), rgba(239,68,68,0.08))', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}
               >
                 90% OFF
               </span>
               <div className="ml-auto flex items-center gap-0.5">
                 <Star className="fill-yellow-400 text-yellow-400" style={{ width: 13, height: 13 }} />
-                <span className="text-[11px] font-bold text-yellow-400">4.9</span>
+                <span className="text-[11px] font-bold text-yellow-500">4.9</span>
               </div>
             </div>
 
@@ -396,7 +431,7 @@ export function MarketplaceProductCard({
                   <Button
                     size="sm"
                     className={cn(
-                      'flex-1 h-10 text-[12px] font-bold gap-1.5 rounded-xl',
+                      'flex-1 h-10 text-[12px] font-bold gap-1.5 rounded-xl transition-all duration-200',
                       notified ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-yellow-500 hover:bg-yellow-400 text-black'
                     )}
                     onClick={handleNotifyMe}
@@ -408,8 +443,8 @@ export function MarketplaceProductCard({
                     size="sm"
                     variant="outline"
                     className={cn(
-                      'h-10 w-11 p-0 rounded-xl',
-                      wishlisted ? 'border-pink-500/60 text-pink-400' : 'border-border text-muted-foreground hover:text-pink-400 hover:border-pink-400/50'
+                      'h-10 w-11 p-0 rounded-xl transition-all duration-200',
+                      wishlisted ? 'border-pink-500/60 text-pink-400 bg-pink-500/10' : 'border-border text-muted-foreground hover:text-pink-400 hover:border-pink-400/50'
                     )}
                     onClick={handleWishlist}
                     title="Add to Cart"
@@ -431,8 +466,8 @@ export function MarketplaceProductCard({
                     size="sm"
                     variant="outline"
                     className={cn(
-                      "flex-1 h-10 text-[12px] font-bold gap-1.5 rounded-xl border-border",
-                      hasDemoAvailable ? "hover:border-primary/50 hover:text-primary" : "opacity-70"
+                      "flex-1 h-10 text-[12px] font-bold gap-1.5 rounded-xl border-border transition-all duration-200",
+                      hasDemoAvailable ? "hover:border-primary/50 hover:text-primary hover:shadow-[0_2px_12px_rgba(37,99,235,0.1)]" : "opacity-70"
                     )}
                     onClick={handleDemo}
                   >
@@ -443,7 +478,7 @@ export function MarketplaceProductCard({
                     size="sm"
                     variant="outline"
                     className={cn(
-                      'h-10 w-11 p-0 rounded-xl',
+                      'h-10 w-11 p-0 rounded-xl transition-all duration-200',
                       wishlisted ? 'border-pink-500/60 text-pink-400 bg-pink-500/10' : 'border-border text-muted-foreground hover:text-pink-400 hover:border-pink-400/50'
                     )}
                     onClick={handleWishlist}
@@ -451,14 +486,20 @@ export function MarketplaceProductCard({
                   >
                     <Heart style={{ width: 16, height: 16 }} className={wishlisted ? 'fill-pink-400 text-pink-400' : ''} />
                   </Button>
-                  <Button
-                    size="sm"
-                    className="flex-1 h-10 text-[12px] font-black gap-1.5 rounded-xl"
-                    onClick={() => onBuyNow(product)}
-                  >
-                    <ShoppingCart style={{ width: 14, height: 14 }} />
-                    BUY $5
-                  </Button>
+                  <motion.div className="flex-1" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                    <Button
+                      size="sm"
+                      className="w-full h-10 text-[12px] font-black gap-1.5 rounded-xl text-white border-0"
+                      style={{
+                        background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)',
+                        boxShadow: '0 4px 14px rgba(37,99,235,0.35), 0 1px 3px rgba(0,0,0,0.1)',
+                      }}
+                      onClick={() => onBuyNow(product)}
+                    >
+                      <ShoppingCart style={{ width: 14, height: 14 }} />
+                      BUY $5
+                    </Button>
+                  </motion.div>
                 </div>
               )}
               {/* DOWNLOAD APK + FEATURES BUTTONS */}
@@ -466,7 +507,7 @@ export function MarketplaceProductCard({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border hover:border-green-500/50 hover:text-green-500"
+                  className="flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border hover:border-green-500/50 hover:text-green-600 hover:shadow-[0_2px_10px_rgba(34,197,94,0.1)] transition-all duration-200"
                   onClick={handleDownloadApk}
                   disabled={downloadChecking}
                 >
@@ -476,7 +517,7 @@ export function MarketplaceProductCard({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border hover:border-accent hover:bg-accent/10"
+                  className="flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border hover:border-primary/40 hover:text-primary hover:shadow-[0_2px_10px_rgba(37,99,235,0.08)] transition-all duration-200"
                   onClick={() => setFeaturesOpen(true)}
                 >
                   <Info style={{ width: 13, height: 13 }} />
