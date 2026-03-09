@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { SidebarProvider } from "@/hooks/useSidebarState";
+import { CartProvider } from "@/hooks/useCart";
 import { Loader2 } from "lucide-react";
  import { GlobalActivityPanel } from "@/components/global/GlobalActivityPanel";
  import { WorkingDeveloperIndicator } from "@/components/global/WorkingDeveloperIndicator";
@@ -61,6 +62,7 @@ import TelecomPwa from "./pages/TelecomPwa";
 import ItSoftwarePwa from "./pages/ItSoftwarePwa";
 import CloudDevopsPwa from "./pages/CloudDevopsPwa";
 import AnalyticsPwa from "./pages/AnalyticsPwa";
+import Cart from "./pages/Cart";
 
 const queryClient = new QueryClient();
 
@@ -138,6 +140,7 @@ function AppRoutes() {
       <Route path="/it-software-pwa" element={<ItSoftwarePwa />} />
       <Route path="/cloud-devops-pwa" element={<CloudDevopsPwa />} />
       <Route path="/analytics-pwa" element={<AnalyticsPwa />} />
+      <Route path="/cart" element={<Cart />} />
 
       {/* Protected routes */}
       <Route
@@ -334,11 +337,13 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <SidebarProvider>
-            <GlobalActivityPanel />
-            <WorkingDeveloperIndicator />
-            <AppRoutes />
-          </SidebarProvider>
+          <CartProvider>
+            <SidebarProvider>
+              <GlobalActivityPanel />
+              <WorkingDeveloperIndicator />
+              <AppRoutes />
+            </SidebarProvider>
+          </CartProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

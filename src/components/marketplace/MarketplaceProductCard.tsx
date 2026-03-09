@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/hooks/useCart';
 import type { MarketplaceProduct } from '@/hooks/useMarketplaceProducts';
 import {
   Dialog,
@@ -56,19 +57,14 @@ export function MarketplaceProductCard({
   rank,
 }: MarketplaceProductCardProps) {
   const [favorited, setFavorited] = useState(false);
-  const [inCart, setInCart] = useState(false);
   const [notified, setNotified] = useState(false);
   const [activeTab, setActiveTab] = useState<'features' | 'tech'>('features');
   const [demoOpen, setDemoOpen] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const { user } = useAuth();
-
-  // Check localStorage cart on mount
-  useEffect(() => {
-    const cart = JSON.parse(localStorage.getItem('sv_cart') || '[]');
-    if (cart.includes(product.id)) setInCart(true);
-  }, [product.id]);
+  const { isInCart, toggleItem } = useCart();
+  const inCart = isInCart(product.id);
 
   const isPipeline = !product.isAvailable || product.status === 'draft' || product.status === 'upcoming';
   const cat = getCatStyle(product.category);
@@ -108,19 +104,15 @@ export function MarketplaceProductCard({
   };
 
   const handleAddToCart = () => {
-    const cart: string[] = JSON.parse(localStorage.getItem('sv_cart') || '[]');
-    if (inCart) {
-      const newCart = cart.filter(id => id !== product.id);
-      localStorage.setItem('sv_cart', JSON.stringify(newCart));
-      setInCart(false);
-      toast('Removed from cart');
-    } else {
-      cart.push(product.id);
-      localStorage.setItem('sv_cart', JSON.stringify(cart));
-      setInCart(true);
-      toast.success(`🛒 ${product.title} added to cart!`);
-    }
-    window.dispatchEvent(new Event('sv_cart_update'));
+    toggleItem({
+      id: product.id,
+      title: product.title,
+      subtitle: product.subtitle || '',
+      image: product.image || '',
+      price: 5,
+      category: product.category,
+    });
+    toast.success(inCart ? 'Removed from cart' : `🛒 ${product.title} added to cart!`);
   };
 
   const handleNotifyMe = async () => {

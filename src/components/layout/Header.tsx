@@ -12,8 +12,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Search, Bell, User, Settings, LogOut } from 'lucide-react';
+import { ArrowLeft, Search, Bell, User, Settings, LogOut, ShoppingCart } from 'lucide-react';
 import { WalletHeaderButton } from '@/components/wallet/WalletHeaderButton';
+import { useCart } from '@/hooks/useCart';
 import { motion } from 'framer-motion';
 
 const pageTitles: Record<string, string> = {
@@ -39,6 +40,7 @@ export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, role, signOut, isSuperAdmin } = useAuth();
+  const { count: cartCount } = useCart();
 
   const pageTitle = pageTitles[location.pathname] || 'SaaS VALA';
   const canGoBack = location.pathname !== '/';
@@ -101,6 +103,28 @@ export function Header() {
 
       {/* Right section */}
       <div className="flex items-center gap-3">
+        {/* Cart */}
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative text-muted-foreground hover:text-foreground"
+            onClick={() => navigate('/cart')}
+          >
+            <ShoppingCart className="h-5 w-5" />
+            {cartCount > 0 && (
+              <motion.span
+                key={cartCount}
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-primary text-[10px] font-bold text-primary-foreground flex items-center justify-center"
+              >
+                {cartCount > 9 ? '9+' : cartCount}
+              </motion.span>
+            )}
+          </Button>
+        </motion.div>
+
         {/* Wallet */}
         <WalletHeaderButton />
 
