@@ -69,7 +69,7 @@ export function Sidebar() {
         collapsed ? 'w-16' : 'w-64'
       )}
       style={{
-        background: 'linear-gradient(180deg, hsl(215, 65%, 18%) 0%, hsl(215, 65%, 14%) 100%)',
+        background: 'linear-gradient(180deg, hsl(215, 72%, 12%) 0%, hsl(215, 75%, 8%) 100%)',
       }}
     >
       {/* Subtle ambient glow on sidebar */}
@@ -93,7 +93,7 @@ export function Sidebar() {
                 <img src={saasValaLogo} alt="SaaS VALA" className="h-8 w-8 rounded-lg object-cover ring-1 ring-primary/20" />
                 <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success border-2 border-sidebar" />
               </div>
-              <span className="font-display text-lg font-bold text-foreground tracking-tight">
+              <span className="font-display text-lg font-bold text-white tracking-tight">
                 SaaS VALA
               </span>
             </motion.div>
@@ -118,9 +118,10 @@ export function Sidebar() {
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 relative group',
                   isActive
-                    ? 'bg-sidebar-accent text-white'
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-white/90'
+                    ? 'text-white font-bold'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
                 )}
+                style={isActive ? { background: 'hsl(215, 65%, 32%)' } : undefined}
               >
                 {/* Active indicator bar */}
                 {isActive && (
@@ -128,8 +129,8 @@ export function Sidebar() {
                     layoutId="sidebar-active"
                     className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[60%] rounded-r-full"
                     style={{
-                      background: 'linear-gradient(180deg, hsl(215, 80%, 60%), hsl(215, 75%, 42%))',
-                      boxShadow: '0 0 12px hsl(215, 80%, 60%, 0.5)',
+                      background: 'linear-gradient(180deg, #5B9BFF, #3B7BFF)',
+                      boxShadow: '0 0 12px rgba(91, 155, 255, 0.6)',
                     }}
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
@@ -143,7 +144,7 @@ export function Sidebar() {
                   <Icon
                     className={cn(
                       'h-5 w-5 shrink-0 transition-colors duration-200',
-                      isActive ? 'text-white' : 'group-hover:text-white/90'
+                      isActive ? 'text-white' : 'text-white/70 group-hover:text-white'
                     )}
                   />
                 </motion.div>
@@ -189,7 +190,7 @@ export function Sidebar() {
                 onClick={signOut}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200',
-                  'text-sidebar-foreground hover:bg-destructive/10 hover:text-destructive'
+                  'text-white/70 hover:bg-red-500/15 hover:text-red-400'
                 )}
               >
                 <LogOut className="h-5 w-5 shrink-0" />
@@ -209,7 +210,7 @@ export function Sidebar() {
             size="sm"
             onClick={toggle}
             className={cn(
-              'mt-2 w-full justify-center text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground',
+              'mt-2 w-full justify-center text-white/70 hover:bg-white/10 hover:text-white',
               collapsed && 'px-0'
             )}
           >
@@ -230,7 +231,7 @@ export function Sidebar() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
-                className="mt-4 text-center text-xs text-muted-foreground"
+                className="mt-4 text-center text-xs text-white/40"
               >
                 Powered by{' '}
                 <span className="font-semibold text-gradient-primary">SoftwareVala™</span>
