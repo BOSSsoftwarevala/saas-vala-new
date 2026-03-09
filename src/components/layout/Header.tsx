@@ -12,8 +12,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { ArrowLeft, Search, Bell, User, Settings, LogOut } from 'lucide-react';
+import { ArrowLeft, Search, Bell, User, Settings, LogOut, ShoppingCart } from 'lucide-react';
 import { WalletHeaderButton } from '@/components/wallet/WalletHeaderButton';
+import { useCart } from '@/hooks/useCart';
 import { motion } from 'framer-motion';
 
 const pageTitles: Record<string, string> = {
