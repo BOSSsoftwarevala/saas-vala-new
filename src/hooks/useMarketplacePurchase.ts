@@ -3,14 +3,15 @@
  import { useAuth } from './useAuth';
  import { toast } from 'sonner';
  
- interface Product {
-   id: string;
-   title: string;
-   subtitle: string;
-   image: string;
-   status: 'upcoming' | 'live' | 'bestseller';
-   price: number;
- }
+interface Product {
+  id: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  status: 'upcoming' | 'live' | 'bestseller';
+  price: number;
+  category?: string;
+}
  
  interface PurchaseResult {
    success: boolean;
