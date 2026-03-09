@@ -93,7 +93,7 @@ export function Sidebar() {
                 <img src={saasValaLogo} alt="SaaS VALA" className="h-8 w-8 rounded-lg object-cover ring-1 ring-primary/20" />
                 <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success border-2 border-sidebar" />
               </div>
-              <span className="font-display text-lg font-bold text-foreground tracking-tight">
+              <span className="font-display text-lg font-bold text-white tracking-tight">
                 SaaS VALA
               </span>
             </motion.div>
