@@ -93,9 +93,28 @@ interface Product {
          console.error('Wallet update error:', updateError);
        }
  
-        // Step 5: Generate license key (SV-YEAR-CATEGORY-XXXNNN format)
+       // Step 5: Generate license key (SV-YEAR-CATEGORY-XXXNNN format)
         const licenseKey = generateLicenseKey((product as any).category);
- 
+
+       // Step 5b: Save license key to license_keys table
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30);
+        await supabase.from('license_keys').insert({
+          product_id: /^[0-9a-f]{8}-/i.test(product.id) ? product.id : null,
+          license_key: licenseKey,
+          key_type: 'monthly' as const,
+          status: 'active' as const,
+          owner_email: user.email || null,
+          owner_name: user.user_metadata?.full_name || null,
+          max_devices: 1,
+          activated_devices: 0,
+          activated_at: new Date().toISOString(),
+          expires_at: expiresAt.toISOString(),
+          created_by: user.id,
+          notes: `Purchased: ${product.title}`,
+          meta: { product_title: product.title, order_id: order.id, product_id: product.id },
+        });
+
        // Step 6: Log activity
        await supabase.from('activity_logs').insert({
          entity_type: 'marketplace_order',
