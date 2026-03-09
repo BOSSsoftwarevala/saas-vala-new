@@ -437,7 +437,7 @@ export function MarketplaceProductCard({
                     onClick={handleDemo}
                   >
                     <Play style={{ width: 14, height: 14 }} />
-                    {hasDemoAvailable ? 'DEMO' : 'DEMO SOON'}
+                    {hasDemoAvailable ? 'DEMO' : 'VIEW'}
                   </Button>
                   <Button
                     size="sm"
