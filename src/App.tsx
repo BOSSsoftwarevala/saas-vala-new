@@ -323,7 +323,7 @@ function AppRoutes() {
             <AdminRoute>
               <ApkPipeline />
             </AdminRoute>
-        }
+          </ProtectedRoute>
       />
       <Route
         path="/admin/add-product"
