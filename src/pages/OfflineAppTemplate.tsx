@@ -35,7 +35,7 @@ function initLocalDb() {
 export default function OfflineAppTemplate() {
   const [screen, setScreen] = useState<AppScreen>('splash');
   const [licenseKey, setLicenseKey] = useState('');
-  const [licenseValid, setLicenseValid] = useState(false);
+  const [_licenseValid, setLicenseValid] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPass, setLoginPass] = useState('');
   const [isOnline] = useState(navigator.onLine);
