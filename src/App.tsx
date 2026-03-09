@@ -140,6 +140,7 @@ function AppRoutes() {
       <Route path="/it-software-pwa" element={<ItSoftwarePwa />} />
       <Route path="/cloud-devops-pwa" element={<CloudDevopsPwa />} />
       <Route path="/analytics-pwa" element={<AnalyticsPwa />} />
+      <Route path="/cart" element={<Cart />} />
 
       {/* Protected routes */}
       <Route
