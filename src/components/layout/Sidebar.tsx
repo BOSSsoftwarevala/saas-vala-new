@@ -118,9 +118,10 @@ export function Sidebar() {
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 relative group',
                   isActive
-                    ? 'bg-sidebar-accent text-white'
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-white/90'
+                    ? 'text-white font-bold'
+                    : 'text-white/70 hover:bg-white/10 hover:text-white'
                 )}
+                style={isActive ? { background: 'hsl(215, 65%, 32%)' } : undefined}
               >
                 {/* Active indicator bar */}
                 {isActive && (
