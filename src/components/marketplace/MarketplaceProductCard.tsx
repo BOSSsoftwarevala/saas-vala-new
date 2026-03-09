@@ -55,13 +55,20 @@ export function MarketplaceProductCard({
   onBuyNow,
   rank,
 }: MarketplaceProductCardProps) {
-  const [wishlisted, setWishlisted] = useState(false);
+  const [favorited, setFavorited] = useState(false);
+  const [inCart, setInCart] = useState(false);
   const [notified, setNotified] = useState(false);
   const [activeTab, setActiveTab] = useState<'features' | 'tech'>('features');
   const [demoOpen, setDemoOpen] = useState(false);
   const [featuresOpen, setFeaturesOpen] = useState(false);
   const [iframeLoaded, setIframeLoaded] = useState(false);
   const { user } = useAuth();
+
+  // Check localStorage cart on mount
+  useState(() => {
+    const cart = JSON.parse(localStorage.getItem('sv_cart') || '[]');
+    if (cart.includes(product.id)) setInCart(true);
+  });
 
   const isPipeline = !product.isAvailable || product.status === 'draft' || product.status === 'upcoming';
   const cat = getCatStyle(product.category);
