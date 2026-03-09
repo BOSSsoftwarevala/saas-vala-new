@@ -129,8 +129,8 @@ export function Sidebar() {
                     layoutId="sidebar-active"
                     className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-[60%] rounded-r-full"
                     style={{
-                      background: 'linear-gradient(180deg, hsl(215, 80%, 60%), hsl(215, 75%, 42%))',
-                      boxShadow: '0 0 12px hsl(215, 80%, 60%, 0.5)',
+                      background: 'linear-gradient(180deg, #5B9BFF, #3B7BFF)',
+                      boxShadow: '0 0 12px rgba(91, 155, 255, 0.6)',
                     }}
                     transition={{ type: 'spring', stiffness: 400, damping: 30 }}
                   />
