@@ -492,39 +492,53 @@ export function MarketplaceProductCard({
             {/* ── BUTTONS ── */}
             <div className="mt-1 flex flex-col gap-2">
               {isPipeline ? (
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className={cn(
-                      'flex-1 h-10 text-[12px] font-bold gap-1.5 rounded-xl transition-all duration-200',
-                      notified ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-yellow-500 hover:bg-yellow-400 text-black'
-                    )}
-                    onClick={handleNotifyMe}
-                  >
-                    <Bell style={{ width: 14, height: 14 }} />
-                    {notified ? 'NOTIFIED' : 'NOTIFY ME'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className={cn(
-                      'h-10 w-11 p-0 rounded-xl transition-all duration-200',
-                      wishlisted ? 'border-pink-500/60 text-pink-400 bg-pink-500/10' : 'border-border text-muted-foreground hover:text-pink-400 hover:border-pink-400/50'
-                    )}
-                    onClick={handleWishlist}
-                    title="Add to Cart"
-                  >
-                    <Heart style={{ width: 16, height: 16 }} className={wishlisted ? 'fill-pink-400 text-pink-400' : ''} />
-                  </Button>
+                <>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className={cn(
+                        'flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl transition-all duration-200',
+                        notified ? 'bg-green-600 hover:bg-green-500 text-white' : 'bg-yellow-500 hover:bg-yellow-400 text-black'
+                      )}
+                      onClick={handleNotifyMe}
+                    >
+                      <Bell style={{ width: 13, height: 13 }} />
+                      {notified ? 'NOTIFIED' : 'NOTIFY ME'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={cn(
+                        'h-9 w-10 p-0 rounded-xl transition-all duration-200',
+                        favorited ? 'border-pink-500/60 text-pink-400 bg-pink-500/10' : 'border-border text-muted-foreground hover:text-pink-400 hover:border-pink-400/50'
+                      )}
+                      onClick={handleFavorite}
+                      title="Add to Favorites"
+                    >
+                      <Heart style={{ width: 15, height: 15 }} className={favorited ? 'fill-pink-400 text-pink-400' : ''} />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className={cn(
+                        'h-9 w-10 p-0 rounded-xl transition-all duration-200',
+                        inCart ? 'border-blue-500/60 text-blue-400 bg-blue-500/10' : 'border-border text-muted-foreground hover:text-blue-400 hover:border-blue-400/50'
+                      )}
+                      onClick={handleAddToCart}
+                      title="Add to Cart"
+                    >
+                      <ShoppingCart style={{ width: 15, height: 15 }} className={inCart ? 'text-blue-400' : ''} />
+                    </Button>
+                  </div>
                   <Button
                     size="sm"
                     disabled
-                    className="flex-1 h-10 text-[12px] font-bold rounded-xl opacity-40 gap-1.5"
+                    className="h-10 text-[12px] font-bold rounded-xl opacity-40 gap-1.5"
                   >
-                    <ShoppingCart style={{ width: 14, height: 14 }} />
+                    <Package style={{ width: 14, height: 14 }} />
                     BUY $5
                   </Button>
-                </div>
+                </>
               ) : (
                 <div className="flex gap-2">
                   <Button
