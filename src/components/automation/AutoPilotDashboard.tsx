@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAutomation } from '@/hooks/useAutoMation';
 import { GitHubMultiAccountPanel } from './GitHubMultiAccountPanel';
 import { SourceCodeCatalogPanel } from './SourceCodeCatalogPanel';
+import { BulkVercelDeployPanel } from './BulkVercelDeployPanel';
 import { 
   Bot, 
   Zap, 
