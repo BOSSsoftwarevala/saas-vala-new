@@ -118,8 +118,8 @@ export function Sidebar() {
                 className={cn(
                   'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200 relative group',
                   isActive
-                    ? 'bg-sidebar-accent text-primary'
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-foreground'
+                    ? 'bg-sidebar-accent text-white'
+                    : 'text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-white/90'
                 )}
               >
                 {/* Active indicator bar */}
@@ -143,7 +143,7 @@ export function Sidebar() {
                   <Icon
                     className={cn(
                       'h-5 w-5 shrink-0 transition-colors duration-200',
-                      isActive ? 'text-primary' : 'group-hover:text-foreground'
+                      isActive ? 'text-white' : 'group-hover:text-white/90'
                     )}
                   />
                 </motion.div>
