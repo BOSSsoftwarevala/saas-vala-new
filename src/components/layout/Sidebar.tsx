@@ -210,7 +210,7 @@ export function Sidebar() {
             size="sm"
             onClick={toggle}
             className={cn(
-              'mt-2 w-full justify-center text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground',
+              'mt-2 w-full justify-center text-white/70 hover:bg-white/10 hover:text-white',
               collapsed && 'px-0'
             )}
           >
