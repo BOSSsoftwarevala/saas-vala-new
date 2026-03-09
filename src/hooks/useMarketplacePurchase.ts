@@ -144,14 +144,24 @@ interface Product {
    return { purchaseProduct, processing };
  }
  
- function generateLicenseKey(): string {
-   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-   let result = '';
-   for (let j = 0; j < 4; j++) {
-     if (j > 0) result += '-';
-     for (let i = 0; i < 4; i++) {
-       result += chars.charAt(Math.floor(Math.random() * chars.length));
-     }
-   }
-   return result;
- }
+const CATEGORY_CODES: Record<string, string> = {
+  Healthcare: 'HEALTH', Finance: 'FIN', Education: 'EDU',
+  Food: 'FOOD', Transport: 'TRANS', Retail: 'RETAIL',
+  Marketing: 'MKT', HR: 'HR', Logistics: 'LOGI',
+  Gaming: 'GAME', 'Real Estate': 'REALTY', Legal: 'LEGAL',
+  IoT: 'IOT', Blockchain: 'CHAIN', Media: 'MEDIA',
+  Agriculture: 'AGRI', Construction: 'CONST', Manufacturing: 'MFG',
+  Automotive: 'AUTO', Travel: 'TRAVEL',
+};
+
+function generateLicenseKey(category?: string): string {
+  const year = new Date().getFullYear();
+  const catCode = (category && CATEGORY_CODES[category]) ? CATEGORY_CODES[category] : 'SFT';
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let suffix = '';
+  for (let i = 0; i < 3; i++) {
+    suffix += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  const num = String(Math.floor(Math.random() * 900) + 100);
+  return `SV-${year}-${catCode}-${suffix}${num}`;
+}
