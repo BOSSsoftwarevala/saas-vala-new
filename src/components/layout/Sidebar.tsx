@@ -22,6 +22,7 @@ import {
   Activity,
   Bot,
   Zap,
+  Smartphone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import saasValaLogo from '@/assets/saas-vala-logo.jpg';
