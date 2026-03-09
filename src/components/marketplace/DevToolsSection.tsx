@@ -33,7 +33,7 @@ const TOP_5_DEVTOOLS_CLONES = [
     price: 5, old_price: 10, rating: 4.9, isAvailable: true, status: 'active', slug: 'github-dev-clone-software',
   },
   {
-    id: 'devtools-clone-2', title: 'GitLab DevOps Platform Clone',
+    id: 'devtools-clone-4', title: 'GitLab DevOps Platform Clone',
     subtitle: 'Complete DevOps lifecycle platform for source control, CI/CD, and monitoring.',
     category: 'Developer Tools', description: 'Complete DevOps lifecycle platform for source control, CI/CD, and monitoring.',
     features: ['Git Repositories', 'CI/CD Pipelines', 'DevOps Automation', 'Issue Tracking', 'Deployment Tools'],
@@ -42,7 +42,7 @@ const TOP_5_DEVTOOLS_CLONES = [
     price: 5, old_price: 10, rating: 4.9, isAvailable: true, status: 'active', slug: 'gitlab-devops-clone-software',
   },
   {
-    id: 'devtools-clone-3', title: 'Bitbucket Code Repository Clone',
+    id: 'devtools-clone-5', title: 'Bitbucket Code Repository Clone',
     subtitle: 'Git repository hosting platform designed for professional teams.',
     category: 'Developer Tools', description: 'Git repository hosting platform designed for professional teams.',
     features: ['Git Repository Hosting', 'Pull Requests', 'Code Reviews', 'Access Control', 'Team Collaboration'],
@@ -51,7 +51,7 @@ const TOP_5_DEVTOOLS_CLONES = [
     price: 5, old_price: 10, rating: 4.9, isAvailable: true, status: 'active', slug: 'bitbucket-dev-clone-software',
   },
   {
-    id: 'devtools-clone-4', title: 'Jenkins CI/CD Automation Clone',
+    id: 'devtools-clone-6', title: 'Jenkins CI/CD Automation Clone',
     subtitle: 'Automation server used for building, testing, and deploying software.',
     category: 'Developer Tools', description: 'Automation server used for building, testing, and deploying software.',
     features: ['CI/CD Pipelines', 'Build Automation', 'Plugin System', 'Deployment Workflows', 'Developer Dashboard'],
@@ -60,7 +60,7 @@ const TOP_5_DEVTOOLS_CLONES = [
     price: 5, old_price: 10, rating: 4.9, isAvailable: true, status: 'active', slug: 'jenkins-cicd-clone-software',
   },
   {
-    id: 'devtools-clone-5', title: 'Docker Container Platform Clone',
+    id: 'devtools-clone-7', title: 'Docker Container Platform Clone',
     subtitle: 'Platform for building, shipping, and running containerized applications.',
     category: 'Developer Tools', description: 'Platform for building, shipping, and running containerized applications.',
     features: ['Container Management', 'Image Repository', 'Deployment Tools', 'Container Monitoring', 'DevOps Dashboard'],
