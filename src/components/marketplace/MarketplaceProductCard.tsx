@@ -148,13 +148,21 @@ export function MarketplaceProductCard({
   const handleDemo = () => {
     const demoUrl = getDemoUrl();
     if (!demoUrl) {
-      toast.info(`Live demo for ${product.title} will be available soon.`);
+      // No URL available — open features panel instead
+      setFeaturesOpen(true);
+      toast.info(`${product.title} — View features & details`, { duration: 3000 });
       return;
     }
     // GitHub or non-iframeable URLs → open in new tab
     if (!isIframeable(demoUrl)) {
-      window.open(demoUrl, '_blank', 'noopener,noreferrer');
-      toast.success(`Opening ${product.title} demo`);
+      const w = window.open(demoUrl, '_blank', 'noopener,noreferrer');
+      if (!w) {
+        // Popup blocked fallback
+        navigator.clipboard.writeText(demoUrl);
+        toast.success(`Link copied! Open: ${demoUrl}`);
+      } else {
+        toast.success(`Opening ${product.title} source code`);
+      }
     } else {
       // Actual deployed app → open in iframe dialog
       setDemoOpen(true);
