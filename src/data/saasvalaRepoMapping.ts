@@ -351,6 +351,7 @@ export const govRepos: RepoProduct[] = [
 export const allReposByCategory: Record<string, RepoProduct[]> = {
   Healthcare: healthcareRepos,
   Education: educationRepos,
+  Sports: sportsRepos,
   Finance: financeRepos,
   Retail: retailRepos,
   Food: foodRepos,
