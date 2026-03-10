@@ -35,6 +35,7 @@ export function GitHubMultiAccountPanel() {
     syncProjects,
     generateDailyReport,
     runFullAutomation,
+    bulkSetVisibility,
   } = useGitHubMultiAccount();
 
   useEffect(() => {
