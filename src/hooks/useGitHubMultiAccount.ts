@@ -218,25 +218,55 @@ export function useGitHubMultiAccount() {
     }
   }, []);
 
+  // Bulk set visibility (public/private) for all repos
+  const bulkSetVisibility = useCallback(async (visibility: 'public' | 'private' = 'public', account = 'SaaSVala') => {
+    setLoading(true);
+    toast.info(`🔄 Making all ${account} repos ${visibility}...`);
+
+    let offset = 0;
+    let hasMore = true;
+    let totalUpdated = 0;
+    let totalFailed = 0;
+
+    while (hasMore) {
+      try {
+        const { data, error } = await supabase.functions.invoke('github-multi-account', {
+          body: {
+            action: 'bulk_set_visibility',
+            data: { visibility, account, batch_size: 30, offset },
+          },
+        });
+
+        if (error) throw error;
+
+        totalUpdated += data.updated;
+        totalFailed += data.failed;
+        hasMore = data.has_more;
+        offset = data.next_offset;
+
+        toast.success(`Batch done: ${data.updated} updated, ${data.failed} failed. ${hasMore ? 'Continuing...' : 'Done!'}`);
+
+        if (hasMore) await new Promise(r => setTimeout(r, 1000));
+      } catch (err: any) {
+        toast.error(`Visibility change failed: ${err.message}`);
+        hasMore = false;
+      }
+    }
+
+    toast.success(`✅ Visibility update complete! ${totalUpdated} repos made ${visibility}, ${totalFailed} failed.`);
+    setLoading(false);
+  }, []);
+
   // Run full automation cycle
   const runFullAutomation = useCallback(async () => {
     setLoading(true);
     toast.info('🤖 Starting full automation cycle...');
     
     try {
-      // 1. List all projects
       await listAllProjects();
-      
-      // 2. Sync to database
       await syncProjects();
-      
-      // 3. Monitor all projects
       await monitorProjects();
-      
-      // 4. Auto-deploy updates
       await autoDeploy();
-      
-      // 5. Generate report
       await generateDailyReport();
       
       toast.success('✅ Full automation cycle completed!');
@@ -262,5 +292,6 @@ export function useGitHubMultiAccount() {
     syncProjects,
     generateDailyReport,
     runFullAutomation,
+    bulkSetVisibility,
   };
 }
