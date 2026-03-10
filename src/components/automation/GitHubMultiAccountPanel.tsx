@@ -15,7 +15,8 @@ import {
   ExternalLink,
   Zap,
   BarChart3,
-  FolderGit2
+  FolderGit2,
+  Eye
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
