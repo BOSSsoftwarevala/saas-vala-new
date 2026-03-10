@@ -15,7 +15,8 @@ import {
   ExternalLink,
   Zap,
   BarChart3,
-  FolderGit2
+  FolderGit2,
+  Eye
 } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
@@ -35,6 +36,7 @@ export function GitHubMultiAccountPanel() {
     syncProjects,
     generateDailyReport,
     runFullAutomation,
+    bulkSetVisibility,
   } = useGitHubMultiAccount();
 
   useEffect(() => {
@@ -67,6 +69,16 @@ export function GitHubMultiAccountPanel() {
               >
                 <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} />
                 Refresh
+              </Button>
+              <Button
+                onClick={() => bulkSetVisibility('public', 'SaaSVala')}
+                disabled={loading}
+                variant="outline"
+                size="sm"
+                className="border-green-500/30 text-green-400 hover:bg-green-500/10"
+              >
+                <Eye className="h-4 w-4 mr-1" />
+                Make All Public
               </Button>
               <Button
                 onClick={() => runFullAutomation()}
