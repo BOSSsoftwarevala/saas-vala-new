@@ -50,12 +50,12 @@ function getCatStyle(cat: string) {
 }
 
 
-export function MarketplaceProductCard({
+export const MarketplaceProductCard = React.forwardRef<HTMLDivElement, MarketplaceProductCardProps>(({
   product,
   index = 0,
   onBuyNow,
   rank,
-}: MarketplaceProductCardProps) {
+}, _ref) => {
   const [favorited, setFavorited] = useState(false);
   const [notified, setNotified] = useState(false);
   const [activeTab, setActiveTab] = useState<'features' | 'tech'>('features');
