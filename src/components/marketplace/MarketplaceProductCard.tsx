@@ -805,7 +805,8 @@ export const MarketplaceProductCard = React.forwardRef<HTMLDivElement, Marketpla
       </Dialog>
     </>
   );
-}
+});
+MarketplaceProductCard.displayName = 'MarketplaceProductCard';
 
 /* ─── COMING SOON PLACEHOLDER ─── */
 export function ComingSoonCard({ label }: { label: string }) {
