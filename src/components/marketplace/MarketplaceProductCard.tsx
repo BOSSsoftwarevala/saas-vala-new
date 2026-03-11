@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -50,12 +50,12 @@ function getCatStyle(cat: string) {
 }
 
 
-export function MarketplaceProductCard({
+export const MarketplaceProductCard = React.forwardRef<HTMLDivElement, MarketplaceProductCardProps>(({
   product,
   index = 0,
   onBuyNow,
   rank,
-}: MarketplaceProductCardProps) {
+}, _ref) => {
   const [favorited, setFavorited] = useState(false);
   const [notified, setNotified] = useState(false);
   const [activeTab, setActiveTab] = useState<'features' | 'tech'>('features');
@@ -805,7 +805,8 @@ export function MarketplaceProductCard({
       </Dialog>
     </>
   );
-}
+});
+MarketplaceProductCard.displayName = 'MarketplaceProductCard';
 
 /* ─── COMING SOON PLACEHOLDER ─── */
 export function ComingSoonCard({ label }: { label: string }) {
