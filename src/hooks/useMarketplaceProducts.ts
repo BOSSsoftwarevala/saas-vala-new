@@ -157,11 +157,13 @@ export function useMarketplaceProducts() {
 
   // Category-specific row fetchers
   const getByCategory = (cats: string[]) =>
-    products.filter(p => {
-      const bt = (p.businessType || '').toLowerCase();
-      const cat = (p.category || '').toLowerCase();
-      return cats.some(c => bt.includes(c) || cat.includes(c));
-    });
+    prioritizeProducts(
+      products.filter(p => {
+        const bt = (p.businessType || '').toLowerCase();
+        const cat = (p.category || '').toLowerCase();
+        return cats.some(c => bt.includes(c) || cat.includes(c));
+      })
+    );
 
   return {
     products,
