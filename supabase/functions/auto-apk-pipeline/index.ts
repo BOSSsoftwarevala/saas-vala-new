@@ -451,7 +451,8 @@ Deno.serve(async (req) => {
           total_repos: (allRepos || []).length,
           newly_registered: newlyRegistered,
           builds_queued: buildsQueued,
-          message: `✅ Pipeline complete: ${(allRepos || []).length} repos scanned, ${newlyRegistered} new, ${buildsQueued} APK builds queued`,
+          repaired_missing_slugs: repairedMissingSlugs,
+          message: `✅ Pipeline complete: ${(allRepos || []).length} repos scanned, ${newlyRegistered} new, ${buildsQueued} APK builds queued, ${repairedMissingSlugs} slugs repaired`,
         });
       }
 
