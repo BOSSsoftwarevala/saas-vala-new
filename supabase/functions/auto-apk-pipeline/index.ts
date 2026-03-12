@@ -155,7 +155,8 @@ Deno.serve(async (req) => {
           total_repos: repos.length,
           already_registered: existingSlugs.size,
           newly_registered: registered,
-          message: `✅ Scanned ${repos.length} repos, registered ${registered} new products`,
+          repaired_missing_slugs: repairedMissingSlugs,
+          message: `✅ Scanned ${repos.length} repos, registered ${registered} new products, repaired ${repairedMissingSlugs} missing slugs`,
         });
       }
 
