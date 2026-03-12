@@ -136,7 +136,8 @@ export function useMarketplaceProducts() {
         console.error('Failed to fetch marketplace products:', error);
         setProducts([]);
       } else {
-        setProducts((data || []).map((p, i) => mapDbProduct(p, i)));
+        const mapped = (data || []).map((p, i) => mapDbProduct(p, i));
+        setProducts(prioritizeProducts(mapped));
       }
       setLoading(false);
     };
