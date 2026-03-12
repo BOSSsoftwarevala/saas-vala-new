@@ -240,7 +240,7 @@ Deno.serve(async (req) => {
         const { data: pendingCatalog } = await admin
           .from("source_code_catalog")
           .select("id, slug, github_repo_url, project_name")
-          .in("status", ["pending", "analyzed"])
+          .in("status", ["pending", "analyzed", "uploaded"])
           .order("created_at", { ascending: true })
           .limit(limit);
 
