@@ -9,6 +9,63 @@ function slugify(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
 }
 
+async function fetchSaasvalaRepos(githubToken: string) {
+  const repos: any[] = [];
+  let page = 1;
+
+  while (true) {
+    const res = await fetch(
+      `https://api.github.com/users/saasvala/repos?per_page=100&page=${page}&sort=updated`,
+      { headers: { Authorization: `Bearer ${githubToken}`, "User-Agent": "SaaSVala-APK-Pipeline" } }
+    );
+
+    if (!res.ok) {
+      throw new Error(`GitHub API error: ${res.status}`);
+    }
+
+    const batch = await res.json();
+    if (!Array.isArray(batch) || batch.length === 0) break;
+
+    repos.push(...batch);
+    if (batch.length < 100) break;
+    page++;
+  }
+
+  return repos;
+}
+
+async function repairMissingCatalogSlugs(admin: any) {
+  const { data: missingSlugRows } = await admin
+    .from("source_code_catalog")
+    .select("id, slug, project_name, github_repo_url")
+    .is("slug", null)
+    .not("github_repo_url", "is", null)
+    .limit(100);
+
+  let repaired = 0;
+
+  for (const row of missingSlugRows || []) {
+    const fromRepoUrl = String(row.github_repo_url || "").split("/").pop();
+    const fallbackName = row.project_name || fromRepoUrl || "";
+    const newSlug = slugify(fromRepoUrl || fallbackName);
+
+    if (!newSlug) continue;
+
+    const { error } = await admin
+      .from("source_code_catalog")
+      .update({ slug: newSlug })
+      .eq("id", row.id);
+
+    if (!error) repaired++;
+  }
+
+  return repaired;
+}
+
+function canRunAsSystem(action: string) {
+  return action === "scheduled_daily_sync";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,28 +76,31 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Auth check
+    const { action, data } = await req.json();
+
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    const isSystemToken = authHeader === `Bearer ${anonKey}`;
+
+    let user: any = null;
+    if (authHeader) {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: authData, error: authError } = await userClient.auth.getUser();
+      if (!authError && authData?.user) {
+        user = authData.user;
+      }
+    }
+
+    if (!user && !(canRunAsSystem(action) && isSystemToken)) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid auth" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const admin = createClient(supabaseUrl, serviceKey);
-    const { action, data } = await req.json();
 
     switch (action) {
       // ═══════════════════════════════════════════
