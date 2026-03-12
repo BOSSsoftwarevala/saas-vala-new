@@ -58,6 +58,34 @@ function formatProductName(name: string): string {
   return (name || '').substring(0, 50).toUpperCase();
 }
 
+function getProductPriorityScore(product: MarketplaceProduct): number {
+  const repoUrl = (product.gitRepoUrl || '').toLowerCase();
+  const demoUrl = (product.demoUrl || '').toLowerCase();
+
+  const hasLiveDemo = Boolean(demoUrl && demoUrl.startsWith('http') && !demoUrl.includes('github.com'));
+  const hasRealRepo = repoUrl.includes('github.com/saasvala/') || repoUrl.includes('github.com/softwarevala/');
+  const hasAnyRepo = Boolean(repoUrl);
+  const isLive = product.status === 'live' || product.status === 'bestseller';
+  const isAvailable = product.isAvailable !== false;
+
+  return (
+    (hasLiveDemo ? 500 : 0) +
+    (hasRealRepo ? 300 : 0) +
+    (!hasRealRepo && hasAnyRepo ? 120 : 0) +
+    (isLive ? 80 : 0) +
+    (isAvailable ? 40 : 0) +
+    (product.featured ? 15 : 0) +
+    (product.trending ? 10 : 0)
+  );
+}
+
+function prioritizeProducts(products: MarketplaceProduct[]): MarketplaceProduct[] {
+  return products
+    .map((product, index) => ({ product, index, score: getProductPriorityScore(product) }))
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .map(({ product }) => product);
+}
+
 export function mapDbProduct(product: any, index: number): MarketplaceProduct {
   const features = Array.isArray(product.features) && product.features.length > 0
     ? product.features.slice(0, 4).map((f: any) =>
@@ -108,7 +136,8 @@ export function useMarketplaceProducts() {
         console.error('Failed to fetch marketplace products:', error);
         setProducts([]);
       } else {
-        setProducts((data || []).map((p, i) => mapDbProduct(p, i)));
+        const mapped = (data || []).map((p, i) => mapDbProduct(p, i));
+        setProducts(prioritizeProducts(mapped));
       }
       setLoading(false);
     };
@@ -128,11 +157,13 @@ export function useMarketplaceProducts() {
 
   // Category-specific row fetchers
   const getByCategory = (cats: string[]) =>
-    products.filter(p => {
-      const bt = (p.businessType || '').toLowerCase();
-      const cat = (p.category || '').toLowerCase();
-      return cats.some(c => bt.includes(c) || cat.includes(c));
-    });
+    prioritizeProducts(
+      products.filter(p => {
+        const bt = (p.businessType || '').toLowerCase();
+        const cat = (p.category || '').toLowerCase();
+        return cats.some(c => bt.includes(c) || cat.includes(c));
+      })
+    );
 
   return {
     products,
@@ -164,11 +195,13 @@ export function useProductsByCategory(categories: string[]) {
       } else {
         const mapped = (data || []).map((p, i) => mapDbProduct(p, i));
         // Filter by category keywords OR return all if no match
-        const filtered = mapped.filter(p => {
-          const bt = (p.businessType || '').toLowerCase();
-          const cat = (p.category || '').toLowerCase();
-          return categories.some(c => bt.includes(c.toLowerCase()) || cat.includes(c.toLowerCase()));
-        });
+        const filtered = prioritizeProducts(
+          mapped.filter(p => {
+            const bt = (p.businessType || '').toLowerCase();
+            const cat = (p.category || '').toLowerCase();
+            return categories.some(c => bt.includes(c.toLowerCase()) || cat.includes(c.toLowerCase()));
+          })
+        );
         setProducts(filtered);
       }
       setLoading(false);

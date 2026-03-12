@@ -9,6 +9,63 @@ function slugify(name: string) {
   return name.toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
 }
 
+async function fetchSaasvalaRepos(githubToken: string) {
+  const repos: any[] = [];
+  let page = 1;
+
+  while (true) {
+    const res = await fetch(
+      `https://api.github.com/users/saasvala/repos?per_page=100&page=${page}&sort=updated`,
+      { headers: { Authorization: `Bearer ${githubToken}`, "User-Agent": "SaaSVala-APK-Pipeline" } }
+    );
+
+    if (!res.ok) {
+      throw new Error(`GitHub API error: ${res.status}`);
+    }
+
+    const batch = await res.json();
+    if (!Array.isArray(batch) || batch.length === 0) break;
+
+    repos.push(...batch);
+    if (batch.length < 100) break;
+    page++;
+  }
+
+  return repos;
+}
+
+async function repairMissingCatalogSlugs(admin: any) {
+  const { data: missingSlugRows } = await admin
+    .from("source_code_catalog")
+    .select("id, slug, project_name, github_repo_url")
+    .is("slug", null)
+    .not("github_repo_url", "is", null)
+    .limit(100);
+
+  let repaired = 0;
+
+  for (const row of missingSlugRows || []) {
+    const fromRepoUrl = String(row.github_repo_url || "").split("/").pop();
+    const fallbackName = row.project_name || fromRepoUrl || "";
+    const newSlug = slugify(fromRepoUrl || fallbackName);
+
+    if (!newSlug) continue;
+
+    const { error } = await admin
+      .from("source_code_catalog")
+      .update({ slug: newSlug })
+      .eq("id", row.id);
+
+    if (!error) repaired++;
+  }
+
+  return repaired;
+}
+
+function canRunAsSystem(action: string) {
+  return action === "scheduled_daily_sync";
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,28 +76,31 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
-    // Auth check
+    const { action, data } = await req.json();
+
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
+    const isSystemToken = authHeader === `Bearer ${anonKey}`;
+
+    let user: any = null;
+    if (authHeader) {
+      const userClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: authData, error: authError } = await userClient.auth.getUser();
+      if (!authError && authData?.user) {
+        user = authData.user;
+      }
+    }
+
+    if (!user && !(canRunAsSystem(action) && isSystemToken)) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authError } = await userClient.auth.getUser();
-    if (authError || !user) {
-      return new Response(JSON.stringify({ error: "Invalid auth" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const admin = createClient(supabaseUrl, serviceKey);
-    const { action, data } = await req.json();
 
     switch (action) {
       // ═══════════════════════════════════════════
@@ -52,20 +112,10 @@ Deno.serve(async (req) => {
           return respond({ error: "GitHub token not configured" }, 500);
         }
 
-        // Fetch all repos from SaaSVala org
-        const repos: any[] = [];
-        let page = 1;
-        while (true) {
-          const res = await fetch(
-            `https://api.github.com/users/saasvala/repos?per_page=100&page=${page}&sort=updated`,
-            { headers: { Authorization: `Bearer ${githubToken}`, "User-Agent": "SaaSVala-APK-Pipeline" } }
-          );
-          const batch = await res.json();
-          if (!Array.isArray(batch) || batch.length === 0) break;
-          repos.push(...batch);
-          if (batch.length < 100) break;
-          page++;
-        }
+        const repos = await fetchSaasvalaRepos(githubToken);
+
+        // Repair historical rows where slug is missing
+        const repairedMissingSlugs = await repairMissingCatalogSlugs(admin);
 
         // Get existing catalog entries
         const { data: existing } = await admin
@@ -105,7 +155,8 @@ Deno.serve(async (req) => {
           total_repos: repos.length,
           already_registered: existingSlugs.size,
           newly_registered: registered,
-          message: `✅ Scanned ${repos.length} repos, registered ${registered} new products`,
+          repaired_missing_slugs: repairedMissingSlugs,
+          message: `✅ Scanned ${repos.length} repos, registered ${registered} new products, repaired ${repairedMissingSlugs} missing slugs`,
         });
       }
 
@@ -189,7 +240,7 @@ Deno.serve(async (req) => {
         const { data: pendingCatalog } = await admin
           .from("source_code_catalog")
           .select("id, slug, github_repo_url, project_name")
-          .in("status", ["pending", "analyzed"])
+          .in("status", ["pending", "analyzed", "uploaded"])
           .order("created_at", { ascending: true })
           .limit(limit);
 
@@ -293,13 +344,8 @@ Deno.serve(async (req) => {
         const githubToken = Deno.env.get("SAASVALA_GITHUB_TOKEN");
         if (!githubToken) return respond({ error: "GitHub token not configured" }, 500);
 
-        // Get repos updated in last 24 hours
         const since = new Date(Date.now() - 86400000).toISOString();
-        const res = await fetch(
-          `https://api.github.com/users/saasvala/repos?per_page=100&sort=updated&direction=desc`,
-          { headers: { Authorization: `Bearer ${githubToken}`, "User-Agent": "SaaSVala-APK-Pipeline" } }
-        );
-        const repos = await res.json();
+        const repos = await fetchSaasvalaRepos(githubToken);
         const recentlyUpdated = (repos || []).filter(
           (r: any) => new Date(r.pushed_at) > new Date(since)
         );
@@ -349,12 +395,8 @@ Deno.serve(async (req) => {
         const githubToken = Deno.env.get("SAASVALA_GITHUB_TOKEN");
         if (!githubToken) return respond({ error: "GitHub token not configured" }, 500);
 
-        // Step 1: Scan repos
-        const scanRes = await fetch(
-          `https://api.github.com/users/saasvala/repos?per_page=100&sort=updated`,
-          { headers: { Authorization: `Bearer ${githubToken}`, "User-Agent": "SaaSVala-APK-Pipeline" } }
-        );
-        const allRepos = await scanRes.json();
+        const allRepos = await fetchSaasvalaRepos(githubToken);
+        const repairedMissingSlugs = await repairMissingCatalogSlugs(admin);
 
         // Step 2: Get existing
         const { data: existing } = await admin.from("source_code_catalog").select("slug, id, status");
@@ -393,8 +435,8 @@ Deno.serve(async (req) => {
               newlyRegistered++;
               buildsQueued++;
             }
-          } else if (existingEntry.status === "pending") {
-            // Queue build for pending entries
+          } else if (["pending", "analyzed", "uploaded"].includes(existingEntry.status || "")) {
+            // Queue build for entries that are synced but not built yet
             await admin.from("bulk_upload_queue").insert({
               catalog_id: existingEntry.id,
               upload_type: "apk_build",
@@ -410,7 +452,108 @@ Deno.serve(async (req) => {
           total_repos: (allRepos || []).length,
           newly_registered: newlyRegistered,
           builds_queued: buildsQueued,
-          message: `✅ Pipeline complete: ${(allRepos || []).length} repos scanned, ${newlyRegistered} new, ${buildsQueued} APK builds queued`,
+          repaired_missing_slugs: repairedMissingSlugs,
+          message: `✅ Pipeline complete: ${(allRepos || []).length} repos scanned, ${newlyRegistered} new, ${buildsQueued} APK builds queued, ${repairedMissingSlugs} slugs repaired`,
+        });
+      }
+
+      // ═══════════════════════════════════════════
+      // Scheduled daily maintenance: missing checks + auto updates
+      // ═══════════════════════════════════════════
+      case "scheduled_daily_sync": {
+        const githubToken = Deno.env.get("SAASVALA_GITHUB_TOKEN");
+        if (!githubToken) return respond({ error: "GitHub token not configured" }, 500);
+
+        const allRepos = await fetchSaasvalaRepos(githubToken);
+        const repairedMissingSlugs = await repairMissingCatalogSlugs(admin);
+
+        const { data: existing } = await admin.from("source_code_catalog").select("slug, id, status");
+        const catalogMap = new Map((existing || []).map((e: any) => [e.slug, e]));
+
+        const newEntries: any[] = [];
+        for (const repo of allRepos || []) {
+          const slug = slugify(repo.name);
+          if (!slug || catalogMap.has(slug)) continue;
+
+          newEntries.push({
+            project_name: repo.name,
+            slug,
+            github_repo_url: repo.html_url,
+            github_account: "saasvala",
+            status: "pending_build",
+            target_industry: detectIndustry(repo.name, repo.description || ""),
+            ai_description: repo.description || `${repo.name} - SaaS Vala Software`,
+            tech_stack: { languages: [repo.language || "Unknown"] },
+            uploaded_to_github: true,
+          });
+        }
+
+        let newlyRegistered = 0;
+        if (newEntries.length > 0) {
+          const { error } = await admin.from("source_code_catalog").upsert(newEntries, { onConflict: "slug" });
+          if (!error) newlyRegistered = newEntries.length;
+        }
+
+        const { data: pendingToQueue } = await admin
+          .from("source_code_catalog")
+          .select("id")
+          .in("status", ["pending", "analyzed", "uploaded"])
+          .limit(200);
+
+        let buildsQueued = 0;
+        for (const row of pendingToQueue || []) {
+          await admin.from("bulk_upload_queue").insert({
+            catalog_id: row.id,
+            upload_type: "apk_build",
+            status: "queued",
+            priority: 5,
+          });
+
+          await admin
+            .from("source_code_catalog")
+            .update({ status: "pending_build" })
+            .eq("id", row.id);
+
+          buildsQueued++;
+        }
+
+        const since = new Date(Date.now() - 86400000).toISOString();
+        const recentlyUpdated = (allRepos || []).filter((r: any) => new Date(r.pushed_at) > new Date(since));
+
+        let rebuildsQueued = 0;
+        for (const repo of recentlyUpdated) {
+          const slug = slugify(repo.name);
+          const { data: catalogEntry } = await admin
+            .from("source_code_catalog")
+            .select("id, status")
+            .eq("slug", slug)
+            .single();
+
+          if (catalogEntry && ["completed", "listed"].includes(catalogEntry.status || "")) {
+            await admin.from("bulk_upload_queue").insert({
+              catalog_id: catalogEntry.id,
+              upload_type: "apk_rebuild",
+              status: "queued",
+              priority: 3,
+            });
+
+            await admin
+              .from("source_code_catalog")
+              .update({ status: "rebuilding" })
+              .eq("id", catalogEntry.id);
+
+            rebuildsQueued++;
+          }
+        }
+
+        return respond({
+          success: true,
+          total_repos: allRepos.length,
+          newly_registered: newlyRegistered,
+          builds_queued: buildsQueued,
+          rebuilds_queued: rebuildsQueued,
+          repaired_missing_slugs: repairedMissingSlugs,
+          message: `✅ Daily sync complete: ${newlyRegistered} new repos, ${buildsQueued} builds, ${rebuildsQueued} rebuilds, ${repairedMissingSlugs} slug repairs`,
         });
       }
 

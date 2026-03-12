@@ -5,7 +5,7 @@
  */
 
 import type { MarketplaceProduct } from '@/hooks/useMarketplaceProducts';
-import { allReposByCategory, type RepoProduct } from './saasvalaRepoMapping';
+import { allRepos, allReposByCategory, type RepoProduct } from './saasvalaRepoMapping';
 
 const stockImages = [
   'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&h=300&fit=crop',
@@ -837,6 +837,10 @@ const CATEGORY_TO_REPO_MAP: Record<string, string> = {
   cybersecurity: 'IT',
   marketing: 'Services',
   security_systems: 'IT',
+  top_selling: 'ALL_REAL',
+  popular: 'ALL_REAL',
+  evergreen: 'ALL_REAL',
+  on_demand: 'ALL_REAL',
 };
 
 export function generateCategoryProducts(
@@ -849,7 +853,12 @@ export function generateCategoryProducts(
 
   // 1. First, inject REAL repos for this category
   const repoCategoryKey = CATEGORY_TO_REPO_MAP[categoryId];
-  const realRepos: RepoProduct[] = repoCategoryKey ? (allReposByCategory[repoCategoryKey] || []) : [];
+  const realRepos: RepoProduct[] =
+    repoCategoryKey === 'ALL_REAL'
+      ? allRepos
+      : repoCategoryKey
+        ? (allReposByCategory[repoCategoryKey] || [])
+        : [];
 
   for (let i = 0; i < realRepos.length && products.length < count; i++) {
     const r = realRepos[i];
@@ -902,18 +911,48 @@ export function generateCategoryProducts(
 }
 
 /**
- * Merge DB products with generated products to ensure exactly `target` items.
- * DB products come first, generated products fill the remaining slots.
+ * Merge DB + generated products while always prioritizing real/live software first.
  */
+function getPriorityScore(product: MarketplaceProduct): number {
+  const repoUrl = (product.gitRepoUrl || '').toLowerCase();
+  const demoUrl = (product.demoUrl || '').toLowerCase();
+  const hasLiveDemo = Boolean(demoUrl && demoUrl.startsWith('http') && !demoUrl.includes('github.com'));
+  const hasRealRepo = repoUrl.includes('github.com/saasvala/') || repoUrl.includes('github.com/softwarevala/');
+  const hasAnyRepo = Boolean(repoUrl);
+  const isLive = product.status === 'live' || product.status === 'bestseller';
+  const isAvailable = product.isAvailable !== false;
+
+  return (
+    (hasLiveDemo ? 500 : 0) +
+    (hasRealRepo ? 300 : 0) +
+    (!hasRealRepo && hasAnyRepo ? 120 : 0) +
+    (isLive ? 80 : 0) +
+    (isAvailable ? 40 : 0) +
+    (product.featured ? 15 : 0) +
+    (product.trending ? 10 : 0)
+  );
+}
+
 export function fillToTarget(
   dbProducts: MarketplaceProduct[],
   categoryId: string,
   categoryLabel: string,
   target: number = 50
 ): MarketplaceProduct[] {
-  if (dbProducts.length >= target) return dbProducts.slice(0, target);
   const generated = generateCategoryProducts(categoryId, categoryLabel, target);
-  const dbTitles = new Set(dbProducts.map(p => p.title));
-  const fillers = generated.filter(p => !dbTitles.has(p.title));
-  return [...dbProducts, ...fillers].slice(0, target);
+
+  const mergedByKey = new Map<string, MarketplaceProduct>();
+  for (const p of [...dbProducts, ...generated]) {
+    const key = `${p.id}::${p.title}`;
+    const existing = mergedByKey.get(key);
+    if (!existing || getPriorityScore(p) > getPriorityScore(existing)) {
+      mergedByKey.set(key, p);
+    }
+  }
+
+  return Array.from(mergedByKey.values())
+    .map((product, index) => ({ product, index, score: getPriorityScore(product) }))
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .map(({ product }) => product)
+    .slice(0, target);
 }
