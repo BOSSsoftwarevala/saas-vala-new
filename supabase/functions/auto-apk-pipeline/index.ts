@@ -112,20 +112,10 @@ Deno.serve(async (req) => {
           return respond({ error: "GitHub token not configured" }, 500);
         }
 
-        // Fetch all repos from SaaSVala org
-        const repos: any[] = [];
-        let page = 1;
-        while (true) {
-          const res = await fetch(
-            `https://api.github.com/users/saasvala/repos?per_page=100&page=${page}&sort=updated`,
-            { headers: { Authorization: `Bearer ${githubToken}`, "User-Agent": "SaaSVala-APK-Pipeline" } }
-          );
-          const batch = await res.json();
-          if (!Array.isArray(batch) || batch.length === 0) break;
-          repos.push(...batch);
-          if (batch.length < 100) break;
-          page++;
-        }
+        const repos = await fetchSaasvalaRepos(githubToken);
+
+        // Repair historical rows where slug is missing
+        const repairedMissingSlugs = await repairMissingCatalogSlugs(admin);
 
         // Get existing catalog entries
         const { data: existing } = await admin
