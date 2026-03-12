@@ -434,8 +434,8 @@ Deno.serve(async (req) => {
               newlyRegistered++;
               buildsQueued++;
             }
-          } else if (existingEntry.status === "pending") {
-            // Queue build for pending entries
+          } else if (["pending", "analyzed", "uploaded"].includes(existingEntry.status || "")) {
+            // Queue build for entries that are synced but not built yet
             await admin.from("bulk_upload_queue").insert({
               catalog_id: existingEntry.id,
               upload_type: "apk_build",
