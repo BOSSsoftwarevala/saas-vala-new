@@ -853,7 +853,12 @@ export function generateCategoryProducts(
 
   // 1. First, inject REAL repos for this category
   const repoCategoryKey = CATEGORY_TO_REPO_MAP[categoryId];
-  const realRepos: RepoProduct[] = repoCategoryKey ? (allReposByCategory[repoCategoryKey] || []) : [];
+  const realRepos: RepoProduct[] =
+    repoCategoryKey === 'ALL_REAL'
+      ? allRepos
+      : repoCategoryKey
+        ? (allReposByCategory[repoCategoryKey] || [])
+        : [];
 
   for (let i = 0; i < realRepos.length && products.length < count; i++) {
     const r = realRepos[i];
