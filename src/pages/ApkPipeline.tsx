@@ -122,6 +122,31 @@ export default function ApkPipeline() {
     fetchBuilds();
   };
 
+  const [runningWorkflow, setRunningWorkflow] = useState(false);
+  const [workflowResult, setWorkflowResult] = useState<any>(null);
+
+  const runAutoWorkflow = async () => {
+    setRunningWorkflow(true);
+    setWorkflowResult(null);
+    toast.info('🤖 Starting Auto Marketplace Workflow: Scan → Build → Upload → Attach...');
+    try {
+      const { data: result, error } = await supabase.functions.invoke('auto-apk-pipeline', {
+        body: { action: 'auto_marketplace_workflow', data: { limit: 50 } },
+      });
+      if (error) throw error;
+      setWorkflowResult(result);
+      if (result?.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result?.error || 'Workflow failed');
+      }
+      fetchBuilds();
+    } catch (err: any) {
+      toast.error(err.message || 'Workflow error');
+    }
+    setRunningWorkflow(false);
+  };
+
   const statusIcon = (s: string) => {
     switch (s) {
       case 'completed': return <CheckCircle2 className="h-4 w-4 text-green-500" />;
