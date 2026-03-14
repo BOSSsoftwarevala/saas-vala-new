@@ -835,14 +835,15 @@ export function ComingSoonCard({ label }: { label: string }) {
         className="rounded-2xl border border-dashed flex flex-col items-center justify-center gap-3 text-center"
         style={{
           minHeight: 420,
-          borderColor: 'hsl(var(--border) / 0.4)',
-          background: 'hsl(var(--card) / 0.6)',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+          borderColor: 'rgba(255,255,255,0.1)',
+          background: 'rgba(255,255,255,0.02)',
+          backdropFilter: 'blur(8px)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
         }}
       >
         <div
           className="h-16 w-16 rounded-2xl flex items-center justify-center"
-          style={{ background: 'hsl(var(--muted))', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.05)' }}
+          style={{ background: 'rgba(255,255,255,0.05)', boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.2)' }}
         >
           <Package style={{ width: 28, height: 28 }} className="text-muted-foreground" />
         </div>
