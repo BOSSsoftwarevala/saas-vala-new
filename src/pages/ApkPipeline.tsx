@@ -247,6 +247,31 @@ export default function ApkPipeline() {
           </CardContent>
         </Card>
 
+        {/* Workflow Result */}
+        {workflowResult && (
+          <Card className="border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Rocket className="h-4 w-4 text-primary" /> Auto Workflow Result
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-3 text-center">
+              {[
+                { label: 'Processed', value: workflowResult.processed || 0 },
+                { label: 'Built', value: workflowResult.built || 0 },
+                { label: 'Uploaded', value: workflowResult.uploaded || 0 },
+                { label: 'Attached', value: workflowResult.attached || 0 },
+                { label: 'Skipped', value: workflowResult.skipped || 0 },
+              ].map(s => (
+                <div key={s.label} className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xl font-black">{s.value}</p>
+                  <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Build Queue Table */}
         <Card>
           <CardHeader>
