@@ -184,9 +184,13 @@ export default function ApkPipeline() {
             <Button variant="outline" onClick={fetchBuilds} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
             </Button>
-            <Button onClick={scanRepos} disabled={scanning}>
+            <Button onClick={scanRepos} disabled={scanning} variant="outline">
               <GitBranch className="h-4 w-4 mr-1" />
               {scanning ? 'Scanning...' : 'Scan Repos'}
+            </Button>
+            <Button onClick={runAutoWorkflow} disabled={runningWorkflow} className="bg-green-600 hover:bg-green-700">
+              <Rocket className="h-4 w-4 mr-1" />
+              {runningWorkflow ? 'Running...' : '🚀 Auto Workflow'}
             </Button>
           </div>
         </div>
