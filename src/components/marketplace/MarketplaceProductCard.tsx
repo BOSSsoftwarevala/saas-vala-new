@@ -535,25 +535,31 @@ export const MarketplaceProductCard = React.forwardRef<HTMLDivElement, Marketpla
               ) : (
                 <>
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className={cn(
-                        "flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border transition-all duration-200",
-                        hasDemoAvailable ? "hover:border-primary/50 hover:text-primary hover:shadow-[0_2px_12px_rgba(37,99,235,0.1)]" : "opacity-70"
-                      )}
-                      onClick={handleDemo}
-                    >
-                      <Play style={{ width: 13, height: 13 }} />
-                      {hasDemoAvailable ? 'DEMO' : 'VIEW'}
-                    </Button>
+                    <motion.div className="flex-1" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full h-9 text-[11px] font-bold gap-1.5 rounded-xl transition-all duration-200"
+                        style={{
+                          background: 'rgba(255,255,255,0.04)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          backdropFilter: 'blur(8px)',
+                          color: hasDemoAvailable ? '#e2e8f0' : '#64748b',
+                        }}
+                        onClick={handleDemo}
+                      >
+                        <Play style={{ width: 13, height: 13 }} />
+                        {hasDemoAvailable ? 'DEMO' : 'VIEW'}
+                      </Button>
+                    </motion.div>
                     <Button
                       size="sm"
                       variant="outline"
                       className={cn(
                         'h-9 w-10 p-0 rounded-xl transition-all duration-200',
-                        favorited ? 'border-pink-500/60 text-pink-400 bg-pink-500/10' : 'border-border text-muted-foreground hover:text-pink-400 hover:border-pink-400/50'
+                        favorited ? 'border-pink-500/40 text-pink-400 bg-pink-500/10' : 'text-muted-foreground hover:text-pink-400 hover:border-pink-400/40'
                       )}
+                      style={{ background: favorited ? 'rgba(236,72,153,0.1)' : 'rgba(255,255,255,0.04)', border: favorited ? '1px solid rgba(236,72,153,0.3)' : '1px solid rgba(255,255,255,0.1)' }}
                       onClick={handleFavorite}
                       title="Add to Favorites"
                     >
@@ -564,21 +570,22 @@ export const MarketplaceProductCard = React.forwardRef<HTMLDivElement, Marketpla
                       variant="outline"
                       className={cn(
                         'h-9 w-10 p-0 rounded-xl transition-all duration-200',
-                        inCart ? 'border-blue-500/60 text-blue-400 bg-blue-500/10' : 'border-border text-muted-foreground hover:text-blue-400 hover:border-blue-400/50'
+                        inCart ? 'border-blue-400/40 text-blue-400 bg-blue-500/10' : 'text-muted-foreground hover:text-blue-400 hover:border-blue-400/40'
                       )}
+                      style={{ background: inCart ? 'rgba(59,130,246,0.1)' : 'rgba(255,255,255,0.04)', border: inCart ? '1px solid rgba(59,130,246,0.3)' : '1px solid rgba(255,255,255,0.1)' }}
                       onClick={handleAddToCart}
                       title="Add to Cart"
                     >
                       <ShoppingCart style={{ width: 15, height: 15 }} className={inCart ? 'text-blue-400' : ''} />
                     </Button>
                   </div>
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
                     <Button
                       size="sm"
                       className="w-full h-10 text-[12px] font-black gap-1.5 rounded-xl text-white border-0"
                       style={{
-                        background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)',
-                        boxShadow: '0 4px 14px rgba(37,99,235,0.35), 0 1px 3px rgba(0,0,0,0.1)',
+                        background: 'linear-gradient(90deg, #2563EB, #1D4ED8)',
+                        boxShadow: '0 4px 20px rgba(37,99,235,0.4), 0 1px 3px rgba(0,0,0,0.2)',
                       }}
                       onClick={() => onBuyNow(product)}
                     >
@@ -590,20 +597,31 @@ export const MarketplaceProductCard = React.forwardRef<HTMLDivElement, Marketpla
               )}
               {/* DOWNLOAD APK + FEATURES BUTTONS */}
               <div className="flex gap-2">
+                <motion.div className="flex-1" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="w-full h-9 text-[11px] font-bold gap-1.5 rounded-xl text-white border-0 transition-all duration-200"
+                    style={{
+                      background: 'linear-gradient(90deg, #7C3AED, #6D28D9)',
+                      boxShadow: '0 2px 12px rgba(124,58,237,0.3)',
+                    }}
+                    onClick={handleDownloadApk}
+                    disabled={downloadChecking}
+                  >
+                    <Download style={{ width: 13, height: 13 }} />
+                    {downloadChecking ? 'CHECKING...' : 'DOWNLOAD APK'}
+                  </Button>
+                </motion.div>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border hover:border-green-500/50 hover:text-green-600 hover:shadow-[0_2px_10px_rgba(34,197,94,0.1)] transition-all duration-200"
-                  onClick={handleDownloadApk}
-                  disabled={downloadChecking}
-                >
-                  <Download style={{ width: 13, height: 13 }} />
-                  {downloadChecking ? 'CHECKING...' : 'DOWNLOAD APK'}
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl border-border hover:border-primary/40 hover:text-primary hover:shadow-[0_2px_10px_rgba(37,99,235,0.08)] transition-all duration-200"
+                  className="flex-1 h-9 text-[11px] font-bold gap-1.5 rounded-xl transition-all duration-200"
+                  style={{
+                    background: 'rgba(255,255,255,0.04)',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    color: '#94a3b8',
+                  }}
                   onClick={() => setFeaturesOpen(true)}
                 >
                   <Info style={{ width: 13, height: 13 }} />
