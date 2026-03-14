@@ -122,6 +122,31 @@ export default function ApkPipeline() {
     fetchBuilds();
   };
 
+  const [runningWorkflow, setRunningWorkflow] = useState(false);
+  const [workflowResult, setWorkflowResult] = useState<any>(null);
+
+  const runAutoWorkflow = async () => {
+    setRunningWorkflow(true);
+    setWorkflowResult(null);
+    toast.info('🤖 Starting Auto Marketplace Workflow: Scan → Build → Upload → Attach...');
+    try {
+      const { data: result, error } = await supabase.functions.invoke('auto-apk-pipeline', {
+        body: { action: 'auto_marketplace_workflow', data: { limit: 50 } },
+      });
+      if (error) throw error;
+      setWorkflowResult(result);
+      if (result?.success) {
+        toast.success(result.message);
+      } else {
+        toast.error(result?.error || 'Workflow failed');
+      }
+      fetchBuilds();
+    } catch (err: any) {
+      toast.error(err.message || 'Workflow error');
+    }
+    setRunningWorkflow(false);
+  };
+
   const statusIcon = (s: string) => {
     switch (s) {
       case 'completed': return <CheckCircle2 className="h-4 w-4 text-green-500" />;
@@ -159,9 +184,13 @@ export default function ApkPipeline() {
             <Button variant="outline" onClick={fetchBuilds} disabled={loading}>
               <RefreshCw className={`h-4 w-4 mr-1 ${loading ? 'animate-spin' : ''}`} /> Refresh
             </Button>
-            <Button onClick={scanRepos} disabled={scanning}>
+            <Button onClick={scanRepos} disabled={scanning} variant="outline">
               <GitBranch className="h-4 w-4 mr-1" />
               {scanning ? 'Scanning...' : 'Scan Repos'}
+            </Button>
+            <Button onClick={runAutoWorkflow} disabled={runningWorkflow} className="bg-green-600 hover:bg-green-700">
+              <Rocket className="h-4 w-4 mr-1" />
+              {runningWorkflow ? 'Running...' : '🚀 Auto Workflow'}
             </Button>
           </div>
         </div>
@@ -217,6 +246,31 @@ export default function ApkPipeline() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Workflow Result */}
+        {workflowResult && (
+          <Card className="border-primary/20">
+            <CardHeader>
+              <CardTitle className="text-sm font-bold flex items-center gap-2">
+                <Rocket className="h-4 w-4 text-primary" /> Auto Workflow Result
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-3 text-center">
+              {[
+                { label: 'Processed', value: workflowResult.processed || 0 },
+                { label: 'Built', value: workflowResult.built || 0 },
+                { label: 'Uploaded', value: workflowResult.uploaded || 0 },
+                { label: 'Attached', value: workflowResult.attached || 0 },
+                { label: 'Skipped', value: workflowResult.skipped || 0 },
+              ].map(s => (
+                <div key={s.label} className="p-3 rounded-lg bg-muted/50">
+                  <p className="text-xl font-black">{s.value}</p>
+                  <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Build Queue Table */}
         <Card>
