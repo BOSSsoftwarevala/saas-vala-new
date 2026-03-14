@@ -561,10 +561,8 @@ Deno.serve(async (req) => {
       // AUTO MARKETPLACE WORKFLOW: scan → build → upload → attach
       // ═══════════════════════════════════════════
       case "auto_marketplace_workflow": {
-        const githubToken = Deno.env.get("SAASVALA_GITHUB_TOKEN");
         const factoryUrl = Deno.env.get("FACTORY_URL");
         const factoryToken = Deno.env.get("FACTORY_TOKEN");
-        const vercelToken = Deno.env.get("VERCEL_TOKEN");
         const batchLimit = data?.limit || 20;
 
         const results: any[] = [];
