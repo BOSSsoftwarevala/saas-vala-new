@@ -78,7 +78,7 @@ export default function MarketplaceAdmin() {
         name: editProduct.name,
         short_description: editProduct.short_description,
         price: editProduct.price,
-        status: editProduct.status,
+        status: editProduct.status as any,
         thumbnail_url: editProduct.thumbnail_url,
         git_repo_url: editProduct.git_repo_url,
         demo_url: editProduct.demo_url,
