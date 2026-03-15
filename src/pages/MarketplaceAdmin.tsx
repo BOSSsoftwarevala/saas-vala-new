@@ -11,7 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import {
   Package, Search, Plus, Edit2, Trash2, Eye, EyeOff,
-  ExternalLink, Download, Star, Image as ImageIcon, Link2, Loader2, X,
+  ExternalLink, Download, Star, Image as ImageIcon, Link2, Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
