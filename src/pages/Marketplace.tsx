@@ -1,46 +1,12 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, lazy, Suspense } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { UpcomingSection } from '@/components/marketplace/UpcomingSection';
 import { OnDemandSection } from '@/components/marketplace/OnDemandSection';
 import { TopSellingSection } from '@/components/marketplace/TopSellingSection';
 import { PopularProductsSection } from '@/components/marketplace/PopularProductsSection';
-import { EducationSection } from '@/components/marketplace/EducationSection';
-import { HealthcareSection } from '@/components/marketplace/HealthcareSection';
-import { RealEstateSection } from '@/components/marketplace/RealEstateSection';
-import { EcommerceSection } from '@/components/marketplace/EcommerceSection';
-import { RetailSection } from '@/components/marketplace/RetailSection';
-import { FoodDeliverySection } from '@/components/marketplace/FoodDeliverySection';
-import { HospitalitySection } from '@/components/marketplace/HospitalitySection';
-import { TransportationSection } from '@/components/marketplace/TransportationSection';
-import { FinanceSection } from '@/components/marketplace/FinanceSection';
-import { MediaStreamingSection } from '@/components/marketplace/MediaStreamingSection';
-import { SocialMediaSection } from '@/components/marketplace/SocialMediaSection';
-import { AiAutomationSection } from '@/components/marketplace/AiAutomationSection';
-import { DevToolsSection } from '@/components/marketplace/DevToolsSection';
-import { ProductivitySection } from '@/components/marketplace/ProductivitySection';
-import { CybersecuritySection } from '@/components/marketplace/CybersecuritySection';
-import { DataAnalyticsSection } from '@/components/marketplace/DataAnalyticsSection';
-import { ElearningSection } from '@/components/marketplace/ElearningSection';
-import { TelemedicineSection } from '@/components/marketplace/TelemedicineSection';
-import { RealEstateMarketplaceSection } from '@/components/marketplace/RealEstateMarketplaceSection';
-import { GamingPlatformSection } from '@/components/marketplace/GamingPlatformSection';
-import { MarketingGrowthSection } from '@/components/marketplace/MarketingGrowthSection';
-import { CustomerSupportSection } from '@/components/marketplace/CustomerSupportSection';
-import { HrRecruitmentSection } from '@/components/marketplace/HrRecruitmentSection';
-import { LegalTechSection } from '@/components/marketplace/LegalTechSection';
-import { LogisticsDeliverySection } from '@/components/marketplace/LogisticsDeliverySection';
-import { IoTSmartDeviceSection } from '@/components/marketplace/IoTSmartDeviceSection';
-import { BlockchainWeb3Section } from '@/components/marketplace/BlockchainWeb3Section';
-import { DesignCreativeSection } from '@/components/marketplace/DesignCreativeSection';
-import { TravelBookingSection } from '@/components/marketplace/TravelBookingSection';
-import { FoodDeliveryPlatformSection } from '@/components/marketplace/FoodDeliveryPlatformSection';
-import { HealthcareTelemedicineSection } from '@/components/marketplace/HealthcareTelemedicineSection';
-import { EducationElearningSection } from '@/components/marketplace/EducationElearningSection';
-import { FinanceFintechSection } from '@/components/marketplace/FinanceFintechSection';
-import { RecruitmentJobSection } from '@/components/marketplace/RecruitmentJobSection';
-import { RealEstatePropertySection } from '@/components/marketplace/RealEstatePropertySection';
+import { LazySection } from '@/components/marketplace/LazySection';
 import { MarketplaceSectionDivider } from '@/components/marketplace/MarketplaceSectionDivider';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
@@ -50,7 +16,44 @@ import { useApkPurchase } from '@/hooks/useApkPurchase';
 import { useFraudDetection } from '@/hooks/useFraudDetection';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import saasValaBanner from '@/assets/saas-vala-banner.jpg';
+import { HeroBannerSlider } from '@/components/marketplace/HeroBannerSlider';
+
+// Lazy load heavy section components — only render when scrolled into view
+const EducationSection = lazy(() => import('@/components/marketplace/EducationSection').then(m => ({ default: m.EducationSection })));
+const HealthcareSection = lazy(() => import('@/components/marketplace/HealthcareSection').then(m => ({ default: m.HealthcareSection })));
+const RealEstateSection = lazy(() => import('@/components/marketplace/RealEstateSection').then(m => ({ default: m.RealEstateSection })));
+const EcommerceSection = lazy(() => import('@/components/marketplace/EcommerceSection').then(m => ({ default: m.EcommerceSection })));
+const RetailSection = lazy(() => import('@/components/marketplace/RetailSection').then(m => ({ default: m.RetailSection })));
+const FoodDeliverySection = lazy(() => import('@/components/marketplace/FoodDeliverySection').then(m => ({ default: m.FoodDeliverySection })));
+const HospitalitySection = lazy(() => import('@/components/marketplace/HospitalitySection').then(m => ({ default: m.HospitalitySection })));
+const TransportationSection = lazy(() => import('@/components/marketplace/TransportationSection').then(m => ({ default: m.TransportationSection })));
+const FinanceSection = lazy(() => import('@/components/marketplace/FinanceSection').then(m => ({ default: m.FinanceSection })));
+const MediaStreamingSection = lazy(() => import('@/components/marketplace/MediaStreamingSection').then(m => ({ default: m.MediaStreamingSection })));
+const SocialMediaSection = lazy(() => import('@/components/marketplace/SocialMediaSection').then(m => ({ default: m.SocialMediaSection })));
+const AiAutomationSection = lazy(() => import('@/components/marketplace/AiAutomationSection').then(m => ({ default: m.AiAutomationSection })));
+const DevToolsSection = lazy(() => import('@/components/marketplace/DevToolsSection').then(m => ({ default: m.DevToolsSection })));
+const ProductivitySection = lazy(() => import('@/components/marketplace/ProductivitySection').then(m => ({ default: m.ProductivitySection })));
+const CybersecuritySection = lazy(() => import('@/components/marketplace/CybersecuritySection').then(m => ({ default: m.CybersecuritySection })));
+const DataAnalyticsSection = lazy(() => import('@/components/marketplace/DataAnalyticsSection').then(m => ({ default: m.DataAnalyticsSection })));
+const ElearningSection = lazy(() => import('@/components/marketplace/ElearningSection').then(m => ({ default: m.ElearningSection })));
+const TelemedicineSection = lazy(() => import('@/components/marketplace/TelemedicineSection').then(m => ({ default: m.TelemedicineSection })));
+const RealEstateMarketplaceSection = lazy(() => import('@/components/marketplace/RealEstateMarketplaceSection').then(m => ({ default: m.RealEstateMarketplaceSection })));
+const GamingPlatformSection = lazy(() => import('@/components/marketplace/GamingPlatformSection').then(m => ({ default: m.GamingPlatformSection })));
+const MarketingGrowthSection = lazy(() => import('@/components/marketplace/MarketingGrowthSection').then(m => ({ default: m.MarketingGrowthSection })));
+const CustomerSupportSection = lazy(() => import('@/components/marketplace/CustomerSupportSection').then(m => ({ default: m.CustomerSupportSection })));
+const HrRecruitmentSection = lazy(() => import('@/components/marketplace/HrRecruitmentSection').then(m => ({ default: m.HrRecruitmentSection })));
+const LegalTechSection = lazy(() => import('@/components/marketplace/LegalTechSection').then(m => ({ default: m.LegalTechSection })));
+const LogisticsDeliverySection = lazy(() => import('@/components/marketplace/LogisticsDeliverySection').then(m => ({ default: m.LogisticsDeliverySection })));
+const IoTSmartDeviceSection = lazy(() => import('@/components/marketplace/IoTSmartDeviceSection').then(m => ({ default: m.IoTSmartDeviceSection })));
+const BlockchainWeb3Section = lazy(() => import('@/components/marketplace/BlockchainWeb3Section').then(m => ({ default: m.BlockchainWeb3Section })));
+const DesignCreativeSection = lazy(() => import('@/components/marketplace/DesignCreativeSection').then(m => ({ default: m.DesignCreativeSection })));
+const TravelBookingSection = lazy(() => import('@/components/marketplace/TravelBookingSection').then(m => ({ default: m.TravelBookingSection })));
+const FoodDeliveryPlatformSection = lazy(() => import('@/components/marketplace/FoodDeliveryPlatformSection').then(m => ({ default: m.FoodDeliveryPlatformSection })));
+const HealthcareTelemedicineSection = lazy(() => import('@/components/marketplace/HealthcareTelemedicineSection').then(m => ({ default: m.HealthcareTelemedicineSection })));
+const EducationElearningSection = lazy(() => import('@/components/marketplace/EducationElearningSection').then(m => ({ default: m.EducationElearningSection })));
+const FinanceFintechSection = lazy(() => import('@/components/marketplace/FinanceFintechSection').then(m => ({ default: m.FinanceFintechSection })));
+const RecruitmentJobSection = lazy(() => import('@/components/marketplace/RecruitmentJobSection').then(m => ({ default: m.RecruitmentJobSection })));
+const RealEstatePropertySection = lazy(() => import('@/components/marketplace/RealEstatePropertySection').then(m => ({ default: m.RealEstatePropertySection })));
 import {
   Dialog,
   DialogContent,
@@ -241,20 +244,8 @@ export default function Marketplace() {
 
       {/* Main Content */}
       <main className="pt-20 pb-8">
-        {/* Hero Banner */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="px-4 md:px-8 mb-6"
-        >
-          <div className="relative rounded-2xl overflow-hidden">
-            <img
-              src={saasValaBanner}
-              alt="SaaS VALA - All Software Only $5 per month"
-              className="w-full h-auto object-contain rounded-2xl"
-            />
-          </div>
-        </motion.div>
+        {/* Netflix-style Hero Banner Slider */}
+        <HeroBannerSlider />
 
         {/* ━━━ SECTION 1: UPCOMING SOFTWARE ━━━ */}
         <UpcomingSection />
@@ -276,137 +267,233 @@ export default function Marketplace() {
 
         <MarketplaceSectionDivider label="education" />
 
-        {/* ━━━ SECTION 5: EDUCATION & SKILL DEVELOPMENT ━━━ */}
-        <EducationSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <EducationSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        <MarketplaceSectionDivider label="healthcare" />
+        <LazySection>
+          <Suspense fallback={null}>
+            <MarketplaceSectionDivider label="healthcare" />
+            <HealthcareSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 6: HEALTHCARE & MEDICAL SERVICES ━━━ */}
-        <HealthcareSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <MarketplaceSectionDivider label="real_estate" />
+            <RealEstateSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        <MarketplaceSectionDivider label="real_estate" />
+        <LazySection>
+          <Suspense fallback={null}>
+            <MarketplaceSectionDivider label="ecommerce" />
+            <EcommerceSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 7: REAL ESTATE & PROPERTY SERVICES ━━━ */}
-        <RealEstateSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <MarketplaceSectionDivider label="retail" />
+            <RetailSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        <MarketplaceSectionDivider label="ecommerce" />
+        <LazySection>
+          <Suspense fallback={null}>
+            <MarketplaceSectionDivider label="food" />
+            <FoodDeliverySection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 8: E-COMMERCE & ONLINE MARKETPLACES ━━━ */}
-        <EcommerceSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <MarketplaceSectionDivider label="hotel" />
+            <HospitalitySection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        <MarketplaceSectionDivider label="retail" />
+        <LazySection>
+          <Suspense fallback={null}>
+            <MarketplaceSectionDivider label="transport" />
+            <TransportationSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 9: RETAIL & POS SYSTEMS ━━━ */}
-        <RetailSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <MarketplaceSectionDivider label="finance" />
+            <FinanceSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        <MarketplaceSectionDivider label="food" />
+        <LazySection>
+          <Suspense fallback={null}>
+            <MarketplaceSectionDivider label="media" />
+            <MediaStreamingSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 10: FOOD DELIVERY & RESTAURANT SYSTEMS ━━━ */}
-        <FoodDeliverySection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <SocialMediaSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        <MarketplaceSectionDivider label="hotel" />
+        <LazySection>
+          <Suspense fallback={null}>
+            <AiAutomationSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 11: HOSPITALITY & HOTEL BOOKING SYSTEMS ━━━ */}
-        <HospitalitySection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <DevToolsSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        <MarketplaceSectionDivider label="transport" />
+        <LazySection>
+          <Suspense fallback={null}>
+            <ProductivitySection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 12: TRANSPORTATION & RIDE SHARING APPS ━━━ */}
-        <TransportationSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <CybersecuritySection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        <MarketplaceSectionDivider label="finance" />
+        <LazySection>
+          <Suspense fallback={null}>
+            <DataAnalyticsSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 13: FINANCE & FINTECH PLATFORMS ━━━ */}
-        <FinanceSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <ElearningSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        <MarketplaceSectionDivider label="media" />
+        <LazySection>
+          <Suspense fallback={null}>
+            <TelemedicineSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 14: MEDIA, STREAMING & ENTERTAINMENT ━━━ */}
-        <MediaStreamingSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <RealEstateMarketplaceSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 15: SOCIAL MEDIA & COMMUNITY ━━━ */}
-        <SocialMediaSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <GamingPlatformSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 16: AI & AUTOMATION ━━━ */}
-        <AiAutomationSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <MarketingGrowthSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 17: DEVELOPER TOOLS & DEVOPS ━━━ */}
-        <DevToolsSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <CustomerSupportSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 18: PRODUCTIVITY & WORKSPACE ━━━ */}
-        <ProductivitySection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <HrRecruitmentSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 19: CYBERSECURITY & PRIVACY ━━━ */}
-        <CybersecuritySection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <LegalTechSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 20: DATA ANALYTICS & BI ━━━ */}
-        <DataAnalyticsSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <LogisticsDeliverySection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 21: EDUCATION & E-LEARNING ━━━ */}
-        <ElearningSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <IoTSmartDeviceSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 22: HEALTHCARE & TELEMEDICINE ━━━ */}
-        <TelemedicineSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <BlockchainWeb3Section onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 23: REAL ESTATE & PROPERTY ━━━ */}
-        <RealEstateMarketplaceSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <DesignCreativeSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 24: GAMING PLATFORMS ━━━ */}
-        <GamingPlatformSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <TravelBookingSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 25: MARKETING & GROWTH ━━━ */}
-        <MarketingGrowthSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <FoodDeliveryPlatformSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 26: CUSTOMER SUPPORT & HELP DESK ━━━ */}
-        <CustomerSupportSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <HealthcareTelemedicineSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 27: HR & RECRUITMENT ━━━ */}
-        <HrRecruitmentSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <EducationElearningSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 28: LEGAL TECH & DOCUMENT AUTOMATION ━━━ */}
-        <LegalTechSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <FinanceFintechSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 29: LOGISTICS & DELIVERY MANAGEMENT ━━━ */}
-        <LogisticsDeliverySection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <RecruitmentJobSection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 30: IoT & SMART DEVICE PLATFORMS ━━━ */}
-        <IoTSmartDeviceSection onBuyNow={handleBuyNow} />
+        <LazySection>
+          <Suspense fallback={null}>
+            <RealEstatePropertySection onBuyNow={handleBuyNow} />
+          </Suspense>
+        </LazySection>
 
-        {/* ━━━ SECTION 31: BLOCKCHAIN & WEB3 PLATFORMS ━━━ */}
-        <BlockchainWeb3Section onBuyNow={handleBuyNow} />
-
-        {/* ━━━ SECTION 32: DESIGN & CREATIVE TOOLS ━━━ */}
-        <DesignCreativeSection onBuyNow={handleBuyNow} />
-
-        {/* ━━━ SECTION 33: TRAVEL & BOOKING PLATFORMS ━━━ */}
-        <TravelBookingSection onBuyNow={handleBuyNow} />
-
-        {/* ━━━ SECTION 34: FOOD DELIVERY & RESTAURANT PLATFORMS ━━━ */}
-        <FoodDeliveryPlatformSection onBuyNow={handleBuyNow} />
-
-        {/* ━━━ SECTION 35: HEALTHCARE & TELEMEDICINE PLATFORMS ━━━ */}
-        <HealthcareTelemedicineSection onBuyNow={handleBuyNow} />
-
-        {/* ━━━ SECTION 36: EDUCATION & E-LEARNING PLATFORMS ━━━ */}
-        <EducationElearningSection onBuyNow={handleBuyNow} />
-
-        {/* ━━━ SECTION 37: FINANCE & FINTECH PLATFORMS ━━━ */}
-        <FinanceFintechSection onBuyNow={handleBuyNow} />
-
-        {/* ━━━ SECTION 38: RECRUITMENT & JOB PLATFORMS ━━━ */}
-        <RecruitmentJobSection onBuyNow={handleBuyNow} />
-
-        {/* ━━━ SECTION 39: REAL ESTATE & PROPERTY PLATFORMS ━━━ */}
-        <RealEstatePropertySection onBuyNow={handleBuyNow} />
-
-        {/* ━━━ DYNAMIC CATEGORY ROWS (Rows 41+) ━━━ */}
+        {/* ━━━ DYNAMIC CATEGORY ROWS ━━━ */}
         {MARKETPLACE_CATEGORIES.filter(cat => !['healthcare', 'real_estate', 'ecommerce', 'retail', 'restaurant', 'hotel', 'transport', 'finance', 'media_gaming', 'marketing', 'ai_automation', 'cloud_devops', 'it_software', 'cybersecurity', 'investment', 'logistics', 'manufacturing', 'construction', 'automotive', 'agriculture', 'energy', 'telecom', 'legal', 'beauty_fashion', 'home_services', 'security_systems', 'government', 'gym_sports', 'research', 'environment', 'mining', 'wholesale', 'pharma', 'travel', 'property'].includes(cat.id)).map((cat, idx) => (
-          <motion.div key={cat.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: (idx + 6) * 0.03 }}>
+          <LazySection key={cat.id}>
             <MarketplaceCategoryRow category={cat} onBuyNow={handleBuyNow} />
             {idx < MARKETPLACE_CATEGORIES.length - 1 && (
               <MarketplaceSectionDivider label={cat.id} />
             )}
-          </motion.div>
+          </LazySection>
         ))}
       </main>
 
