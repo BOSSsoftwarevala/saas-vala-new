@@ -1,5 +1,4 @@
-import { useState, useRef, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef } from 'react';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { LazySection } from '@/components/marketplace/LazySection';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
