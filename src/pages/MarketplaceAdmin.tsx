@@ -19,9 +19,24 @@ import {
   Package, Search, Plus, Edit2, Trash2, Eye, EyeOff,
   ExternalLink, Download, Star, Image as ImageIcon, Link2, Loader2,
   Layout, Megaphone, RefreshCw, CheckCircle2, XCircle, Tag, Ticket,
-  Smartphone,
+  Smartphone, X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+// ─── Custom Event for Marketplace Sync ───
+const MARKETPLACE_PRODUCT_UPDATED = 'marketplace:product-updated';
+
+const dispatchMarketplaceUpdate = (productId?: string) => {
+  const event = new CustomEvent(MARKETPLACE_PRODUCT_UPDATED, {
+    detail: { 
+      productId, 
+      timestamp: new Date().toISOString(),
+      source: 'admin-save'
+    },
+  });
+  window.dispatchEvent(event);
+  console.log(`[Admin] Marketplace update signal dispatched`, { productId });
+};
 
 // ─── Types ───
 interface Product {
@@ -83,6 +98,10 @@ export default function MarketplaceAdmin() {
 
   // ─── Dashboard Stats ───
   const [stats, setStats] = useState({ total: 0, visible: 0, featured: 0, withDemo: 0, withApk: 0, pipeline: 0 });
+
+  // ─── Side Panel View ───
+  const [viewPanelOpen, setViewPanelOpen] = useState<boolean>(false);
+  const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
 
   // ═══ FETCH ═══
   const fetchProducts = async () => {
@@ -149,7 +168,14 @@ export default function MarketplaceAdmin() {
       apk_enabled: editProduct.apk_enabled, license_enabled: editProduct.license_enabled,
     }).eq('id', editProduct.id);
     if (error) toast.error('Save failed');
-    else { toast.success('Product saved!'); setEditProduct(null); fetchProducts(); fetchStats(); }
+    else { 
+      toast.success('Product saved!'); 
+      setEditProduct(null); 
+      fetchProducts(); 
+      fetchStats();
+      // ✅ NEW: Trigger marketplace UI refresh
+      dispatchMarketplaceUpdate(editProduct.id);
+    }
     setSaving(false);
   };
 
@@ -194,7 +220,12 @@ export default function MarketplaceAdmin() {
     }
     for (const id of ids) await supabase.from('products').update(update).eq('id', id);
     toast.success(`Updated ${ids.length} products`);
-    setSelectedIds(new Set()); fetchProducts(); fetchStats(); setBulkRunning(false);
+    setSelectedIds(new Set()); 
+    fetchProducts(); 
+    fetchStats();
+    // ✅ NEW: Trigger marketplace UI refresh for bulk updates
+    ids.forEach(id => dispatchMarketplaceUpdate(id));
+    setBulkRunning(false);
   };
 
   // ═══ BANNER CRUD ═══
@@ -273,240 +304,410 @@ export default function MarketplaceAdmin() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-4 p-4 md:p-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-black text-foreground flex items-center gap-2">
-              <Package className="h-5 w-5 text-primary" /> Marketplace Control Center
-            </h1>
-            <p className="text-xs text-muted-foreground">Full admin control — products, banners, coupons, APK & more</p>
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => { fetchProducts(); fetchStats(); fetchBanners(); fetchTickers(); fetchCoupons(); }} className="gap-1">
-              <RefreshCw className="h-3 w-3" /> Refresh
-            </Button>
-            <Button size="sm" onClick={() => window.location.href = '/admin/add-product'} className="gap-1">
-              <Plus className="h-3 w-3" /> Add Product
-            </Button>
-          </div>
-        </div>
-
-        {/* ─── DASHBOARD STATS ─── */}
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-          {[
-            { label: 'Total', value: stats.total, icon: Package, color: 'text-foreground' },
-            { label: 'Live', value: stats.visible, icon: Eye, color: 'text-emerald-500' },
-            { label: 'Featured', value: stats.featured, icon: Star, color: 'text-yellow-500' },
-            { label: 'With Demo', value: stats.withDemo, icon: ExternalLink, color: 'text-blue-500' },
-            { label: 'With APK', value: stats.withApk, icon: Download, color: 'text-purple-500' },
-            { label: 'Pipeline', value: stats.pipeline, icon: Loader2, color: 'text-amber-500' },
-          ].map(s => (
-            <div key={s.label} className="rounded-lg border border-border p-2 bg-card">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] text-muted-foreground">{s.label}</p>
-                <s.icon className={cn('h-3 w-3', s.color)} />
+      <div className="flex gap-4 h-[calc(100vh-60px)]">
+        {/* ═══ LEFT SIDE - MAIN TABLE ═══ */}
+        <div className={cn(
+          "flex-1 overflow-auto transition-all duration-300",
+          viewPanelOpen ? "border-r border-border" : "w-full"
+        )}>
+          <div className="space-y-4 p-4 md:p-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <h1 className="text-xl font-black text-foreground flex items-center gap-2">
+                  <Package className="h-5 w-5 text-primary" /> Marketplace Control Center
+                </h1>
+                <p className="text-xs text-muted-foreground">Full admin control — products, banners, coupons, APK & more</p>
               </div>
-              <p className={cn('text-lg font-black', s.color)}>{s.value}</p>
-            </div>
-          ))}
-        </div>
-
-        <Tabs defaultValue="products" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 h-9">
-            <TabsTrigger value="products" className="text-[10px] gap-1"><Package className="h-3 w-3" /> Products</TabsTrigger>
-            <TabsTrigger value="banners" className="text-[10px] gap-1"><Layout className="h-3 w-3" /> Banners</TabsTrigger>
-            <TabsTrigger value="tickers" className="text-[10px] gap-1"><Megaphone className="h-3 w-3" /> Tickers</TabsTrigger>
-            <TabsTrigger value="coupons" className="text-[10px] gap-1"><Ticket className="h-3 w-3" /> Coupons</TabsTrigger>
-            <TabsTrigger value="bulk" className="text-[10px] gap-1"><RefreshCw className="h-3 w-3" /> Bulk</TabsTrigger>
-          </TabsList>
-
-          {/* ═══════════ PRODUCTS TAB ═══════════ */}
-          <TabsContent value="products" className="space-y-3 mt-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input placeholder="Search by name, slug, category..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9 h-9 text-sm" />
-            </div>
-
-            <div className="rounded-lg border border-border overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs">
-                  <thead className="bg-muted/30">
-                    <tr>
-                      <th className="p-2 text-left w-8"><input type="checkbox" checked={selectedIds.size === products.length && products.length > 0} onChange={selectAll} /></th>
-                      <th className="p-2 text-left font-semibold text-muted-foreground">Product</th>
-                      <th className="p-2 text-center font-semibold text-muted-foreground">Price</th>
-                      <th className="p-2 text-center font-semibold text-muted-foreground hidden md:table-cell">Rating</th>
-                      <th className="p-2 text-center font-semibold text-muted-foreground hidden sm:table-cell">Status</th>
-                      <th className="p-2 text-center font-semibold text-muted-foreground hidden md:table-cell">APK</th>
-                      <th className="p-2 text-right font-semibold text-muted-foreground">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? Array.from({ length: 5 }).map((_, i) => (
-                      <tr key={i} className="border-t border-border"><td colSpan={7} className="p-2"><Skeleton className="h-7 w-full" /></td></tr>
-                    )) : products.length === 0 ? (
-                      <tr><td colSpan={7} className="text-center p-6 text-muted-foreground">No products found</td></tr>
-                    ) : products.map(p => (
-                      <tr key={p.id} className="border-t border-border hover:bg-muted/10">
-                        <td className="p-2"><input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
-                        <td className="p-2">
-                          <div className="flex items-center gap-2">
-                            {p.thumbnail_url ? <img src={p.thumbnail_url} alt="" className="h-8 w-8 rounded object-cover" /> : <div className="h-8 w-8 rounded bg-muted flex items-center justify-center"><ImageIcon className="h-3 w-3 text-muted-foreground" /></div>}
-                            <div className="min-w-0">
-                              <p className="font-semibold text-foreground truncate max-w-[160px]">{p.name}</p>
-                              <p className="text-[10px] text-muted-foreground">{p.business_type || '—'}</p>
-                            </div>
-                            {p.featured && <Star className="h-3 w-3 text-yellow-500 shrink-0 fill-yellow-500" />}
-                            {p.trending && <Megaphone className="h-3 w-3 text-purple-500 shrink-0" />}
-                          </div>
-                        </td>
-                        <td className="p-2 text-center">
-                          <span className="font-bold text-primary">${p.price}</span>
-                          {p.discount_percent > 0 && <Badge className="ml-1 text-[8px] bg-red-500/10 text-red-400">{p.discount_percent}%</Badge>}
-                        </td>
-                        <td className="p-2 text-center hidden md:table-cell">
-                          <span className="text-yellow-400 text-[10px] font-bold">⭐ {p.rating || 4.5}</span>
-                        </td>
-                        <td className="p-2 text-center hidden sm:table-cell">
-                          <Badge className={cn('text-[9px]', p.marketplace_visible ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground')}>
-                            {p.marketplace_visible ? 'LIVE' : 'HIDDEN'}
-                          </Badge>
-                        </td>
-                        <td className="p-2 text-center hidden md:table-cell">
-                          {p.apk_url ? <Badge className="text-[9px] bg-purple-500/10 text-purple-400">APK ✓</Badge> : <span className="text-[10px] text-muted-foreground">—</span>}
-                        </td>
-                        <td className="p-2 text-right">
-                          <div className="flex items-center justify-end gap-0.5">
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditProduct(p)} title="Edit"><Edit2 className="h-3 w-3" /></Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleVisibility(p)} title={p.marketplace_visible ? 'Hide' : 'Show'}>{p.marketplace_visible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}</Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => deleteProduct(p.id)} title="Delete"><Trash2 className="h-3 w-3" /></Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] text-muted-foreground">Page {page + 1}</p>
-              <div className="flex gap-1">
-                <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Prev</Button>
-                <Button variant="outline" size="sm" className="h-7 text-xs" disabled={products.length < PAGE_SIZE} onClick={() => setPage(p => p + 1)}>Next</Button>
-              </div>
-            </div>
-          </TabsContent>
-
-          {/* ═══════════ BANNERS TAB ═══════════ */}
-          <TabsContent value="banners" className="space-y-3 mt-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-foreground flex items-center gap-2"><Layout className="h-4 w-4 text-primary" /> Hero Banner Slides</h2>
-              <Button size="sm" className="h-7 text-xs gap-1" onClick={() => setEditBanner({ id: 'new-' + Date.now(), title: '', subtitle: '', image_url: '', badge: '', badge_color: 'from-blue-500 to-indigo-500', offer_text: '', coupon_code: '', link_url: '', sort_order: banners.length + 1, is_active: true, start_date: null, end_date: null })}>
-                <Plus className="h-3 w-3" /> Add Banner
-              </Button>
-            </div>
-            {bannersLoading ? <Skeleton className="h-20 w-full" /> : banners.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No banners. Add your first hero slide!</p>
-            ) : (
-              <div className="grid gap-2">
-                {banners.map((b, i) => (
-                  <div key={b.id} className={cn('rounded-lg border p-3 flex items-center gap-3', b.is_active ? 'border-primary/30 bg-primary/5' : 'border-border bg-muted/20')}>
-                    <span className="text-lg font-black text-muted-foreground w-6 text-center">{i + 1}</span>
-                    {b.image_url && <img src={b.image_url} alt="" className="h-12 w-20 rounded object-cover hidden sm:block" />}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-foreground truncate">{b.title}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{b.subtitle}</p>
-                      {b.offer_text && <Badge className="text-[8px] mt-0.5 bg-red-500/10 text-red-400">{b.offer_text}</Badge>}
-                      {b.coupon_code && <Badge className="text-[8px] mt-0.5 ml-1 bg-amber-500/10 text-amber-400">CODE: {b.coupon_code}</Badge>}
-                    </div>
-                    {b.badge && <Badge className={cn('text-[9px] bg-gradient-to-r text-white', b.badge_color)}>{b.badge}</Badge>}
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleBannerActive(b)}>
-                      {b.is_active ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <XCircle className="h-3.5 w-3.5 text-muted-foreground" />}
-                    </Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditBanner(b)}><Edit2 className="h-3 w-3" /></Button>
-                    <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteBanner(b.id)}><Trash2 className="h-3 w-3" /></Button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <p className="text-[10px] text-muted-foreground">💡 Banners auto-update on the marketplace homepage instantly after saving.</p>
-          </TabsContent>
-
-          {/* ═══════════ TICKERS TAB ═══════════ */}
-          <TabsContent value="tickers" className="space-y-3 mt-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-foreground flex items-center gap-2"><Megaphone className="h-4 w-4 text-primary" /> Offer Ticker</h2>
-              <Button size="sm" className="h-7 text-xs gap-1" onClick={() => setEditTicker({ id: 'new-' + Date.now(), text: '', sort_order: tickers.length + 1, is_active: true })}>
-                <Plus className="h-3 w-3" /> Add Ticker
-              </Button>
-            </div>
-            {tickersLoading ? <Skeleton className="h-10 w-full" /> : (
-              <div className="grid gap-1.5">
-                {tickers.map(t => (
-                  <div key={t.id} className={cn('rounded-lg border p-2.5 flex items-center gap-3', t.is_active ? 'border-border' : 'border-border bg-muted/20 opacity-50')}>
-                    <span className="text-xs font-bold text-muted-foreground w-5 text-center">{t.sort_order}</span>
-                    <p className="flex-1 text-sm text-foreground truncate">{t.text}</p>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditTicker(t)}><Edit2 className="h-3 w-3" /></Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => deleteTicker(t.id)}><Trash2 className="h-3 w-3" /></Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* ═══════════ COUPONS TAB ═══════════ */}
-          <TabsContent value="coupons" className="space-y-3 mt-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-foreground flex items-center gap-2"><Ticket className="h-4 w-4 text-primary" /> Coupon Manager</h2>
-              <Button size="sm" className="h-7 text-xs gap-1" onClick={() => setEditCoupon({ id: 'new-' + Date.now(), code: '', description: '', discount_type: 'percent', discount_value: 10, min_order: 0, max_uses: 100, used_count: 0, is_active: true, start_date: null, end_date: null })}>
-                <Plus className="h-3 w-3" /> Add Coupon
-              </Button>
-            </div>
-            {couponsLoading ? <Skeleton className="h-10 w-full" /> : coupons.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-8">No coupons yet.</p>
-            ) : (
-              <div className="grid gap-2">
-                {coupons.map(c => (
-                  <div key={c.id} className={cn('rounded-lg border p-3 flex items-center gap-3', c.is_active ? 'border-border' : 'border-border opacity-50')}>
-                    <code className="text-sm font-black text-primary bg-primary/10 px-2 py-1 rounded">{c.code}</code>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-foreground">{c.description || '—'}</p>
-                      <p className="text-[10px] text-muted-foreground">{c.discount_type === 'percent' ? `${c.discount_value}% OFF` : `$${c.discount_value} OFF`} · Used: {c.used_count}/{c.max_uses}</p>
-                    </div>
-                    <Badge className={cn('text-[9px]', c.is_active ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground')}>{c.is_active ? 'ACTIVE' : 'INACTIVE'}</Badge>
-                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditCoupon(c)}><Edit2 className="h-3 w-3" /></Button>
-                    <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => deleteCoupon(c.id)}><Trash2 className="h-3 w-3" /></Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-
-          {/* ═══════════ BULK OPS TAB ═══════════ */}
-          <TabsContent value="bulk" className="space-y-3 mt-3">
-            <h2 className="text-sm font-bold text-foreground flex items-center gap-2"><RefreshCw className="h-4 w-4 text-primary" /> Bulk Operations</h2>
-            <p className="text-xs text-muted-foreground">Select products in Products tab first. Selected: <strong className="text-primary">{selectedIds.size}</strong></p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {[
-                { action: 'show', label: 'Show All', icon: Eye, color: 'text-emerald-500' },
-                { action: 'hide', label: 'Hide All', icon: EyeOff, color: 'text-muted-foreground' },
-                { action: 'feature', label: 'Set Featured', icon: Star, color: 'text-yellow-500' },
-                { action: 'unfeature', label: 'Unfeature', icon: Star, color: 'text-muted-foreground' },
-                { action: 'trending', label: 'Set Trending', icon: Megaphone, color: 'text-purple-500' },
-                { action: 'price5', label: 'Price → $5', icon: Tag, color: 'text-primary' },
-                { action: 'enableApk', label: 'Enable APK', icon: Smartphone, color: 'text-green-500' },
-                { action: 'disableApk', label: 'Disable APK', icon: Smartphone, color: 'text-muted-foreground' },
-                { action: 'delete', label: 'Delete Selected', icon: Trash2, color: 'text-destructive' },
-              ].map(({ action, label, icon: Icon, color }) => (
-                <Button key={action} variant="outline" size="sm" className={cn('h-10 text-xs gap-1.5 justify-start', color)} disabled={bulkRunning || selectedIds.size === 0} onClick={() => runBulk(action)}>
-                  <Icon className="h-3.5 w-3.5" /> {label}
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => { fetchProducts(); fetchStats(); fetchBanners(); fetchTickers(); fetchCoupons(); }} className="gap-1">
+                  <RefreshCw className="h-3 w-3" /> Refresh
                 </Button>
+                <Button size="sm" onClick={() => window.location.href = '/admin/add-product'} className="gap-1">
+                  <Plus className="h-3 w-3" /> Add Product
+                </Button>
+              </div>
+            </div>
+
+            {/* ─── DASHBOARD STATS ─── */}
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+              {[
+                { label: 'Total', value: stats.total, icon: Package, color: 'text-foreground' },
+                { label: 'Live', value: stats.visible, icon: Eye, color: 'text-emerald-500' },
+                { label: 'Featured', value: stats.featured, icon: Star, color: 'text-yellow-500' },
+                { label: 'With Demo', value: stats.withDemo, icon: ExternalLink, color: 'text-blue-500' },
+                { label: 'With APK', value: stats.withApk, icon: Download, color: 'text-purple-500' },
+                { label: 'Pipeline', value: stats.pipeline, icon: Loader2, color: 'text-amber-500' },
+              ].map(s => (
+                <div key={s.label} className="rounded-lg border border-border p-2 bg-card">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] text-muted-foreground">{s.label}</p>
+                    <s.icon className={cn('h-3 w-3', s.color)} />
+                  </div>
+                  <p className={cn('text-lg font-black', s.color)}>{s.value}</p>
+                </div>
               ))}
             </div>
-            {bulkRunning && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Processing...</div>}
-          </TabsContent>
-        </Tabs>
+
+            <Tabs defaultValue="products" className="w-full">
+              <TabsList className="grid w-full grid-cols-5 h-9">
+                <TabsTrigger value="products" className="text-[10px] gap-1"><Package className="h-3 w-3" /> Products</TabsTrigger>
+                <TabsTrigger value="banners" className="text-[10px] gap-1"><Layout className="h-3 w-3" /> Banners</TabsTrigger>
+                <TabsTrigger value="tickers" className="text-[10px] gap-1"><Megaphone className="h-3 w-3" /> Tickers</TabsTrigger>
+                <TabsTrigger value="coupons" className="text-[10px] gap-1"><Ticket className="h-3 w-3" /> Coupons</TabsTrigger>
+                <TabsTrigger value="bulk" className="text-[10px] gap-1"><RefreshCw className="h-3 w-3" /> Bulk</TabsTrigger>
+              </TabsList>
+
+              {/* ═══════════ PRODUCTS TAB ═══════════ */}
+              <TabsContent value="products" className="space-y-3 mt-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Input placeholder="Search by name, slug, category..." value={search} onChange={e => { setSearch(e.target.value); setPage(0); }} className="pl-9 h-9 text-sm" />
+                </div>
+
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead className="bg-muted/30">
+                        <tr>
+                          <th className="p-2 text-left w-8"><input type="checkbox" checked={selectedIds.size === products.length && products.length > 0} onChange={selectAll} /></th>
+                          <th className="p-2 text-left font-semibold text-muted-foreground">Product</th>
+                          <th className="p-2 text-center font-semibold text-muted-foreground">Price</th>
+                          <th className="p-2 text-center font-semibold text-muted-foreground hidden md:table-cell">Rating</th>
+                          <th className="p-2 text-center font-semibold text-muted-foreground hidden sm:table-cell">Status</th>
+                          <th className="p-2 text-center font-semibold text-muted-foreground hidden md:table-cell">APK</th>
+                          <th className="p-2 text-right font-semibold text-muted-foreground">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {loading ? Array.from({ length: 5 }).map((_, i) => (
+                          <tr key={i} className="border-t border-border"><td colSpan={7} className="p-2"><Skeleton className="h-7 w-full" /></td></tr>
+                        )) : products.length === 0 ? (
+                          <tr><td colSpan={7} className="text-center p-6 text-muted-foreground">No products found</td></tr>
+                        ) : products.map(p => (
+                          <tr key={p.id} className="border-t border-border hover:bg-muted/10 cursor-pointer transition-colors" onClick={() => { setViewingProduct(p); setViewPanelOpen(true); }}>
+                            <td className="p-2" onClick={e => e.stopPropagation()}><input type="checkbox" checked={selectedIds.has(p.id)} onChange={() => toggleSelect(p.id)} /></td>
+                            <td className="p-2">
+                              <div className="flex items-center gap-2">
+                                {p.thumbnail_url ? <img src={p.thumbnail_url} alt="" className="h-8 w-8 rounded object-cover" /> : <div className="h-8 w-8 rounded bg-muted flex items-center justify-center"><ImageIcon className="h-3 w-3 text-muted-foreground" /></div>}
+                                <div className="min-w-0">
+                                  <p className="font-semibold text-foreground truncate max-w-[160px]">{p.name}</p>
+                                  <p className="text-[10px] text-muted-foreground">{p.business_type || '—'}</p>
+                                </div>
+                                {p.featured && <Star className="h-3 w-3 text-yellow-500 shrink-0 fill-yellow-500" />}
+                                {p.trending && <Megaphone className="h-3 w-3 text-purple-500 shrink-0" />}
+                              </div>
+                            </td>
+                            <td className="p-2 text-center">
+                              <span className="font-bold text-primary">${p.price}</span>
+                              {p.discount_percent > 0 && <Badge className="ml-1 text-[8px] bg-red-500/10 text-red-400">{p.discount_percent}%</Badge>}
+                            </td>
+                            <td className="p-2 text-center hidden md:table-cell">
+                              <span className="text-yellow-400 text-[10px] font-bold">⭐ {p.rating || 4.5}</span>
+                            </td>
+                            <td className="p-2 text-center hidden sm:table-cell">
+                              <Badge className={cn('text-[9px]', p.marketplace_visible ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground')}>
+                                {p.marketplace_visible ? 'LIVE' : 'HIDDEN'}
+                              </Badge>
+                            </td>
+                            <td className="p-2 text-center hidden md:table-cell">
+                              {p.apk_url ? <Badge className="text-[9px] bg-purple-500/10 text-purple-400">APK ✓</Badge> : <span className="text-[10px] text-muted-foreground">—</span>}
+                            </td>
+                            <td className="p-2 text-right" onClick={e => e.stopPropagation()}>
+                              <div className="flex items-center justify-end gap-0.5">
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditProduct(p)} title="Edit"><Edit2 className="h-3 w-3" /></Button>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => toggleVisibility(p)} title={p.marketplace_visible ? 'Hide' : 'Show'}>{p.marketplace_visible ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}</Button>
+                                <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => deleteProduct(p.id)} title="Delete"><Trash2 className="h-3 w-3" /></Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] text-muted-foreground">Page {page + 1}</p>
+                  <div className="flex gap-1">
+                    <Button variant="outline" size="sm" className="h-7 text-xs" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Prev</Button>
+                    <Button variant="outline" size="sm" className="h-7 text-xs" disabled={products.length < PAGE_SIZE} onClick={() => setPage(p => p + 1)}>Next</Button>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* ═══════════ BANNERS TAB ═══════════ */}
+              <TabsContent value="banners" className="space-y-3 mt-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-foreground flex items-center gap-2"><Layout className="h-4 w-4 text-primary" /> Hero Banner Slides</h2>
+                  <Button size="sm" className="h-7 text-xs gap-1" onClick={() => setEditBanner({ id: 'new-' + Date.now(), title: '', subtitle: '', image_url: '', badge: '', badge_color: 'from-blue-500 to-indigo-500', offer_text: '', coupon_code: '', link_url: '', sort_order: banners.length + 1, is_active: true, start_date: null, end_date: null })}>
+                    <Plus className="h-3 w-3" /> Add Banner
+                  </Button>
+                </div>
+                {bannersLoading ? <Skeleton className="h-20 w-full" /> : banners.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No banners. Add your first hero slide!</p>
+                ) : (
+                  <div className="grid gap-2">
+                    {banners.map((b, i) => (
+                      <div key={b.id} className={cn('rounded-lg border p-3 flex items-center gap-3', b.is_active ? 'border-primary/30 bg-primary/5' : 'border-border bg-muted/20')}>
+                        <span className="text-lg font-black text-muted-foreground w-6 text-center">{i + 1}</span>
+                        {b.image_url && <img src={b.image_url} alt="" className="h-12 w-20 rounded object-cover hidden sm:block" />}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-sm text-foreground truncate">{b.title}</p>
+                          <p className="text-[10px] text-muted-foreground truncate">{b.subtitle}</p>
+                          {b.offer_text && <Badge className="text-[8px] mt-0.5 bg-red-500/10 text-red-400">{b.offer_text}</Badge>}
+                          {b.coupon_code && <Badge className="text-[8px] mt-0.5 ml-1 bg-amber-500/10 text-amber-400">CODE: {b.coupon_code}</Badge>}
+                        </div>
+                        {b.badge && <Badge className={cn('text-[9px] bg-gradient-to-r text-white', b.badge_color)}>{b.badge}</Badge>}
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => toggleBannerActive(b)}>
+                          {b.is_active ? <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" /> : <XCircle className="h-3.5 w-3.5 text-muted-foreground" />}
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditBanner(b)}><Edit2 className="h-3 w-3" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => deleteBanner(b.id)}><Trash2 className="h-3 w-3" /></Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p className="text-[10px] text-muted-foreground">💡 Banners auto-update on the marketplace homepage instantly after saving.</p>
+              </TabsContent>
+
+              {/* ═══════════ TICKERS TAB ═══════════ */}
+              <TabsContent value="tickers" className="space-y-3 mt-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-foreground flex items-center gap-2"><Megaphone className="h-4 w-4 text-primary" /> Offer Ticker</h2>
+                  <Button size="sm" className="h-7 text-xs gap-1" onClick={() => setEditTicker({ id: 'new-' + Date.now(), text: '', sort_order: tickers.length + 1, is_active: true })}>
+                    <Plus className="h-3 w-3" /> Add Ticker
+                  </Button>
+                </div>
+                {tickersLoading ? <Skeleton className="h-10 w-full" /> : (
+                  <div className="grid gap-1.5">
+                    {tickers.map(t => (
+                      <div key={t.id} className={cn('rounded-lg border p-2.5 flex items-center gap-3', t.is_active ? 'border-border' : 'border-border bg-muted/20 opacity-50')}>
+                        <span className="text-xs font-bold text-muted-foreground w-5 text-center">{t.sort_order}</span>
+                        <p className="flex-1 text-sm text-foreground truncate">{t.text}</p>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditTicker(t)}><Edit2 className="h-3 w-3" /></Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => deleteTicker(t.id)}><Trash2 className="h-3 w-3" /></Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* ═══════════ COUPONS TAB ═══════════ */}
+              <TabsContent value="coupons" className="space-y-3 mt-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-sm font-bold text-foreground flex items-center gap-2"><Ticket className="h-4 w-4 text-primary" /> Coupon Manager</h2>
+                  <Button size="sm" className="h-7 text-xs gap-1" onClick={() => setEditCoupon({ id: 'new-' + Date.now(), code: '', description: '', discount_type: 'percent', discount_value: 10, min_order: 0, max_uses: 100, used_count: 0, is_active: true, start_date: null, end_date: null })}>
+                    <Plus className="h-3 w-3" /> Add Coupon
+                  </Button>
+                </div>
+                {couponsLoading ? <Skeleton className="h-10 w-full" /> : coupons.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">No coupons yet.</p>
+                ) : (
+                  <div className="grid gap-2">
+                    {coupons.map(c => (
+                      <div key={c.id} className={cn('rounded-lg border p-3 flex items-center gap-3', c.is_active ? 'border-border' : 'border-border opacity-50')}>
+                        <code className="text-sm font-black text-primary bg-primary/10 px-2 py-1 rounded">{c.code}</code>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-foreground">{c.description || '—'}</p>
+                          <p className="text-[10px] text-muted-foreground">{c.discount_type === 'percent' ? `${c.discount_value}% OFF` : `$${c.discount_value} OFF`} · Used: {c.used_count}/{c.max_uses}</p>
+                        </div>
+                        <Badge className={cn('text-[9px]', c.is_active ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground')}>{c.is_active ? 'ACTIVE' : 'INACTIVE'}</Badge>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setEditCoupon(c)}><Edit2 className="h-3 w-3" /></Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-destructive" onClick={() => deleteCoupon(c.id)}><Trash2 className="h-3 w-3" /></Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* ═══════════ BULK OPS TAB ═══════════ */}
+              <TabsContent value="bulk" className="space-y-3 mt-3">
+                <h2 className="text-sm font-bold text-foreground flex items-center gap-2"><RefreshCw className="h-4 w-4 text-primary" /> Bulk Operations</h2>
+                <p className="text-xs text-muted-foreground">Select products in Products tab first. Selected: <strong className="text-primary">{selectedIds.size}</strong></p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {[
+                    { action: 'show', label: 'Show All', icon: Eye, color: 'text-emerald-500' },
+                    { action: 'hide', label: 'Hide All', icon: EyeOff, color: 'text-muted-foreground' },
+                    { action: 'feature', label: 'Set Featured', icon: Star, color: 'text-yellow-500' },
+                    { action: 'unfeature', label: 'Unfeature', icon: Star, color: 'text-muted-foreground' },
+                    { action: 'trending', label: 'Set Trending', icon: Megaphone, color: 'text-purple-500' },
+                    { action: 'price5', label: 'Price → $5', icon: Tag, color: 'text-primary' },
+                    { action: 'enableApk', label: 'Enable APK', icon: Smartphone, color: 'text-green-500' },
+                    { action: 'disableApk', label: 'Disable APK', icon: Smartphone, color: 'text-muted-foreground' },
+                    { action: 'delete', label: 'Delete Selected', icon: Trash2, color: 'text-destructive' },
+                  ].map(({ action, label, icon: Icon, color }) => (
+                    <Button key={action} variant="outline" size="sm" className={cn('h-10 text-xs gap-1.5 justify-start', color)} disabled={bulkRunning || selectedIds.size === 0} onClick={() => runBulk(action)}>
+                      <Icon className="h-3.5 w-3.5" /> {label}
+                    </Button>
+                  ))}
+                </div>
+                {bulkRunning && <div className="flex items-center gap-2 text-xs text-muted-foreground"><Loader2 className="h-3 w-3 animate-spin" /> Processing...</div>}
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
+
+        {/* ═══ RIGHT SIDE - VIEW PANEL ═══ */}
+        {viewPanelOpen && viewingProduct && (
+          <div className="fixed right-0 top-0 h-screen w-[500px] bg-card border-l border-border shadow-2xl z-40 flex flex-col overflow-hidden transition-transform duration-300">
+            
+            {/* Header */}
+            <div className="bg-gradient-to-r from-primary/10 to-transparent border-b border-border p-4 flex items-center justify-between shrink-0">
+              <div className="flex-1 min-w-0">
+                <h3 className="text-sm font-bold text-foreground truncate">{viewingProduct.name}</h3>
+                <p className="text-[10px] text-muted-foreground truncate">{viewingProduct.slug}</p>
+              </div>
+              <button
+                onClick={() => {
+                  setViewPanelOpen(false);
+                  setTimeout(() => setViewingProduct(null), 300);
+                }}
+                className="ml-2 p-1 hover:bg-muted rounded transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Content - Scrollable */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="p-4 space-y-4">
+                
+                {/* Thumbnail */}
+                {viewingProduct.thumbnail_url && (
+                  <img 
+                    src={viewingProduct.thumbnail_url} 
+                    alt={viewingProduct.name}
+                    className="w-full h-40 object-cover rounded-lg border border-border"
+                  />
+                )}
+
+                {/* Status Badges */}
+                <div className="flex flex-wrap gap-1.5">
+                  <Badge className={cn('text-[8px]', viewingProduct.marketplace_visible ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground')}>
+                    {viewingProduct.marketplace_visible ? '✓ LIVE' : '✗ HIDDEN'}
+                  </Badge>
+                  {viewingProduct.featured && <Badge className="text-[8px] bg-yellow-500/10 text-yellow-400">⭐ FEATURED</Badge>}
+                  {viewingProduct.trending && <Badge className="text-[8px] bg-purple-500/10 text-purple-400">��� TRENDING</Badge>}
+                  {viewingProduct.apk_enabled && <Badge className="text-[8px] bg-blue-500/10 text-blue-400">📱 APK</Badge>}
+                  {viewingProduct.demo_enabled && <Badge className="text-[8px] bg-green-500/10 text-green-400">🎬 DEMO</Badge>}
+                </div>
+
+                {/* Quick Stats */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="rounded-lg bg-muted/50 p-2">
+                    <p className="text-[8px] text-muted-foreground">Price</p>
+                    <p className="text-base font-bold text-primary mt-1">${viewingProduct.price}</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 p-2">
+                    <p className="text-[8px] text-muted-foreground">Discount</p>
+                    <p className="text-base font-bold text-primary mt-1">{viewingProduct.discount_percent}%</p>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 p-2">
+                    <p className="text-[8px] text-muted-foreground">Rating</p>
+                    <p className="text-base font-bold text-yellow-400 mt-1">⭐{viewingProduct.rating}</p>
+                  </div>
+                </div>
+
+                {/* Description */}
+                {viewingProduct.short_description && (
+                  <div>
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase mb-2">Description</p>
+                    <p className="text-[10px] text-foreground line-clamp-4 leading-relaxed">{viewingProduct.short_description}</p>
+                  </div>
+                )}
+
+                {/* Details */}
+                <div className="border-t border-border pt-3">
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase mb-2">Details</p>
+                  <div className="space-y-1.5 text-[9px]">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Category:</span>
+                      <span className="font-semibold text-foreground">{viewingProduct.business_type || '—'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Status:</span>
+                      <Badge className="text-[8px]">{viewingProduct.status.toUpperCase()}</Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Created:</span>
+                      <span className="font-semibold text-foreground">{new Date(viewingProduct.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* APK Section */}
+                {(viewingProduct.apk_url || viewingProduct.apk_enabled) && (
+                  <div className="border-t border-border pt-3">
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase mb-2">📱 APK</p>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] text-muted-foreground">Enabled:</span>
+                        <Badge className={viewingProduct.apk_enabled ? 'bg-green-500/10 text-green-400 text-[8px]' : 'bg-muted text-[8px]'}>
+                          {viewingProduct.apk_enabled ? '✓' : '✗'}
+                        </Badge>
+                      </div>
+                      {viewingProduct.apk_url && (
+                        <a href={viewingProduct.apk_url} target="_blank" rel="noopener noreferrer" 
+                          className="text-[8px] text-primary hover:underline block truncate">
+                          {viewingProduct.apk_url.substring(0, 50)}...
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Demo Section */}
+                {(viewingProduct.demo_url || viewingProduct.demo_enabled) && (
+                  <div className="border-t border-border pt-3">
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase mb-2">🎬 Demo</p>
+                    <div className="space-y-1.5">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[9px] text-muted-foreground">Enabled:</span>
+                        <Badge className={viewingProduct.demo_enabled ? 'bg-green-500/10 text-green-400 text-[8px]' : 'bg-muted text-[8px]'}>
+                          {viewingProduct.demo_enabled ? '✓' : '✗'}
+                        </Badge>
+                      </div>
+                      {viewingProduct.demo_url && (
+                        <a href={viewingProduct.demo_url} target="_blank" rel="noopener noreferrer" 
+                          className="text-[8px] text-primary hover:underline break-all">
+                          {viewingProduct.demo_url}
+                        </a>
+                      )}
+                      {viewingProduct.demo_login && (
+                        <p className="text-[8px] text-foreground">
+                          <span className="text-muted-foreground">Login:</span> {viewingProduct.demo_login}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-border p-3 space-y-2 shrink-0 bg-card">
+              <Button 
+                className="w-full h-8 text-xs font-bold gap-1"
+                onClick={() => {
+                  setEditProduct(viewingProduct);
+                  setViewPanelOpen(false);
+                }}
+              >
+                <Edit2 className="h-3 w-3" /> Edit
+              </Button>
+              <Button 
+                variant="outline" 
+                className="w-full h-7 text-xs"
+                onClick={() => {
+                  setViewPanelOpen(false);
+                  setTimeout(() => setViewingProduct(null), 300);
+                }}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ═══ EDIT PRODUCT DIALOG ═══ */}
@@ -620,55 +821,4 @@ export default function MarketplaceAdmin() {
             </DialogHeader>
             <div className="space-y-3 mt-2">
               <Field label="Text"><Input value={editTicker.text} onChange={e => setEditTicker({ ...editTicker, text: e.target.value })} className="h-9 text-sm" placeholder="🔥 Sale text here..." /></Field>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="Order"><Input type="number" value={editTicker.sort_order} onChange={e => setEditTicker({ ...editTicker, sort_order: Number(e.target.value) })} className="h-9 text-sm" /></Field>
-                <div className="flex items-end gap-2 pb-1">
-                  <Switch checked={editTicker.is_active} onCheckedChange={v => setEditTicker({ ...editTicker, is_active: v })} />
-                  <span className="text-xs">{editTicker.is_active ? 'Active' : 'Off'}</span>
-                </div>
-              </div>
-              <Button className="w-full h-10 text-sm" onClick={saveTicker} disabled={saving}>Save</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* ═══ EDIT COUPON DIALOG ═══ */}
-      {editCoupon && (
-        <Dialog open={!!editCoupon} onOpenChange={() => setEditCoupon(null)}>
-          <DialogContent className="sm:max-w-md">
-            <DialogHeader>
-              <DialogTitle className="text-sm">{editCoupon.id.startsWith('new-') ? 'Add' : 'Edit'} Coupon</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 mt-2">
-              <Field label="Coupon Code"><Input value={editCoupon.code} onChange={e => setEditCoupon({ ...editCoupon, code: e.target.value.toUpperCase() })} className="h-9 text-sm font-mono" placeholder="FESTIVAL2026" /></Field>
-              <Field label="Description"><Input value={editCoupon.description || ''} onChange={e => setEditCoupon({ ...editCoupon, description: e.target.value })} className="h-9 text-sm" /></Field>
-              <div className="grid grid-cols-3 gap-2">
-                <Field label="Type">
-                  <Select value={editCoupon.discount_type} onValueChange={v => setEditCoupon({ ...editCoupon, discount_type: v })}>
-                    <SelectTrigger className="h-9 text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="percent">Percent %</SelectItem>
-                      <SelectItem value="fixed">Fixed $</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Value"><Input type="number" value={editCoupon.discount_value} onChange={e => setEditCoupon({ ...editCoupon, discount_value: Number(e.target.value) })} className="h-9 text-sm" /></Field>
-                <Field label="Max Uses"><Input type="number" value={editCoupon.max_uses} onChange={e => setEditCoupon({ ...editCoupon, max_uses: Number(e.target.value) })} className="h-9 text-sm" /></Field>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="Start"><Input type="datetime-local" value={editCoupon.start_date?.slice(0, 16) || ''} onChange={e => setEditCoupon({ ...editCoupon, start_date: e.target.value || null })} className="h-9 text-sm" /></Field>
-                <Field label="End"><Input type="datetime-local" value={editCoupon.end_date?.slice(0, 16) || ''} onChange={e => setEditCoupon({ ...editCoupon, end_date: e.target.value || null })} className="h-9 text-sm" /></Field>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={editCoupon.is_active} onCheckedChange={v => setEditCoupon({ ...editCoupon, is_active: v })} />
-                <span className="text-xs">{editCoupon.is_active ? 'Active' : 'Disabled'}</span>
-              </div>
-              <Button className="w-full h-10 text-sm" onClick={saveCoupon} disabled={saving}>Save Coupon</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </DashboardLayout>
-  );
-}
+              <div className="grid grid-cols-2 gap-2
