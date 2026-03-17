@@ -3,6 +3,8 @@ import { MarketplaceProductCard, ComingSoonCard } from './MarketplaceProductCard
 import { useProductsByCategory } from '@/hooks/useMarketplaceProducts';
 import { fillToTarget } from '@/data/marketplaceProductGenerator';
 import { SectionHeader } from './SectionHeader';
+// ✅ ADD: Import hooks for real-time updates
+import { useState, useEffect } from 'react';
 
 const TOP_5_MEDIA_CLONES = [
   {
@@ -52,13 +54,39 @@ const TOP_5_MEDIA_CLONES = [
   },
 ];
 
+// ✅ ADD: Global event constant
+const MARKETPLACE_SECTION_REFRESHED = 'marketplace:section-refreshed';
+
 export function MediaStreamingSection({ onBuyNow }: { onBuyNow: (p: any) => void }) {
   const { products: dbProducts } = useProductsByCategory(['media', 'streaming', 'entertainment', 'gaming', 'video']);
+  // ✅ ADD: Refresh key to force section re-render
+  const [refreshKey, setRefreshKey] = useState(0);
+  
   const generatedProducts = fillToTarget(dbProducts as any, 'media', 'Media', 45);
   const displayProducts = [...TOP_5_MEDIA_CLONES as any[], ...generatedProducts];
 
+  // ✅ ADD: Listen for section refresh events from admin updates
+  useEffect(() => {
+    const handleSectionRefresh = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      const { sectionName } = customEvent.detail;
+      
+      // Only refresh if this section was updated
+      if (sectionName === 'media' || sectionName === 'streaming' || sectionName === 'entertainment') {
+        console.log('[MediaStreamingSection] Refreshing products...');
+        setRefreshKey(prev => prev + 1);
+      }
+    };
+
+    window.addEventListener(MARKETPLACE_SECTION_REFRESHED, handleSectionRefresh);
+    
+    return () => {
+      window.removeEventListener(MARKETPLACE_SECTION_REFRESHED, handleSectionRefresh);
+    };
+  }, []);
+
   return (
-    <section className="py-4">
+    <section className="py-4" key={refreshKey}>
       <SectionHeader
         icon="🎬"
         title="Media, Streaming & Entertainment Platforms"
