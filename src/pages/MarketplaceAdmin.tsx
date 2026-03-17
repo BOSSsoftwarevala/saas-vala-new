@@ -103,6 +103,18 @@ export default function MarketplaceAdmin() {
   const [viewPanelOpen, setViewPanelOpen] = useState<boolean>(false);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
 
+  // ✅ LOCK BODY SCROLL
+  useEffect(() => {
+    if (viewPanelOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'auto';
+    }
+    return () => {
+      document.body.style.overflow = 'auto';
+    };
+  }, [viewPanelOpen]);
+
   // ═══ FETCH ═══
   const fetchProducts = async () => {
     setLoading(true);
@@ -173,7 +185,6 @@ export default function MarketplaceAdmin() {
       setEditProduct(null); 
       fetchProducts(); 
       fetchStats();
-      // ✅ NEW: Trigger marketplace UI refresh
       dispatchMarketplaceUpdate(editProduct.id);
     }
     setSaving(false);
@@ -223,7 +234,6 @@ export default function MarketplaceAdmin() {
     setSelectedIds(new Set()); 
     fetchProducts(); 
     fetchStats();
-    // ✅ NEW: Trigger marketplace UI refresh for bulk updates
     ids.forEach(id => dispatchMarketplaceUpdate(id));
     setBulkRunning(false);
   };
@@ -547,157 +557,261 @@ export default function MarketplaceAdmin() {
           </div>
         </div>
 
-        {/* ═══ RIGHT SIDE - VIEW PANEL ═══ */}
+        {/* ✅ ═══ RIGHT SIDE - PROFESSIONAL V3 PANEL ═══ */}
+        {viewPanelOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-30 transition-opacity duration-300"
+            onClick={() => setViewPanelOpen(false)}
+          />
+        )}
+
         {viewPanelOpen && viewingProduct && (
-          <div className="fixed right-0 top-0 h-screen w-[500px] bg-card border-l border-border shadow-2xl z-40 flex flex-col overflow-hidden transition-transform duration-300">
+          <div 
+            className={cn(
+              "fixed right-0 top-0 h-screen w-[500px] bg-card shadow-2xl z-40 flex flex-col transition-all duration-300",
+              viewPanelOpen ? "translate-x-0" : "translate-x-full"
+            )}
+          >
             
-            {/* Header */}
-            <div className="bg-gradient-to-r from-primary/10 to-transparent border-b border-border p-4 flex items-center justify-between shrink-0">
+            {/* HEADER */}
+            <div className="border-b border-border bg-gradient-to-r from-primary/15 to-transparent p-4 flex items-center justify-between shrink-0">
               <div className="flex-1 min-w-0">
-                <h3 className="text-sm font-bold text-foreground truncate">{viewingProduct.name}</h3>
-                <p className="text-[10px] text-muted-foreground truncate">{viewingProduct.slug}</p>
+                <h2 className="text-sm font-bold text-foreground">{viewingProduct.name}</h2>
+                <p className="text-[10px] text-muted-foreground mt-1">{viewingProduct.slug}</p>
               </div>
               <button
                 onClick={() => {
                   setViewPanelOpen(false);
                   setTimeout(() => setViewingProduct(null), 300);
                 }}
-                className="ml-2 p-1 hover:bg-muted rounded transition-colors"
+                className="ml-2 p-1.5 hover:bg-muted rounded-lg transition-colors"
               >
-                <X className="h-4 w-4" />
+                <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
               </button>
             </div>
 
-            {/* Content - Scrollable */}
+            {/* CONTENT SCROLL */}
             <div className="flex-1 overflow-y-auto">
               <div className="p-4 space-y-4">
-                
-                {/* Thumbnail */}
+
+                {/* THUMBNAIL */}
                 {viewingProduct.thumbnail_url && (
-                  <img 
-                    src={viewingProduct.thumbnail_url} 
-                    alt={viewingProduct.name}
-                    className="w-full h-40 object-cover rounded-lg border border-border"
-                  />
+                  <div className="rounded-xl overflow-hidden border border-border/50 shadow-sm">
+                    <img 
+                      src={viewingProduct.thumbnail_url} 
+                      alt={viewingProduct.name}
+                      className="w-full h-44 object-cover"
+                    />
+                  </div>
                 )}
 
-                {/* Status Badges */}
+                {/* STATUS BADGES */}
                 <div className="flex flex-wrap gap-1.5">
-                  <Badge className={cn('text-[8px]', viewingProduct.marketplace_visible ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground')}>
-                    {viewingProduct.marketplace_visible ? '✓ LIVE' : '✗ HIDDEN'}
+                  <Badge className={cn(
+                    "text-[8px] font-semibold px-2 py-1",
+                    viewingProduct.marketplace_visible 
+                      ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30" 
+                      : "bg-slate-500/15 text-slate-600 border border-slate-500/30"
+                  )}>
+                    {viewingProduct.marketplace_visible ? "✓ LIVE" : "✗ DRAFT"}
                   </Badge>
-                  {viewingProduct.featured && <Badge className="text-[8px] bg-yellow-500/10 text-yellow-400">⭐ FEATURED</Badge>}
-                  {viewingProduct.trending && <Badge className="text-[8px] bg-purple-500/10 text-purple-400">��� TRENDING</Badge>}
-                  {viewingProduct.apk_enabled && <Badge className="text-[8px] bg-blue-500/10 text-blue-400">📱 APK</Badge>}
-                  {viewingProduct.demo_enabled && <Badge className="text-[8px] bg-green-500/10 text-green-400">🎬 DEMO</Badge>}
+                  {viewingProduct.featured && (
+                    <Badge className="text-[8px] font-semibold bg-yellow-500/15 text-yellow-600 border border-yellow-500/30">
+                      ⭐ FEATURED
+                    </Badge>
+                  )}
+                  {viewingProduct.trending && (
+                    <Badge className="text-[8px] font-semibold bg-purple-500/15 text-purple-600 border border-purple-500/30">
+                      📈 TRENDING
+                    </Badge>
+                  )}
+                  {viewingProduct.apk_enabled && (
+                    <Badge className="text-[8px] font-semibold bg-blue-500/15 text-blue-600 border border-blue-500/30">
+                      📱 APK
+                    </Badge>
+                  )}
+                  {viewingProduct.demo_enabled && (
+                    <Badge className="text-[8px] font-semibold bg-green-500/15 text-green-600 border border-green-500/30">
+                      🎬 DEMO
+                    </Badge>
+                  )}
                 </div>
 
-                {/* Quick Stats */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-lg bg-muted/50 p-2">
-                    <p className="text-[8px] text-muted-foreground">Price</p>
-                    <p className="text-base font-bold text-primary mt-1">${viewingProduct.price}</p>
+                {/* PRICING GRID */}
+                <div className="grid grid-cols-3 gap-2.5">
+                  <div className="rounded-lg bg-primary/10 border border-primary/20 p-3">
+                    <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-wide">Price</p>
+                    <p className="text-2xl font-black text-primary mt-2">${viewingProduct.price}</p>
                   </div>
-                  <div className="rounded-lg bg-muted/50 p-2">
-                    <p className="text-[8px] text-muted-foreground">Discount</p>
-                    <p className="text-base font-bold text-primary mt-1">{viewingProduct.discount_percent}%</p>
+                  <div className="rounded-lg bg-red-500/10 border border-red-500/20 p-3">
+                    <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-wide">Discount</p>
+                    <p className="text-2xl font-black text-red-500 mt-2">{viewingProduct.discount_percent}%</p>
                   </div>
-                  <div className="rounded-lg bg-muted/50 p-2">
-                    <p className="text-[8px] text-muted-foreground">Rating</p>
-                    <p className="text-base font-bold text-yellow-400 mt-1">⭐{viewingProduct.rating}</p>
+                  <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-3">
+                    <p className="text-[8px] font-bold text-muted-foreground uppercase tracking-wide">Rating</p>
+                    <p className="text-2xl font-black text-yellow-500 mt-2">⭐{viewingProduct.rating}</p>
                   </div>
                 </div>
 
-                {/* Description */}
+                {/* DESCRIPTION */}
                 {viewingProduct.short_description && (
-                  <div>
-                    <p className="text-[9px] font-bold text-muted-foreground uppercase mb-2">Description</p>
-                    <p className="text-[10px] text-foreground line-clamp-4 leading-relaxed">{viewingProduct.short_description}</p>
+                  <div className="rounded-lg bg-muted/40 border border-border/50 p-3">
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide mb-2">Description</p>
+                    <p className="text-[10px] text-foreground leading-relaxed line-clamp-4">
+                      {viewingProduct.short_description}
+                    </p>
                   </div>
                 )}
 
-                {/* Details */}
-                <div className="border-t border-border pt-3">
-                  <p className="text-[9px] font-bold text-muted-foreground uppercase mb-2">Details</p>
-                  <div className="space-y-1.5 text-[9px]">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Category:</span>
-                      <span className="font-semibold text-foreground">{viewingProduct.business_type || '—'}</span>
+                {/* DETAILS SECTION */}
+                <div className="space-y-2">
+                  <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide">📋 Details</p>
+                  <div className="rounded-lg border border-border/50 divide-y divide-border/50 overflow-hidden bg-muted/20">
+                    <div className="flex items-center justify-between p-3">
+                      <span className="text-[9px] text-muted-foreground">Category</span>
+                      <span className="text-[9px] font-semibold text-foreground">{viewingProduct.business_type || "—"}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Status:</span>
+                    <div className="flex items-center justify-between p-3">
+                      <span className="text-[9px] text-muted-foreground">Status</span>
                       <Badge className="text-[8px]">{viewingProduct.status.toUpperCase()}</Badge>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Created:</span>
-                      <span className="font-semibold text-foreground">{new Date(viewingProduct.created_at).toLocaleDateString()}</span>
+                    <div className="flex items-center justify-between p-3">
+                      <span className="text-[9px] text-muted-foreground">Created</span>
+                      <span className="text-[9px] font-semibold text-foreground">
+                        {new Date(viewingProduct.created_at).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
                 </div>
 
-                {/* APK Section */}
-                {(viewingProduct.apk_url || viewingProduct.apk_enabled) && (
-                  <div className="border-t border-border pt-3">
-                    <p className="text-[9px] font-bold text-muted-foreground uppercase mb-2">📱 APK</p>
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[9px] text-muted-foreground">Enabled:</span>
-                        <Badge className={viewingProduct.apk_enabled ? 'bg-green-500/10 text-green-400 text-[8px]' : 'bg-muted text-[8px]'}>
-                          {viewingProduct.apk_enabled ? '✓' : '✗'}
+                {/* APK SECTION */}
+                {viewingProduct.apk_url && (
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide">📱 APK Download</p>
+                    <div className="rounded-lg bg-blue-500/10 border border-blue-500/30 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] text-muted-foreground">Status</span>
+                        <Badge className={cn(
+                          "text-[8px] font-semibold",
+                          viewingProduct.apk_enabled 
+                            ? "bg-green-500/20 text-green-600 border border-green-500/30" 
+                            : "bg-slate-500/20 text-slate-600 border border-slate-500/30"
+                        )}>
+                          {viewingProduct.apk_enabled ? "✓ Active" : "✗ Inactive"}
                         </Badge>
                       </div>
-                      {viewingProduct.apk_url && (
-                        <a href={viewingProduct.apk_url} target="_blank" rel="noopener noreferrer" 
-                          className="text-[8px] text-primary hover:underline block truncate">
-                          {viewingProduct.apk_url.substring(0, 50)}...
+                      <div className="bg-card/50 rounded p-2 border border-blue-500/20">
+                        <p className="text-[8px] text-muted-foreground mb-1">URL</p>
+                        <a 
+                          href={viewingProduct.apk_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-[8px] text-blue-600 hover:text-blue-500 break-all font-mono hover:underline"
+                        >
+                          {viewingProduct.apk_url.substring(0, 55)}...
                         </a>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* DEMO SECTION */}
+                {viewingProduct.demo_url && (
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide">🎬 Demo Access</p>
+                    <div className="rounded-lg bg-green-500/10 border border-green-500/30 p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] text-muted-foreground">Status</span>
+                        <Badge className={cn(
+                          "text-[8px] font-semibold",
+                          viewingProduct.demo_enabled 
+                            ? "bg-green-500/20 text-green-600 border border-green-500/30" 
+                            : "bg-slate-500/20 text-slate-600 border border-slate-500/30"
+                        )}>
+                          {viewingProduct.demo_enabled ? "✓ Active" : "✗ Inactive"}
+                        </Badge>
+                      </div>
+                      <div className="bg-card/50 rounded p-2 border border-green-500/20">
+                        <p className="text-[8px] text-muted-foreground mb-1">URL</p>
+                        <a 
+                          href={viewingProduct.demo_url} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-[8px] text-green-600 hover:text-green-500 break-all font-mono hover:underline"
+                        >
+                          {viewingProduct.demo_url}
+                        </a>
+                      </div>
+                      {viewingProduct.demo_login && (
+                        <div className="bg-card/50 rounded p-2 border border-green-500/20">
+                          <p className="text-[8px] text-muted-foreground mb-1">Login</p>
+                          <code className="text-[8px] text-foreground font-mono font-semibold">
+                            {viewingProduct.demo_login}
+                          </code>
+                        </div>
+                      )}
+                      {viewingProduct.demo_password && (
+                        <div className="bg-card/50 rounded p-2 border border-green-500/20">
+                          <p className="text-[8px] text-muted-foreground mb-1">Password</p>
+                          <code className="text-[8px] text-foreground font-mono font-semibold">
+                            {viewingProduct.demo_password}
+                          </code>
+                        </div>
                       )}
                     </div>
                   </div>
                 )}
 
-                {/* Demo Section */}
-                {(viewingProduct.demo_url || viewingProduct.demo_enabled) && (
-                  <div className="border-t border-border pt-3">
-                    <p className="text-[9px] font-bold text-muted-foreground uppercase mb-2">🎬 Demo</p>
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between items-center">
-                        <span className="text-[9px] text-muted-foreground">Enabled:</span>
-                        <Badge className={viewingProduct.demo_enabled ? 'bg-green-500/10 text-green-400 text-[8px]' : 'bg-muted text-[8px]'}>
-                          {viewingProduct.demo_enabled ? '✓' : '✗'}
+                {/* TAGS */}
+                {viewingProduct.tags && viewingProduct.tags.length > 0 && (
+                  <div className="space-y-2">
+                    <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide">🏷️ Tags</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {viewingProduct.tags.map(tag => (
+                        <Badge 
+                          key={tag} 
+                          variant="outline" 
+                          className="text-[8px] bg-muted/50 border-border/50"
+                        >
+                          {tag}
                         </Badge>
-                      </div>
-                      {viewingProduct.demo_url && (
-                        <a href={viewingProduct.demo_url} target="_blank" rel="noopener noreferrer" 
-                          className="text-[8px] text-primary hover:underline break-all">
-                          {viewingProduct.demo_url}
-                        </a>
-                      )}
-                      {viewingProduct.demo_login && (
-                        <p className="text-[8px] text-foreground">
-                          <span className="text-muted-foreground">Login:</span> {viewingProduct.demo_login}
-                        </p>
-                      )}
+                      ))}
                     </div>
                   </div>
                 )}
+
+                {/* LICENSE */}
+                <div className="rounded-lg bg-purple-500/10 border border-purple-500/30 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-bold text-muted-foreground uppercase tracking-wide">License</span>
+                    <Badge className={cn(
+                      "text-[8px] font-semibold",
+                      viewingProduct.license_enabled 
+                        ? "bg-purple-500/20 text-purple-600 border border-purple-500/30" 
+                        : "bg-slate-500/20 text-slate-600 border border-slate-500/30"
+                    )}>
+                      {viewingProduct.license_enabled ? "✓ Enabled" : "✗ Disabled"}
+                    </Badge>
+                  </div>
+                </div>
+
               </div>
             </div>
 
-            {/* Footer */}
-            <div className="border-t border-border p-3 space-y-2 shrink-0 bg-card">
+            {/* FOOTER */}
+            <div className="border-t border-border bg-gradient-to-t from-card via-card/80 to-transparent p-3 space-y-2 shrink-0">
               <Button 
-                className="w-full h-8 text-xs font-bold gap-1"
+                className="w-full h-9 text-sm font-bold gap-2 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary text-primary-foreground shadow-lg"
                 onClick={() => {
                   setEditProduct(viewingProduct);
                   setViewPanelOpen(false);
                 }}
               >
-                <Edit2 className="h-3 w-3" /> Edit
+                <Edit2 className="h-3.5 w-3.5" /> Edit Product
               </Button>
               <Button 
                 variant="outline" 
-                className="w-full h-7 text-xs"
+                className="w-full h-8 text-sm font-medium hover:bg-muted/50"
                 onClick={() => {
                   setViewPanelOpen(false);
                   setTimeout(() => setViewingProduct(null), 300);
@@ -760,65 +874,4 @@ export default function MarketplaceAdmin() {
                 ].map(t => (
                   <button key={t.key} onClick={() => setEditProduct({ ...editProduct, [t.key]: !(editProduct as any)[t.key] })}
                     className={cn('px-2.5 py-1 rounded-lg text-[10px] font-semibold border transition-colors', (editProduct as any)[t.key] ? 'bg-primary/10 text-primary border-primary/30' : 'bg-muted text-muted-foreground border-border')}>
-                    {(editProduct as any)[t.key] ? '✓' : '○'} {t.label}
-                  </button>
-                ))}
-              </div>
-              <Button className="w-full h-10 text-sm" onClick={handleSaveProduct} disabled={saving}>
-                {saving ? <><Loader2 className="h-3 w-3 animate-spin mr-1" />Saving...</> : 'Save Product'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* ═══ EDIT BANNER DIALOG ═══ */}
-      {editBanner && (
-        <Dialog open={!!editBanner} onOpenChange={() => setEditBanner(null)}>
-          <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-sm">{editBanner.id.startsWith('new-') ? 'Add' : 'Edit'} Banner</DialogTitle>
-              <DialogDescription className="text-xs">Hero slide content & scheduling</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3 mt-2">
-              <Field label="Title"><Input value={editBanner.title} onChange={e => setEditBanner({ ...editBanner, title: e.target.value })} className="h-9 text-sm" /></Field>
-              <Field label="Subtitle"><Input value={editBanner.subtitle || ''} onChange={e => setEditBanner({ ...editBanner, subtitle: e.target.value })} className="h-9 text-sm" /></Field>
-              <Field label="Image URL"><Input value={editBanner.image_url || ''} onChange={e => setEditBanner({ ...editBanner, image_url: e.target.value })} className="h-9 text-sm" placeholder="https://..." /></Field>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="Badge Text"><Input value={editBanner.badge || ''} onChange={e => setEditBanner({ ...editBanner, badge: e.target.value })} className="h-9 text-sm" /></Field>
-                <Field label="Badge Color"><Input value={editBanner.badge_color || ''} onChange={e => setEditBanner({ ...editBanner, badge_color: e.target.value })} className="h-9 text-sm" placeholder="from-red-500 to-orange-500" /></Field>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="Offer Text"><Input value={editBanner.offer_text || ''} onChange={e => setEditBanner({ ...editBanner, offer_text: e.target.value })} className="h-9 text-sm" placeholder="20% OFF" /></Field>
-                <Field label="Coupon Code"><Input value={editBanner.coupon_code || ''} onChange={e => setEditBanner({ ...editBanner, coupon_code: e.target.value })} className="h-9 text-sm" placeholder="FESTIVAL2026" /></Field>
-              </div>
-              <Field label="Link URL"><Input value={editBanner.link_url || ''} onChange={e => setEditBanner({ ...editBanner, link_url: e.target.value })} className="h-9 text-sm" placeholder="https://..." /></Field>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="Start Date"><Input type="datetime-local" value={editBanner.start_date?.slice(0, 16) || ''} onChange={e => setEditBanner({ ...editBanner, start_date: e.target.value || null })} className="h-9 text-sm" /></Field>
-                <Field label="End Date"><Input type="datetime-local" value={editBanner.end_date?.slice(0, 16) || ''} onChange={e => setEditBanner({ ...editBanner, end_date: e.target.value || null })} className="h-9 text-sm" /></Field>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <Field label="Sort Order"><Input type="number" value={editBanner.sort_order} onChange={e => setEditBanner({ ...editBanner, sort_order: Number(e.target.value) })} className="h-9 text-sm" /></Field>
-                <div className="flex items-end gap-2 pb-1">
-                  <Switch checked={editBanner.is_active} onCheckedChange={v => setEditBanner({ ...editBanner, is_active: v })} />
-                  <span className="text-xs text-muted-foreground">{editBanner.is_active ? 'Active' : 'Disabled'}</span>
-                </div>
-              </div>
-              <Button className="w-full h-10 text-sm" onClick={saveBanner} disabled={saving}>
-                {saving ? <><Loader2 className="h-3 w-3 animate-spin mr-1" />Saving...</> : 'Save Banner'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
-
-      {/* ═══ EDIT TICKER DIALOG ═══ */}
-      {editTicker && (
-        <Dialog open={!!editTicker} onOpenChange={() => setEditTicker(null)}>
-          <DialogContent className="sm:max-w-sm">
-            <DialogHeader>
-              <DialogTitle className="text-sm">{editTicker.id.startsWith('new-') ? 'Add' : 'Edit'} Ticker</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 mt-2">
-              <Field label="Text"><Input value={editTicker.text} onChange={e => setEditTicker({ ...editTicker, text: e.target.value })} className="h-9 text-sm" placeholder="🔥 Sale text here..." /></Field>
-              <div className="grid grid-cols-2 gap-2
+                    {(editProduct as
