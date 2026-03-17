@@ -20,7 +20,12 @@ export interface MarketplaceProduct {
   demoEnabled?: boolean;
   featured: boolean;
   trending: boolean;
-  isAvailable: boolean; // false = On Pipeline
+  isAvailable: boolean;
+  discount_percent: number;
+  rating: number;
+  tags: string[];
+  apk_enabled: boolean;
+  license_enabled: boolean;
 }
 
 const stockImages = [
@@ -115,6 +120,11 @@ export function mapDbProduct(product: any, index: number): MarketplaceProduct {
     featured: Boolean(product.featured),
     trending: Boolean(product.trending),
     isAvailable,
+    discount_percent: Number(product.discount_percent) || 0,
+    rating: Number(product.rating) || 4.5,
+    tags: product.tags || [],
+    apk_enabled: product.apk_enabled !== false,
+    license_enabled: product.license_enabled !== false,
   };
 }
 
@@ -125,9 +135,9 @@ export function useMarketplaceProducts() {
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
-      const { data, error } = await supabase
+  const { data, error } = await supabase
         .from('products')
-        .select('id, name, slug, description, short_description, price, status, features, thumbnail_url, git_repo_url, marketplace_visible, apk_url, demo_url, demo_login, demo_password, demo_enabled, featured, trending, business_type, deploy_status')
+        .select('id, name, slug, description, short_description, price, status, features, thumbnail_url, git_repo_url, marketplace_visible, apk_url, demo_url, demo_login, demo_password, demo_enabled, featured, trending, business_type, deploy_status, discount_percent, rating, tags, apk_enabled, license_enabled')
         .eq('marketplace_visible', true)
         .order('created_at', { ascending: false })
         .limit(500);
@@ -185,7 +195,7 @@ export function useProductsByCategory(categories: string[]) {
       // Fetch all marketplace visible products and filter client-side by category
       const { data, error } = await supabase
         .from('products')
-        .select('id, name, slug, description, short_description, price, status, features, thumbnail_url, git_repo_url, marketplace_visible, apk_url, demo_url, demo_login, demo_password, demo_enabled, featured, trending, business_type, deploy_status')
+        .select('id, name, slug, description, short_description, price, status, features, thumbnail_url, git_repo_url, marketplace_visible, apk_url, demo_url, demo_login, demo_password, demo_enabled, featured, trending, business_type, deploy_status, discount_percent, rating, tags, apk_enabled, license_enabled')
         .eq('marketplace_visible', true)
         .order('created_at', { ascending: false })
         .limit(500);

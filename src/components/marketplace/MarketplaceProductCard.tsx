@@ -44,6 +44,14 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
   const iconColor = catColors[product.category] || '#f97316';
   const cardRank = rank ?? index + 1;
 
+  // Dynamic fields from DB
+  const price = product.price || 5;
+  const discount = (product as any).discount_percent || 0;
+  const rating = (product as any).rating || 4.5;
+  const originalPrice = discount > 0 ? Math.round(price / (1 - discount / 100)) : price * 2;
+  const apkEnabled = (product as any).apk_enabled !== false;
+  const licenseEnabled = (product as any).license_enabled !== false;
+
   const features: string[] = Array.isArray(product.features)
     ? product.features.slice(0, 4).map((f: any) => typeof f === 'string' ? f : f.text)
     : ['Dashboard', 'Reports', 'Analytics', 'API'];
@@ -66,9 +74,9 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
   }, [user, favorited]);
 
   const handleAddToCart = useCallback(() => {
-    toggleItem({ id: product.id, title: product.title, subtitle: product.subtitle || '', image: product.image || '', price: 5, category: product.category });
+    toggleItem({ id: product.id, title: product.title, subtitle: product.subtitle || '', image: product.image || '', price, category: product.category });
     toast.success(inCart ? 'Removed from cart' : `🛒 Added to cart!`);
-  }, [product, inCart, toggleItem]);
+  }, [product, inCart, toggleItem, price]);
 
   const handleNotifyMe = useCallback(() => {
     if (!user) { toast.error('Sign in to get notified'); return; }
@@ -87,6 +95,7 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
   }, [getDemoUrl]);
 
   const handleDownloadApk = useCallback(async () => {
+    if (!apkEnabled) { toast.info('APK download is currently disabled for this product.'); return; }
     if (!user) { toast.error('Please sign in to download APK'); return; }
     setDownloadChecking(true);
     try {
@@ -117,7 +126,7 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
       });
     } catch { toast.info('APK download will be available soon.'); }
     setDownloadChecking(false);
-  }, [user, product, onBuyNow]);
+  }, [user, product, onBuyNow, apkEnabled]);
 
   const demoUrl = getDemoUrl();
 
@@ -146,7 +155,7 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
           {!isPipeline ? (
             <span className="text-[9px] font-black text-white px-2 py-0.5 rounded-full" style={{ background: 'linear-gradient(90deg,#22C55E,#16A34A)' }}>LIVE</span>
           ) : (
-            <span className="text-[9px] font-black text-black px-2 py-0.5 rounded-full bg-amber-400">SOON</span>
+            <span className="text-[9px] font-black text-black px-2 py-0.5 rounded-full bg-amber-400">PIPELINE</span>
           )}
           <span className="absolute top-2 right-3 text-[10px] font-bold text-white/20">#{cardRank}</span>
         </div>
@@ -156,22 +165,19 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
           <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
             {product.subtitle || 'Complete solution with all features, reports, and integrations.'}
           </p>
-
-          {/* Feature chips */}
           <div className="flex flex-wrap gap-1">
             {features.slice(0, 3).map((f, i) => (
               <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-muted/80 text-muted-foreground border border-border/50">{f}</span>
             ))}
           </div>
-
-          {/* Price row */}
+          {/* Price row — dynamic from DB */}
           <div className="flex items-center gap-2 mt-auto pt-1">
-            <span className="text-xs line-through text-muted-foreground/40">$10</span>
-            <span className="text-xl font-black text-primary">$5</span>
-            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171' }}>90% OFF</span>
+            <span className="text-xs line-through text-muted-foreground/40">${originalPrice}</span>
+            <span className="text-xl font-black text-primary">${price}</span>
+            {discount > 0 && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(239,68,68,0.12)', color: '#f87171' }}>{discount}% OFF</span>}
             <div className="ml-auto flex items-center gap-0.5">
               <Star className="fill-yellow-400 text-yellow-400" style={{ width: 11, height: 11 }} />
-              <span className="text-[10px] font-bold text-yellow-400">4.9</span>
+              <span className="text-[10px] font-bold text-yellow-400">{rating}</span>
             </div>
           </div>
         </div>
@@ -201,15 +207,17 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
                 </Button>
               </div>
               <Button size="sm" className="w-full h-9 text-[11px] font-black rounded-lg text-white border-0" style={{ background: 'linear-gradient(90deg,#2563EB,#1D4ED8)' }} onClick={() => onBuyNow(product)}>
-                <Package style={{ width: 13, height: 13 }} className="mr-1" /> BUY NOW — $5
+                <Package style={{ width: 13, height: 13 }} className="mr-1" /> BUY NOW — ${price}
               </Button>
             </>
           )}
           <div className="flex gap-1.5">
-            <Button size="sm" variant="outline" className="flex-1 h-7 text-[10px] font-bold rounded-lg text-white border-0" style={{ background: 'linear-gradient(90deg,#7C3AED,#6D28D9)' }} onClick={handleDownloadApk} disabled={downloadChecking}>
-              <Download style={{ width: 11, height: 11 }} className="mr-1" />{downloadChecking ? '...' : 'APK'}
-            </Button>
-            <Button size="sm" variant="outline" className="flex-1 h-7 text-[10px] font-bold rounded-lg border-white/10 text-muted-foreground" onClick={() => setFeaturesOpen(true)}>
+            {apkEnabled && (
+              <Button size="sm" variant="outline" className="flex-1 h-7 text-[10px] font-bold rounded-lg text-white border-0" style={{ background: 'linear-gradient(90deg,#7C3AED,#6D28D9)' }} onClick={handleDownloadApk} disabled={downloadChecking || isPipeline}>
+                <Download style={{ width: 11, height: 11 }} className="mr-1" />{downloadChecking ? '...' : isPipeline ? 'PIPELINE' : 'APK'}
+              </Button>
+            )}
+            <Button size="sm" variant="outline" className={cn('h-7 text-[10px] font-bold rounded-lg border-white/10 text-muted-foreground', apkEnabled ? 'flex-1' : 'w-full')} onClick={() => setFeaturesOpen(true)}>
               <Info style={{ width: 11, height: 11 }} className="mr-1" /> FEATURES
             </Button>
           </div>
@@ -222,7 +230,7 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
           <DialogContent className="max-w-4xl w-[95vw] h-[80vh] flex flex-col p-0 gap-0">
             <DialogHeader className="px-4 pt-3 pb-2 border-b border-border shrink-0">
               <DialogTitle className="text-sm font-black uppercase">{product.title} — Live Demo</DialogTitle>
-              <DialogDescription className="text-xs">demo@softwarevala.com / Demo@2026</DialogDescription>
+              <DialogDescription className="text-xs">{(product as any).demoLogin || 'demo@softwarevala.com'} / {(product as any).demoPassword || 'Demo@2026'}</DialogDescription>
             </DialogHeader>
             <div className="flex-1 relative bg-muted/30 overflow-hidden">
               {demoUrl && isIframeable(demoUrl) ? (
@@ -262,12 +270,12 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
                 <ul className="space-y-1">
                   {features.map((f, i) => <li key={i} className="text-[12px] text-foreground flex gap-2"><span className="text-primary">✓</span>{f}</li>)}
                   <li className="text-[12px] text-foreground flex gap-2"><span className="text-primary">✓</span>Full Source Code</li>
-                  <li className="text-[12px] text-foreground flex gap-2"><span className="text-primary">✓</span>Lifetime License</li>
+                  {licenseEnabled && <li className="text-[12px] text-foreground flex gap-2"><span className="text-primary">✓</span>Lifetime License</li>}
                 </ul>
               </div>
               <div className="flex gap-2">
                 <Button className="flex-1 h-10 text-xs font-black" onClick={() => { setFeaturesOpen(false); onBuyNow(product); }}>
-                  <ShoppingCart style={{ width: 14, height: 14 }} className="mr-1" /> BUY — $5
+                  <ShoppingCart style={{ width: 14, height: 14 }} className="mr-1" /> BUY — ${price}
                 </Button>
                 <Button variant="outline" className="flex-1 h-10 text-xs font-bold" onClick={() => { setFeaturesOpen(false); handleDemo(); }}>
                   <Play style={{ width: 14, height: 14 }} className="mr-1" /> DEMO
