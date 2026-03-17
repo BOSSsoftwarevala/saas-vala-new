@@ -19,7 +19,7 @@ import {
   Package, Search, Plus, Edit2, Trash2, Eye, EyeOff,
   ExternalLink, Download, Star, Image as ImageIcon, Link2, Loader2,
   Layout, Megaphone, RefreshCw, CheckCircle2, XCircle, Tag, Ticket,
-  BarChart3, ShoppingCart, Key, Smartphone, Settings,
+  Smartphone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
