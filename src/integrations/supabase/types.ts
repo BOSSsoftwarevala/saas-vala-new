@@ -2598,6 +2598,7 @@ export type Database = {
           apk_version_code: number | null
           app_hash: string | null
           business_type: string | null
+          buy_enabled: boolean
           category_id: string | null
           created_at: string | null
           created_by: string | null
@@ -2664,6 +2665,7 @@ export type Database = {
           apk_version_code?: number | null
           app_hash?: string | null
           business_type?: string | null
+          buy_enabled?: boolean
           category_id?: string | null
           created_at?: string | null
           created_by?: string | null
@@ -2730,6 +2732,7 @@ export type Database = {
           apk_version_code?: number | null
           app_hash?: string | null
           business_type?: string | null
+          buy_enabled?: boolean
           category_id?: string | null
           created_at?: string | null
           created_by?: string | null
