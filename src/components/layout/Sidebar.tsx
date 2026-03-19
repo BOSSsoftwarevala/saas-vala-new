@@ -121,7 +121,7 @@ export function Sidebar() {
 
         {/* Navigation */}
         <nav className="flex-1 space-y-0.5 p-2 overflow-y-auto">
-          {filteredNavItems.map((item, index) => {
+          {filteredNavItems.map((item) => {
             const isActive = location.pathname === item.href;
             const Icon = item.icon;
 
