@@ -55,7 +55,7 @@ export default function Auth() {
    const [signupEmail, setSignupEmail] = useState('');
    const [signupPassword, setSignupPassword] = useState('');
     const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
-    const [signupRole, setSignupRole] = useState<'user' | 'reseller'>('user');
+    const [signupRole, setSignupRole] = useState<'user' | 'reseller'>(applyReseller ? 'reseller' : 'user');
     const [signupErrors, setSignupErrors] = useState<Record<string, string>>({});
  
    // Redirect based on role after login
