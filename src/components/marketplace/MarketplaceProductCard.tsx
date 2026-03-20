@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
+import { playClickSound } from '@/lib/clickSound';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
