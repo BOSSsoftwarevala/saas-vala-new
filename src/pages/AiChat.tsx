@@ -133,6 +133,10 @@ export default function AiChat() {
     return parseInt(localStorage.getItem('saas-ai-max-tokens') || '4096');
   });
 
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    return localStorage.getItem('saas-ai-model') || 'google/gemini-3-flash-preview';
+  });
+
   // Auto-select first session
   useEffect(() => {
     if (!activeSessionId && sessions.length > 0) {
