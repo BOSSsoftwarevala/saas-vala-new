@@ -99,9 +99,9 @@ export default function Marketplace() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: '#0B1020' }}>
+    <div className="min-h-screen overflow-x-hidden" style={{ background: '#0B1020' }}>
       <MarketplaceHeader />
-      <main className="pt-16 pb-8">
+      <main className="pt-16 pb-8 max-w-[100vw] overflow-x-hidden">
         <HeroBannerSlider />
 
         {/* Education — always visible, not lazy */}
