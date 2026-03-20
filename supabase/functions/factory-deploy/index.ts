@@ -147,11 +147,39 @@ serve(async (req) => {
           );
         }
 
-        // Step 2: Add custom domain
+        // Step 2: Add custom domain on Vercel
         const domainResult = await addCustomDomain(headers, vercelProjectId, customDomain);
 
         // Step 3: Trigger deployment
         const deployData = await triggerDeployment(headers, projectName, owner, repo);
+
+        // Step 4: Auto Cloudflare DNS
+        let dnsStatus = "skipped";
+        const CF_TOKEN = Deno.env.get("CLOUDFLARE_API_TOKEN");
+        const CF_ZONE = Deno.env.get("CLOUDFLARE_ZONE_ID");
+        if (CF_TOKEN && CF_ZONE) {
+          try {
+            const cfHeaders = { "Authorization": `Bearer ${CF_TOKEN}`, "Content-Type": "application/json" };
+            const checkRes = await fetch(
+              `https://api.cloudflare.com/client/v4/zones/${CF_ZONE}/dns_records?name=${customDomain}&type=CNAME`,
+              { headers: cfHeaders }
+            );
+            const checkData = await checkRes.json();
+            if (!checkData.result?.[0]) {
+              await fetch(`https://api.cloudflare.com/client/v4/zones/${CF_ZONE}/dns_records`, {
+                method: "POST",
+                headers: cfHeaders,
+                body: JSON.stringify({ type: "CNAME", name: customDomain, content: "cname.vercel-dns.com", proxied: true, ttl: 1 }),
+              });
+              dnsStatus = "created";
+            } else {
+              dnsStatus = "exists";
+            }
+          } catch { dnsStatus = "failed"; }
+        }
+
+        // Step 5: Update demo_url in products table
+        await sb.from("products").update({ demo_url: `https://${customDomain}` }).eq("slug", projectName);
 
         return new Response(
           JSON.stringify({
@@ -160,11 +188,11 @@ serve(async (req) => {
             project_id: vercelProjectId,
             custom_domain: customDomain,
             domain_status: domainResult.error ? "failed" : "configured",
-            domain_details: domainResult,
+            dns_status: dnsStatus,
             deploy_url: `https://${customDomain}`,
             vercel_url: `https://${projectName}.vercel.app`,
             deployment_id: deployData.id,
-            message: `✅ ${customDomain} → Vercel project created & domain assigned`,
+            message: `✅ ${customDomain} → Deployed + DNS ${dnsStatus}`,
           }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
