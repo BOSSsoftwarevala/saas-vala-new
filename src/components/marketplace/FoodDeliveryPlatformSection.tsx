@@ -1,7 +1,6 @@
 import { SectionSlider } from './SectionSlider';
 import { MarketplaceProductCard, ComingSoonCard } from './MarketplaceProductCard';
 import { useProductsByCategory } from '@/hooks/useMarketplaceProducts';
-import { fillToTarget } from '@/data/marketplaceProductGenerator';
 import { SectionHeader } from './SectionHeader';
 
 const TOP_5_FOOD_DELIVERY_CLONES = [
@@ -54,8 +53,7 @@ const TOP_5_FOOD_DELIVERY_CLONES = [
 
 export function FoodDeliveryPlatformSection({ onBuyNow }: { onBuyNow: (p: any) => void }) {
   const { products: dbProducts } = useProductsByCategory(['food_delivery', 'restaurant_delivery', 'ordering', 'meal']);
-  const generatedProducts = fillToTarget(dbProducts as any, 'food_delivery_platform', 'Food Delivery', 45);
-  const displayProducts = [...TOP_5_FOOD_DELIVERY_CLONES as any[], ...generatedProducts];
+  const displayProducts = [...TOP_5_FOOD_DELIVERY_CLONES as any[], ...(dbProducts as any[])];
 
   return (
     <section className="py-4">

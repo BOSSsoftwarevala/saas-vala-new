@@ -1,7 +1,6 @@
 import { SectionSlider } from './SectionSlider';
 import { MarketplaceProductCard, ComingSoonCard } from './MarketplaceProductCard';
 import { useProductsByCategory } from '@/hooks/useMarketplaceProducts';
-import { fillToTarget } from '@/data/marketplaceProductGenerator';
 import { Badge } from '@/components/ui/badge';
 import { GraduationCap } from 'lucide-react';
 

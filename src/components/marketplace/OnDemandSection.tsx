@@ -7,13 +7,12 @@ import { SectionSlider } from './SectionSlider';
 import { MarketplaceProductCard, ComingSoonCard } from './MarketplaceProductCard';
 import { OnDemandRequestModal } from './OnDemandRequestModal';
 import { useProductsByCategory } from '@/hooks/useMarketplaceProducts';
-import { fillToTarget } from '@/data/marketplaceProductGenerator';
 
 export function OnDemandSection({ onBuyNow }: { onBuyNow: (p: any) => void }) {
   const [requestModal, setRequestModal] = useState<{ open: boolean; product?: any }>({ open: false });
   const { products: dbProducts, loading } = useProductsByCategory(['saas', 'cloud', 'on_demand']);
 
-  const displayProducts = fillToTarget(dbProducts as any, 'on_demand', 'On-Demand', 50);
+  const displayProducts = dbProducts as any[];
 
   const openRequest = (product: any) => setRequestModal({ open: true, product });
 

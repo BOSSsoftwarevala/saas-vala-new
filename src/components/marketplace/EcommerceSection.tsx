@@ -1,7 +1,6 @@
 import { SectionSlider } from './SectionSlider';
 import { MarketplaceProductCard, ComingSoonCard } from './MarketplaceProductCard';
 import { useProductsByCategory } from '@/hooks/useMarketplaceProducts';
-import { fillToTarget } from '@/data/marketplaceProductGenerator';
 import { SectionHeader } from './SectionHeader';
 
 const TOP_5_ECOMMERCE_CLONES = [
@@ -54,8 +53,7 @@ const TOP_5_ECOMMERCE_CLONES = [
 
 export function EcommerceSection({ onBuyNow }: { onBuyNow: (p: any) => void }) {
   const { products: dbProducts } = useProductsByCategory(['ecommerce', 'marketplace', 'vendor', 'commerce']);
-  const generatedProducts = fillToTarget(dbProducts as any, 'ecommerce', 'E-Commerce', 45);
-  const displayProducts = [...TOP_5_ECOMMERCE_CLONES as any[], ...generatedProducts];
+  const displayProducts = [...TOP_5_ECOMMERCE_CLONES as any[], ...(dbProducts as any[])];
 
   return (
     <section className="py-4">
