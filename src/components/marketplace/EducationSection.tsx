@@ -96,9 +96,7 @@ export function EducationSection({ onBuyNow }: { onBuyNow: (p: any) => void }) {
     'education', 'school', 'college', 'coaching', 'elearning', 'e-learning', 'training', 'skill', 'university', 'library', 'examination'
   ]);
 
-  const generatedProducts = fillToTarget(dbProducts as any, 'education', 'Education', 45);
-  // Merge top 5 clones at the front, then fill remaining
-  const displayProducts = [...TOP_5_EDUCATION_CLONES as any[], ...generatedProducts];
+  const displayProducts = [...TOP_5_EDUCATION_CLONES as any[], ...(dbProducts as any[])];
 
   return (
     <section className="py-4">

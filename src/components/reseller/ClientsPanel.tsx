@@ -32,7 +32,7 @@ export function ClientsPanel() {
       // Get license keys sold by this reseller, grouped by buyer
       const { data, error } = await supabase
         .from('license_keys')
-        .select('id, customer_email, customer_name, status, created_at')
+        .select('id, owner_email, owner_name, status, created_at')
         .eq('created_by', user.id)
         .order('created_at', { ascending: false });
 
@@ -42,10 +42,10 @@ export function ClientsPanel() {
         return;
       }
 
-      // Group by customer email
+      // Group by owner email
       const clientMap = new Map<string, Client>();
       for (const key of data) {
-        const email = key.customer_email || 'unknown';
+        const email = key.owner_email || 'unknown';
         const existing = clientMap.get(email);
         if (existing) {
           existing.keys += 1;
@@ -56,7 +56,7 @@ export function ClientsPanel() {
         } else {
           clientMap.set(email, {
             id: key.id,
-            name: key.customer_name || email.split('@')[0],
+            name: key.owner_name || email.split('@')[0],
             email,
             keys: 1,
             lastPurchase: key.created_at || '',
