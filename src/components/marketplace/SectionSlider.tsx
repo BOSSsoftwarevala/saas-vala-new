@@ -68,7 +68,7 @@ export const SectionSlider = React.forwardRef<HTMLDivElement, SectionSliderProps
   };
 
   return (
-    <div className="relative group">
+    <div className="relative group max-w-[100vw] overflow-hidden">
       {/* Left arrow */}
       {canScrollLeft && (
         <button
@@ -92,10 +92,10 @@ export const SectionSlider = React.forwardRef<HTMLDivElement, SectionSliderProps
       <div
         ref={scrollRef}
         className={cn(
-          'flex gap-4 overflow-x-auto scrollbar-hide px-4 md:px-8 pb-2',
+          'flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide px-4 md:px-8 pb-2 snap-x snap-mandatory',
           className
         )}
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
       >
         {children}
       </div>
