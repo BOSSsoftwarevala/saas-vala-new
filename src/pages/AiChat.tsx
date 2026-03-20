@@ -113,17 +113,24 @@ export default function AiChat() {
   const aiStartTimeRef = useRef<number | null>(null);
   const aiTokensRef = useRef<number>(0);
   const _autoRetryRef = useRef<number | null>(null);
-  const _abortControllerRef = useRef<AbortController | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showMemoryPanel, setShowMemoryPanel] = useState(false);
+  const [showSystemPrompt, setShowSystemPrompt] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState<Set<string>>(new Set());
   const [thinkingContext, setThinkingContext] = useState<'analyzing' | 'fixing' | 'deploying' | 'general'>('general');
 
-  const [selectedModel, setSelectedModel] = useState<string>(() => {
-    return localStorage.getItem('saas-ai-model') || 'google/gemini-3-flash-preview';
+  const [systemPrompt, setSystemPrompt] = useState<string>(() => {
+    return localStorage.getItem('saas-ai-system-prompt') || 'You are VALA AI, an expert full-stack developer and business consultant for SaaSVala. You help with code generation, deployment, security audits, and business automation. Always respond in a professional yet friendly manner, mixing English with Hindi when appropriate.';
+  });
+  const [temperature, setTemperature] = useState<number>(() => {
+    return parseFloat(localStorage.getItem('saas-ai-temperature') || '0.7');
+  });
+  const [maxTokens, setMaxTokens] = useState<number>(() => {
+    return parseInt(localStorage.getItem('saas-ai-max-tokens') || '4096');
   });
 
   // Auto-select first session
