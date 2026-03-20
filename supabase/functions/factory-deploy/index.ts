@@ -323,6 +323,169 @@ serve(async (req) => {
         );
       }
 
+      // ─── Cloudflare DNS Auto-Create ───
+      case "cloudflare-dns": {
+        const CF_TOKEN = Deno.env.get("CLOUDFLARE_API_TOKEN");
+        const CF_ZONE = Deno.env.get("CLOUDFLARE_ZONE_ID");
+
+        if (!CF_TOKEN || !CF_ZONE) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Cloudflare credentials not set" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const dnsName = subdomain ? `${subdomain}.${domain || "saasvala.com"}` : null;
+        if (!dnsName) {
+          return new Response(
+            JSON.stringify({ success: false, error: "subdomain required" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        // For Vercel deployments, use CNAME to cname.vercel-dns.com
+        const recordType = target_ip ? "A" : "CNAME";
+        const recordContent = target_ip || "cname.vercel-dns.com";
+
+        const cfHeaders = {
+          "Authorization": `Bearer ${CF_TOKEN}`,
+          "Content-Type": "application/json",
+        };
+
+        // Check if record already exists
+        const checkRes = await fetch(
+          `https://api.cloudflare.com/client/v4/zones/${CF_ZONE}/dns_records?name=${dnsName}&type=${recordType}`,
+          { headers: cfHeaders }
+        );
+        const checkData = await checkRes.json();
+        const existing = checkData.result?.[0];
+
+        let dnsResult;
+        if (existing) {
+          // Update existing record
+          const updateRes = await fetch(
+            `https://api.cloudflare.com/client/v4/zones/${CF_ZONE}/dns_records/${existing.id}`,
+            {
+              method: "PUT",
+              headers: cfHeaders,
+              body: JSON.stringify({
+                type: recordType,
+                name: dnsName,
+                content: recordContent,
+                proxied: true,
+                ttl: 1,
+              }),
+            }
+          );
+          dnsResult = await updateRes.json();
+        } else {
+          // Create new record
+          const createRes = await fetch(
+            `https://api.cloudflare.com/client/v4/zones/${CF_ZONE}/dns_records`,
+            {
+              method: "POST",
+              headers: cfHeaders,
+              body: JSON.stringify({
+                type: recordType,
+                name: dnsName,
+                content: recordContent,
+                proxied: true,
+                ttl: 1,
+              }),
+            }
+          );
+          dnsResult = await createRes.json();
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: dnsResult.success,
+            dns_record: dnsResult.result,
+            action: existing ? "updated" : "created",
+            message: `✅ DNS ${existing ? "updated" : "created"}: ${dnsName} → ${recordContent}`,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // ─── Bulk DNS for all repos ───
+      case "bulk-dns": {
+        const CF_TOKEN = Deno.env.get("CLOUDFLARE_API_TOKEN");
+        const CF_ZONE = Deno.env.get("CLOUDFLARE_ZONE_ID");
+
+        if (!CF_TOKEN || !CF_ZONE) {
+          return new Response(
+            JSON.stringify({ success: false, error: "Cloudflare credentials not set" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        const cfHeaders = {
+          "Authorization": `Bearer ${CF_TOKEN}`,
+          "Content-Type": "application/json",
+        };
+
+        const suffix = domain_suffix || "saasvala.com";
+        const repoList: string[] = repos || [];
+
+        // If no repos given, fetch from DB
+        let slugs = repoList;
+        if (slugs.length === 0) {
+          const { data: catData } = await sb
+            .from("source_code_catalog")
+            .select("slug")
+            .like("github_repo_url", "https://github.com/saasvala/%");
+          slugs = (catData || []).map((r: any) => r.slug);
+        }
+
+        let created = 0, updated = 0, failed = 0;
+        for (const slug of slugs) {
+          const dnsName = `${slug}.${suffix}`;
+          try {
+            const checkRes = await fetch(
+              `https://api.cloudflare.com/client/v4/zones/${CF_ZONE}/dns_records?name=${dnsName}&type=CNAME`,
+              { headers: cfHeaders }
+            );
+            const checkData = await checkRes.json();
+            const existing = checkData.result?.[0];
+
+            if (existing) {
+              updated++;
+            } else {
+              await fetch(
+                `https://api.cloudflare.com/client/v4/zones/${CF_ZONE}/dns_records`,
+                {
+                  method: "POST",
+                  headers: cfHeaders,
+                  body: JSON.stringify({
+                    type: "CNAME",
+                    name: dnsName,
+                    content: "cname.vercel-dns.com",
+                    proxied: true,
+                    ttl: 1,
+                  }),
+                }
+              );
+              created++;
+            }
+          } catch {
+            failed++;
+          }
+        }
+
+        return new Response(
+          JSON.stringify({
+            success: true,
+            total: slugs.length,
+            created,
+            already_exists: updated,
+            failed,
+            message: `✅ DNS: ${created} created, ${updated} existing, ${failed} failed`,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       default:
         return new Response(
           JSON.stringify({ success: false, error: `Unknown action: ${action}` }),
