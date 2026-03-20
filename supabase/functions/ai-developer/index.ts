@@ -3742,10 +3742,13 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, stream = false, model } = await req.json() as { 
+    const { messages, stream = false, model, system_prompt, temperature, max_tokens } = await req.json() as { 
       messages: Message[]; 
       stream?: boolean;
       model?: string;
+      system_prompt?: string;
+      temperature?: number;
+      max_tokens?: number;
     };
 
     const SUPPORTED_MODELS = [
