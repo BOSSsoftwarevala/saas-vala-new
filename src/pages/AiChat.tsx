@@ -136,7 +136,7 @@ export default function AiChat() {
   const [showMemoryPanel, setShowMemoryPanel] = useState(false);
   const [showSystemPrompt, setShowSystemPrompt] = useState(false);
   const [pinnedMessages, setPinnedMessages] = useState<Set<string>>(new Set());
-  const [thinkingContext, setThinkingContext] = useState<'analyzing' | 'fixing' | 'deploying' | 'general'>('general');
+  const [_thinkingContext, setThinkingContext] = useState<'analyzing' | 'fixing' | 'deploying' | 'general'>('general');
 
   // Build Mode State
   const [buildMode, setBuildMode] = useState(false);
@@ -291,7 +291,7 @@ export default function AiChat() {
           // Try each URL to find one that's actually alive
           for (const row of data) {
             try {
-              const check = await fetch(row.deployed_url, { method: 'HEAD', mode: 'no-cors' });
+              await fetch(row.deployed_url, { method: 'HEAD', mode: 'no-cors' });
               setPreviewUrl(row.deployed_url);
               setPreviewInput(row.deployed_url);
               break;
