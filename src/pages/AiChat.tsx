@@ -174,6 +174,10 @@ export default function AiChat() {
     getApkPipelineStats();
   }, [getApkPipelineStats]);
 
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    return localStorage.getItem('saas-ai-model') || 'google/gemini-3-flash-preview';
+  });
+
   const updateBuildStep = (id: string, status: BuildStepStatus, result?: string) => {
     setBuildSteps(prev => prev.map(s => s.id === id ? { ...s, status, result } : s));
   };
@@ -300,10 +304,6 @@ export default function AiChat() {
   });
   const [maxTokens, setMaxTokens] = useState<number>(() => {
     return parseInt(localStorage.getItem('saas-ai-max-tokens') || '4096');
-  });
-
-  const [selectedModel, setSelectedModel] = useState<string>(() => {
-    return localStorage.getItem('saas-ai-model') || 'google/gemini-3-flash-preview';
   });
 
   // Auto-select first session
