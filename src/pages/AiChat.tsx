@@ -498,7 +498,33 @@ export default function AiChat() {
     }));
   }, [activeSessionId]);
 
-  const handleExport = () => {
+  const handleStopGeneration = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+      abortControllerRef.current = null;
+    }
+    if (aiTimerRef.current) { window.clearInterval(aiTimerRef.current); aiTimerRef.current = null; }
+    setIsLoading(false);
+    setGlobalWorking(false);
+    setAiStatus({ stage: 'idle' });
+    toast.info('Generation stopped');
+  }, []);
+
+  const handleRetry = useCallback((messageId: string) => {
+    if (!activeSessionId || isLoading) return;
+    const session = sessions.find(s => s.id === activeSessionId);
+    if (!session) return;
+    // Find the last user message before this assistant message
+    const msgIndex = session.messages.findIndex(m => m.id === messageId);
+    if (msgIndex <= 0) return;
+    const lastUserMsg = session.messages[msgIndex - 1];
+    if (lastUserMsg.role !== 'user') return;
+    // Remove the assistant message and resend
+    setSessions(prev => prev.map(s => s.id === activeSessionId ? { ...s, messages: s.messages.filter(m => m.id !== messageId) } : s));
+    setTimeout(() => handleSend(lastUserMsg.content), 100);
+  }, [activeSessionId, sessions, isLoading]);
+
+
     if (!activeSession) return;
     const content = activeSession.messages.map(m => `${m.role === 'user' ? 'You' : 'VALA AI'}: ${m.content}`).join('\n\n');
     const blob = new Blob([content], { type: 'text/plain' });
