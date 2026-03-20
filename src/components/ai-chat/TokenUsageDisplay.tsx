@@ -6,11 +6,10 @@ interface TokenUsageDisplayProps {
   tokens: number;
   elapsedMs: number;
   isLoading: boolean;
-  model: string;
   estimatedCost?: number;
 }
 
-export function TokenUsageDisplay({ tokens, elapsedMs, isLoading, model, estimatedCost }: TokenUsageDisplayProps) {
+export function TokenUsageDisplay({ tokens, elapsedMs, isLoading, estimatedCost }: TokenUsageDisplayProps) {
   if (!isLoading && tokens === 0) return null;
 
   const elapsed = (elapsedMs / 1000).toFixed(1);

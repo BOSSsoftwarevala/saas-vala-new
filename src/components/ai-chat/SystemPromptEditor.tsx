@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Settings2, Save, Plus, Trash2, Check } from 'lucide-react';
+import { Settings2, Save, Trash2, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SystemPrompt {
@@ -33,12 +33,20 @@ export function SystemPromptEditor({ isOpen, onClose, activePrompt, onSelectProm
     if (isOpen) loadPrompts();
   }, [isOpen]);
 
+  useEffect(() => {
+    setEditingPrompt(activePrompt);
+  }, [activePrompt]);
+
   const loadPrompts = async () => {
-    const { data } = await supabase
-      .from('system_prompts')
-      .select('*')
-      .order('is_default', { ascending: false });
-    if (data) setPrompts(data as SystemPrompt[]);
+    try {
+      const { data } = await (supabase as any)
+        .from('system_prompts')
+        .select('*')
+        .order('is_default', { ascending: false });
+      if (data) setPrompts(data as SystemPrompt[]);
+    } catch (e) {
+      console.error('Failed to load prompts:', e);
+    }
   };
 
   const handleSave = async () => {
@@ -48,20 +56,20 @@ export function SystemPromptEditor({ isOpen, onClose, activePrompt, onSelectProm
     }
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from('system_prompts').insert({
+    const { error } = await (supabase as any).from('system_prompts').insert({
       name: newName,
       prompt: editingPrompt,
       user_id: user?.id,
       is_default: false,
       is_global: false,
-    } as any);
+    });
     setLoading(false);
     if (error) toast.error('Save failed');
     else { toast.success('Prompt saved'); setNewName(''); loadPrompts(); }
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from('system_prompts').delete().eq('id', id);
+    await (supabase as any).from('system_prompts').delete().eq('id', id);
     toast.success('Deleted');
     loadPrompts();
   };
@@ -76,7 +84,6 @@ export function SystemPromptEditor({ isOpen, onClose, activePrompt, onSelectProm
           </SheetTitle>
         </SheetHeader>
         <div className="space-y-4 mt-4">
-          {/* Current prompt editor */}
           <div className="space-y-2">
             <label className="text-sm font-medium text-foreground">Active System Prompt</label>
             <Textarea
@@ -91,7 +98,6 @@ export function SystemPromptEditor({ isOpen, onClose, activePrompt, onSelectProm
             </Button>
           </div>
 
-          {/* Save as new */}
           <div className="border-t border-border pt-4 space-y-2">
             <label className="text-sm font-medium text-foreground">Save as Template</label>
             <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Template name..." className="text-sm" />
@@ -100,7 +106,6 @@ export function SystemPromptEditor({ isOpen, onClose, activePrompt, onSelectProm
             </Button>
           </div>
 
-          {/* Saved templates */}
           <div className="border-t border-border pt-4 space-y-2">
             <label className="text-sm font-medium text-foreground">Templates</label>
             {prompts.map((p) => (
