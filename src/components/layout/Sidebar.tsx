@@ -16,10 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LogOut,
-  Users,
   Store,
-  FileText,
-  Activity,
   Bot,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
