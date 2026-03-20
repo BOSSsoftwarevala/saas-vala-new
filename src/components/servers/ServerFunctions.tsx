@@ -201,7 +201,6 @@ export function ServerFunctions() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="glass-card">
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-foreground">{mockFunctions.length}</p>
             <p className="text-2xl font-bold text-foreground">{functions.length}</p>
           </CardContent>
         </Card>

@@ -35,9 +35,9 @@ interface NewProjectModalProps {
 
 interface CatalogRepo {
   id: string;
-  repo_name: string;
-  repo_url: string | null;
-  language: string | null;
+  project_name: string;
+  github_repo_url: string | null;
+  tech_stack: string | null;
   updated_at: string | null;
 }
 
@@ -65,7 +65,7 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
       setRepoLoading(true);
       const { data } = await supabase
         .from('source_code_catalog')
-        .select('id, repo_name, repo_url, language, updated_at')
+        .select('id, project_name, github_repo_url, tech_stack, updated_at')
         .order('updated_at', { ascending: false })
         .limit(50);
       setRepos((data as CatalogRepo[]) || []);
@@ -75,7 +75,7 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
   }, [open]);
 
   const filteredRepos = repos.filter((repo) =>
-    repo.repo_name.toLowerCase().includes(searchQuery.toLowerCase())
+    repo.project_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const timeAgo = (ts: string | null) => {
@@ -107,7 +107,7 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
     setSelectedRepo(repoId);
     const repo = repos.find((r) => r.id === repoId);
     if (repo) {
-      setProjectName(repo.repo_name);
+      setProjectName(repo.project_name);
     }
     setStep('configure');
   };
@@ -178,14 +178,14 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
                         <div className="flex items-center gap-3">
                           <Folder className="h-5 w-5 text-muted-foreground" />
                           <div>
-                            <p className="font-medium text-foreground">{repo.repo_name}</p>
-                            <p className="text-sm text-muted-foreground truncate max-w-[300px]">{repo.repo_url || ''}</p>
+                            <p className="font-medium text-foreground">{repo.project_name}</p>
+                            <p className="text-sm text-muted-foreground truncate max-w-[300px]">{repo.github_repo_url || ''}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          {repo.language && <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span className={cn('h-3 w-3 rounded-full', languageColors[repo.language] || 'bg-gray-500')} />
-                            {repo.language}
+                          {repo.tech_stack && <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span className={cn('h-3 w-3 rounded-full', languageColors[repo.tech_stack] || 'bg-gray-500')} />
+                            {repo.tech_stack}
                           </div>}
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
@@ -223,7 +223,7 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
               <div className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg">
                 <Github className="h-5 w-5 text-muted-foreground" />
                 <span className="font-medium text-foreground">
-                  {repos.find((r) => r.id === selectedRepo)?.repo_name}
+                  {repos.find((r) => r.id === selectedRepo)?.project_name}
                 </span>
                 <Check className="h-4 w-4 text-success ml-auto" />
               </div>

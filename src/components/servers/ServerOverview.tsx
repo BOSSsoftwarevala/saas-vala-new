@@ -239,7 +239,7 @@ export function ServerOverview({ onSelectProject, onNewProject }: ServerOverview
                       {status.label}
                     </Badge>
                     <Badge variant="outline" className="border-border text-muted-foreground">
-                      {project.branch}
+                      {srv.git_branch || 'main'}
                     </Badge>
                   </div>
 
