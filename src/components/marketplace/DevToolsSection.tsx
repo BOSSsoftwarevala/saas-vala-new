@@ -1,7 +1,6 @@
 import { SectionSlider } from './SectionSlider';
 import { MarketplaceProductCard, ComingSoonCard } from './MarketplaceProductCard';
 import { useProductsByCategory } from '@/hooks/useMarketplaceProducts';
-import { fillToTarget } from '@/data/marketplaceProductGenerator';
 import { SectionHeader } from './SectionHeader';
 
 const TOP_5_DEVTOOLS_CLONES = [
@@ -72,8 +71,7 @@ const TOP_5_DEVTOOLS_CLONES = [
 
 export function DevToolsSection({ onBuyNow }: { onBuyNow: (p: any) => void }) {
   const { products: dbProducts } = useProductsByCategory(['devops', 'developer', 'cicd', 'docker', 'kubernetes', 'cloud']);
-  const generatedProducts = fillToTarget(dbProducts as any, 'cloud_devops', 'Developer Tools', 45);
-  const displayProducts = [...TOP_5_DEVTOOLS_CLONES as any[], ...generatedProducts];
+  const displayProducts = [...TOP_5_DEVTOOLS_CLONES as any[], ...(dbProducts as any[])];
 
   return (
     <section className="py-4">

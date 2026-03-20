@@ -1,7 +1,6 @@
 import { SectionSlider } from './SectionSlider';
 import { MarketplaceProductCard, ComingSoonCard } from './MarketplaceProductCard';
 import { useProductsByCategory } from '@/hooks/useMarketplaceProducts';
-import { fillToTarget } from '@/data/marketplaceProductGenerator';
 import { SectionHeader } from './SectionHeader';
 
 const TOP_5_LEGAL_CLONES = [
@@ -54,8 +53,7 @@ const TOP_5_LEGAL_CLONES = [
 
 export function LegalTechSection({ onBuyNow }: { onBuyNow: (p: any) => void }) {
   const { products: dbProducts } = useProductsByCategory(['legal', 'law', 'contract', 'esignature', 'document']);
-  const generatedProducts = fillToTarget(dbProducts as any, 'legal_tech', 'Legal Tech', 45);
-  const displayProducts = [...TOP_5_LEGAL_CLONES as any[], ...generatedProducts];
+  const displayProducts = [...TOP_5_LEGAL_CLONES as any[], ...(dbProducts as any[])];
 
   return (
     <section className="py-4">

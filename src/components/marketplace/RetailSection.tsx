@@ -1,7 +1,6 @@
 import { SectionSlider } from './SectionSlider';
 import { MarketplaceProductCard, ComingSoonCard } from './MarketplaceProductCard';
 import { useProductsByCategory } from '@/hooks/useMarketplaceProducts';
-import { fillToTarget } from '@/data/marketplaceProductGenerator';
 import { SectionHeader } from './SectionHeader';
 
 const TOP_5_RETAIL_CLONES = [
@@ -54,8 +53,7 @@ const TOP_5_RETAIL_CLONES = [
 
 export function RetailSection({ onBuyNow }: { onBuyNow: (p: any) => void }) {
   const { products: dbProducts } = useProductsByCategory(['retail', 'pos', 'store', 'shop']);
-  const generatedProducts = fillToTarget(dbProducts as any, 'retail', 'Retail', 45);
-  const displayProducts = [...TOP_5_RETAIL_CLONES as any[], ...generatedProducts];
+  const displayProducts = [...TOP_5_RETAIL_CLONES as any[], ...(dbProducts as any[])];
 
   return (
     <section className="py-4">

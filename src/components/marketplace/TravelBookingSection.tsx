@@ -1,7 +1,6 @@
 import { SectionSlider } from './SectionSlider';
 import { MarketplaceProductCard, ComingSoonCard } from './MarketplaceProductCard';
 import { useProductsByCategory } from '@/hooks/useMarketplaceProducts';
-import { fillToTarget } from '@/data/marketplaceProductGenerator';
 import { SectionHeader } from './SectionHeader';
 
 const TOP_5_TRAVEL_CLONES = [
@@ -54,8 +53,7 @@ const TOP_5_TRAVEL_CLONES = [
 
 export function TravelBookingSection({ onBuyNow }: { onBuyNow: (p: any) => void }) {
   const { products: dbProducts } = useProductsByCategory(['travel', 'booking', 'hotel', 'flight', 'tourism']);
-  const generatedProducts = fillToTarget(dbProducts as any, 'travel_booking', 'Travel & Booking', 45);
-  const displayProducts = [...TOP_5_TRAVEL_CLONES as any[], ...generatedProducts];
+  const displayProducts = [...TOP_5_TRAVEL_CLONES as any[], ...(dbProducts as any[])];
 
   return (
     <section className="py-4">

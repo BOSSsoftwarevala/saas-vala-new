@@ -1,7 +1,6 @@
 import { SectionSlider } from './SectionSlider';
 import { MarketplaceProductCard, ComingSoonCard } from './MarketplaceProductCard';
 import { useProductsByCategory } from '@/hooks/useMarketplaceProducts';
-import { fillToTarget } from '@/data/marketplaceProductGenerator';
 import { SectionHeader } from './SectionHeader';
 
 const TOP_5_SOCIAL_CLONES = [
@@ -54,8 +53,7 @@ const TOP_5_SOCIAL_CLONES = [
 
 export function SocialMediaSection({ onBuyNow }: { onBuyNow: (p: any) => void }) {
   const { products: dbProducts } = useProductsByCategory(['social', 'community', 'network', 'forum']);
-  const generatedProducts = fillToTarget(dbProducts as any, 'social_media', 'Social Media', 45);
-  const displayProducts = [...TOP_5_SOCIAL_CLONES as any[], ...generatedProducts];
+  const displayProducts = [...TOP_5_SOCIAL_CLONES as any[], ...(dbProducts as any[])];
 
   return (
     <section className="py-4">
