@@ -21,7 +21,7 @@ import {
   FileText,
   Activity,
   Bot,
-  Zap,
+  
   Smartphone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
