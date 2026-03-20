@@ -131,6 +131,11 @@ export default function AiChat() {
   const _autoRetryRef = useRef<number | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // ── PERSIST SESSIONS TO LOCALSTORAGE ──
+  useEffect(() => {
+    localStorage.setItem('saas-ai-sessions', JSON.stringify(sessions));
+  }, [sessions]);
+
   const [showHistoryPanel, setShowHistoryPanel] = useState(false);
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -422,6 +427,7 @@ export default function AiChat() {
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const controller = new AbortController();
+      abortControllerRef.current = controller;
       const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 min timeout
 
       try {
