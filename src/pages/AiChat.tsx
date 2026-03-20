@@ -649,25 +649,31 @@ export default function AiChat() {
           <div className="flex-1 overflow-y-auto min-h-0">
             {activeSession && activeSession.messages.length > 0 ? (
               <div className="px-3 py-3 space-y-1 pb-4">
-                {activeSession.messages.map((message, index) => (
-                  <div key={message.id} id={`message-${message.id}`}>
-                    <ChatMessage
-                      message={message}
-                      index={index}
-                      isPinned={pinnedMessages.has(message.id)}
-                      onPin={handlePinMessage}
-                      onUnpin={handleUnpinMessage}
-                      onApproveAction={(messageId, actionId) => {
-                        handleSend(`✅ APPROVED — Action ID: ${actionId}. Execute karo.`);
-                        toast.success('Action approved!');
-                      }}
-                      onDenyAction={(messageId, actionId) => {
-                        handleSend(`❌ CANCELLED — Action ID: ${actionId}.`);
-                        toast.info('Action cancelled.');
-                      }}
-                    />
-                  </div>
-                ))}
+                {activeSession.messages.map((message, index) => {
+                  const lastAssistantIdx = [...activeSession.messages].reverse().findIndex(m => m.role === 'assistant');
+                  const isLastAssistant = message.role === 'assistant' && index === activeSession.messages.length - 1 - lastAssistantIdx;
+                  return (
+                    <div key={message.id} id={`message-${message.id}`}>
+                      <ChatMessage
+                        message={message}
+                        index={index}
+                        isPinned={pinnedMessages.has(message.id)}
+                        onPin={handlePinMessage}
+                        onUnpin={handleUnpinMessage}
+                        onRetry={handleRetry}
+                        isLastAssistant={isLastAssistant && !isLoading}
+                        onApproveAction={(messageId, actionId) => {
+                          handleSend(`✅ APPROVED — Action ID: ${actionId}. Execute karo.`);
+                          toast.success('Action approved!');
+                        }}
+                        onDenyAction={(messageId, actionId) => {
+                          handleSend(`❌ CANCELLED — Action ID: ${actionId}.`);
+                          toast.info('Action cancelled.');
+                        }}
+                      />
+                    </div>
+                  );
+                })}
                 <AiStatusPanel 
                   status={aiStatus}
                   onDismissError={() => setAiStatus({ stage: 'idle' })}
