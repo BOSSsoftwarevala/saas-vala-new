@@ -134,12 +134,14 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
   return (
     <>
       <div
-        className="flex-shrink-0 rounded-2xl overflow-hidden flex flex-col group cursor-pointer"
+        className="flex-shrink-0 rounded-2xl overflow-hidden flex flex-col group cursor-pointer snap-start"
         style={{
-          width: 280,
+          width: 'clamp(220px, 28vw, 280px)',
+          minWidth: 220,
+          maxWidth: 280,
           background: 'rgba(255,255,255,0.03)',
           border: '1px solid rgba(255,255,255,0.07)',
-          transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
+          transition: 'transform 0.25s ease-out, box-shadow 0.25s ease-out, border-color 0.25s ease-out',
         }}
         onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(37,99,235,0.15)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,0.3)'; }}
         onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
