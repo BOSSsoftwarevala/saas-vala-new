@@ -258,7 +258,7 @@ export default function AiChat() {
         const resp = await fetch(CHAT_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-          body: JSON.stringify({ messages: formattedMessages, stream: false, model: selectedModel }),
+          body: JSON.stringify({ messages: formattedMessages, stream: false, model: selectedModel, system_prompt: systemPrompt, temperature, max_tokens: maxTokens }),
           signal: controller.signal,
         });
 
