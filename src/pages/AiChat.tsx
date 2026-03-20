@@ -373,6 +373,13 @@ export default function AiChat() {
     setActiveSessionId(newSession.id);
   };
 
+  const openBuilderMode = () => {
+    const newSession: ChatSession = { id: crypto.randomUUID(), title: '🚀 Builder', createdAt: new Date(), messages: [] };
+    setSessions(prev => [newSession, ...prev]);
+    setActiveSessionId(newSession.id);
+    setBuildMode(true);
+  };
+
   const deleteSession = (id: string) => {
     setSessions(prev => prev.filter(s => s.id !== id));
     if (activeSessionId === id) {
@@ -750,6 +757,14 @@ export default function AiChat() {
               {isLoading && <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />}
             </div>
             <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={openBuilderMode} className="h-7 w-7 text-muted-foreground hover:text-primary">
+                    <Rocket className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">Builder + APK Pipeline</TooltipContent>
+              </Tooltip>
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button variant="ghost" size="icon" onClick={() => setShowSearchPanel(true)} className="h-7 w-7 text-muted-foreground hover:text-foreground">
