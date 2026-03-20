@@ -147,7 +147,9 @@ export default function AiChat() {
   const activeSession = sessions.find(s => s.id === activeSessionId);
 
   useEffect(() => { localStorage.setItem('saas-ai-model', selectedModel); }, [selectedModel]);
-  useEffect(() => { localStorage.setItem('saas-ai-sessions', JSON.stringify(sessions)); }, [sessions]);
+  useEffect(() => { localStorage.setItem('saas-ai-system-prompt', systemPrompt); }, [systemPrompt]);
+  useEffect(() => { localStorage.setItem('saas-ai-temperature', temperature.toString()); }, [temperature]);
+  useEffect(() => { localStorage.setItem('saas-ai-max-tokens', maxTokens.toString()); }, [maxTokens]);
   useEffect(() => { if (activeSessionId) localStorage.setItem('saas-ai-active-session', activeSessionId); }, [activeSessionId]);
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [activeSession?.messages]);
   useEffect(() => { if (isMobile) setSessionListOpen(false); }, [isMobile]);
