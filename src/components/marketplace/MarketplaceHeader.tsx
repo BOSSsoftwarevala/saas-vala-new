@@ -40,7 +40,7 @@ const languages = [
 
 export function MarketplaceHeader() {
   const navigate = useNavigate();
-  const { user, isSuperAdmin, isReseller } = useAuth();
+  const { user, isReseller } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState(currencies[0]);
