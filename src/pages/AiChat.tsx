@@ -849,6 +849,12 @@ export default function AiChat() {
             <MemoryPanel onClose={() => setShowMemoryPanel(false)} />
           </SheetContent>
         </Sheet>
+        <SystemPromptEditor
+          isOpen={showSystemPrompt}
+          onClose={() => setShowSystemPrompt(false)}
+          activePrompt={systemPrompt}
+          onSelectPrompt={setSystemPrompt}
+        />
       </div>
     </TooltipProvider>
   );
