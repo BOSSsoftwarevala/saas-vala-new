@@ -711,15 +711,39 @@ export default function AiChat() {
             )}
           </div>
 
-          {/* Model selector + input */}
+          {/* Model selector + controls + input */}
           <div className="shrink-0 border-t border-border/50 bg-background/95 backdrop-blur-md">
-            <div className="px-2 pt-1.5 flex items-center gap-2">
+            <div className="px-2 pt-1.5 flex items-center gap-2 flex-wrap">
               <ModelSelector selectedModel={selectedModel} onModelChange={setSelectedModel} />
+              <ChatControlPanel 
+                temperature={temperature} 
+                maxTokens={maxTokens} 
+                onTemperatureChange={setTemperature} 
+                onMaxTokensChange={setMaxTokens} 
+              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="icon" onClick={() => setShowSystemPrompt(true)} className="h-7 w-7 text-muted-foreground hover:text-primary">
+                    <Settings2 className="h-3.5 w-3.5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="top" className="text-xs">System Prompt</TooltipContent>
+              </Tooltip>
               {isLoading && (
-                <span className="text-[10px] text-muted-foreground">
-                  {aiStatus.elapsedMs ? `${(aiStatus.elapsedMs / 1000).toFixed(1)}s` : '0s'} · {aiStatus.tokens ?? 0} tokens
-                </span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={handleStopGeneration} className="h-7 w-7 text-destructive hover:bg-destructive/10">
+                      <Square className="h-3.5 w-3.5 fill-current" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="text-xs">Stop generation</TooltipContent>
+                </Tooltip>
               )}
+              <TokenUsageDisplay
+                tokens={aiStatus.tokens ?? 0}
+                elapsedMs={aiStatus.elapsedMs ?? 0}
+                isLoading={isLoading}
+              />
             </div>
             <ChatInput onSend={handleSend} isLoading={isLoading} onVoiceMessage={handleVoiceMessage} />
           </div>
