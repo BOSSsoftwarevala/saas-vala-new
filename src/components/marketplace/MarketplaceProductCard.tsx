@@ -295,7 +295,7 @@ MarketplaceProductCard.displayName = 'MarketplaceProductCard';
 
 export function ComingSoonCard({ label }: { label: string }) {
   return (
-    <div className="flex-shrink-0" style={{ width: 280 }}>
+    <div className="flex-shrink-0 snap-start" style={{ width: 'clamp(220px, 28vw, 280px)', minWidth: 220, maxWidth: 280 }}>
       <div className="rounded-2xl border border-dashed flex flex-col items-center justify-center gap-3 text-center"
         style={{ minHeight: 320, borderColor: 'rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)' }}>
         <Package style={{ width: 28, height: 28 }} className="text-muted-foreground" />
