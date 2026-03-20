@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,6 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -33,6 +32,7 @@ import {
   Trash2,
   Globe,
   Server,
+  Loader2,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -42,66 +42,20 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-// Mock functions data
-const mockFunctions = [
-  {
-    id: '1',
-    name: 'api/user',
-    type: 'serverless',
-    runtime: 'Node.js 18',
-    region: 'us-east-1',
-    invocations: 12453,
-    avgDuration: '45ms',
-    errors: 12,
-    status: 'active',
-  },
-  {
-    id: '2',
-    name: 'api/products',
-    type: 'serverless',
-    runtime: 'Node.js 18',
-    region: 'us-east-1',
-    invocations: 8234,
-    avgDuration: '89ms',
-    errors: 3,
-    status: 'active',
-  },
-  {
-    id: '3',
-    name: 'api/webhook',
-    type: 'edge',
-    runtime: 'Edge Runtime',
-    region: 'global',
-    invocations: 45678,
-    avgDuration: '12ms',
-    errors: 0,
-    status: 'active',
-  },
-  {
-    id: '4',
-    name: 'api/analytics',
-    type: 'serverless',
-    runtime: 'Node.js 18',
-    region: 'eu-west-1',
-    invocations: 2341,
-    avgDuration: '156ms',
-    errors: 45,
-    status: 'error',
-  },
-  {
-    id: '5',
-    name: 'api/cron/cleanup',
-    type: 'cron',
-    runtime: 'Node.js 18',
-    region: 'us-east-1',
-    invocations: 24,
-    avgDuration: '2.3s',
-    errors: 0,
-    status: 'active',
-    schedule: '0 0 * * *',
-  },
-];
+interface FunctionItem {
+  id: string;
+  name: string;
+  type: string;
+  runtime: string;
+  region: string;
+  invocations: number;
+  avgDuration: string;
+  errors: number;
+  status: string;
+  schedule?: string;
+}
 
 const typeConfig = {
   serverless: { label: 'Serverless', color: 'bg-primary/20 text-primary border-primary/30', icon: Server },
@@ -113,6 +67,34 @@ export function ServerFunctions() {
   const [showCreate, setShowCreate] = useState(false);
   const [newFunction, setNewFunction] = useState({ name: '', runtime: 'nodejs18', type: 'serverless' });
   const { toast } = useToast();
+  const [functions, setFunctions] = useState<FunctionItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Edge functions are defined in supabase/functions/ directory
+    // We'll list them from the known edge functions
+    const knownFunctions: FunctionItem[] = [
+      'ai-chat', 'ai-auto-pilot', 'ai-developer', 'analyze-code',
+      'auto-apk-pipeline', 'auto-deploy-pipeline', 'auto-monitor',
+      'bulk-vercel-deploy', 'download-apk', 'factory-deploy',
+      'github-connect', 'github-multi-account', 'github-oauth',
+      'marketplace-sync-missing', 'seed-marketplace', 'seo-optimize',
+      'server-agent', 'source-code-manager', 'verify-license',
+      'elevenlabs-stt', 'elevenlabs-tts',
+    ].map((name, i) => ({
+      id: String(i + 1),
+      name,
+      type: name.includes('cron') || name.includes('auto-monitor') ? 'cron' : 'edge',
+      runtime: 'Deno',
+      region: 'global',
+      invocations: 0,
+      avgDuration: '-',
+      errors: 0,
+      status: 'active',
+    }));
+    setFunctions(knownFunctions);
+    setLoading(false);
+  }, []);
 
   const handleCreate = () => {
     if (!newFunction.name.trim()) return;
@@ -124,8 +106,16 @@ export function ServerFunctions() {
     setShowCreate(false);
   };
 
-  const totalInvocations = mockFunctions.reduce((sum, f) => sum + f.invocations, 0);
-  const totalErrors = mockFunctions.reduce((sum, f) => sum + f.errors, 0);
+  const totalInvocations = functions.reduce((sum, f) => sum + f.invocations, 0);
+  const totalErrors = functions.reduce((sum, f) => sum + f.errors, 0);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -212,7 +202,7 @@ export function ServerFunctions() {
         <Card className="glass-card">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-foreground">{mockFunctions.length}</p>
-            <p className="text-sm text-muted-foreground">Functions</p>
+            <p className="text-2xl font-bold text-foreground">{functions.length}</p>
           </CardContent>
         </Card>
         <Card className="glass-card">
@@ -241,7 +231,7 @@ export function ServerFunctions() {
           <CardTitle className="text-sm font-medium text-muted-foreground">All Functions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {mockFunctions.map((fn) => {
+          {functions.map((fn) => {
             const type = typeConfig[fn.type as keyof typeof typeConfig];
             const TypeIcon = type.icon;
 
