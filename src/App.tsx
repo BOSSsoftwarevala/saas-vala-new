@@ -64,7 +64,6 @@ const ItSoftwarePwa = React.lazy(() => import("./pages/ItSoftwarePwa"));
 const CloudDevopsPwa = React.lazy(() => import("./pages/CloudDevopsPwa"));
 const AnalyticsPwa = React.lazy(() => import("./pages/AnalyticsPwa"));
 const Cart = React.lazy(() => import("./pages/Cart"));
-const ApkPipeline = React.lazy(() => import("./pages/ApkPipeline"));
 const OfflineAppTemplate = React.lazy(() => import("./pages/OfflineAppTemplate"));
 const MarketplaceAdmin = React.lazy(() => import("./pages/MarketplaceAdmin"));
 
@@ -154,7 +153,7 @@ function AppRoutes() {
         <Route path="/audit-logs" element={<ProtectedRoute><AdminRoute><AuditLogs /></AdminRoute></ProtectedRoute>} />
         <Route path="/system-health" element={<ProtectedRoute><AdminRoute><SystemHealth /></AdminRoute></ProtectedRoute>} />
         <Route path="/automation" element={<ProtectedRoute><AdminRoute><Automation /></AdminRoute></ProtectedRoute>} />
-        <Route path="/apk-pipeline" element={<ProtectedRoute><AdminRoute><ApkPipeline /></AdminRoute></ProtectedRoute>} />
+        <Route path="/apk-pipeline" element={<ProtectedRoute><Navigate to="/ai-chat" replace /></ProtectedRoute>} />
         <Route path="/admin/add-product" element={<ProtectedRoute><AdminRoute><AddProduct /></AdminRoute></ProtectedRoute>} />
         <Route path="/admin/marketplace" element={<ProtectedRoute><AdminRoute><MarketplaceAdmin /></AdminRoute></ProtectedRoute>} />
 
