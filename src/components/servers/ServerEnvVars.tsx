@@ -36,24 +36,12 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
-// Mock env vars data
-const mockEnvVars = {
-  production: [
-    { id: '1', key: 'DATABASE_URL', value: 'postgresql://****:****@db.example.com/prod', encrypted: true },
-    { id: '2', key: 'API_SECRET', value: 'sk-prod-****', encrypted: true },
-    { id: '3', key: 'NEXT_PUBLIC_API_URL', value: 'https://api.saas-vala.com', encrypted: false },
-    { id: '4', key: 'STRIPE_SECRET_KEY', value: 'sk_live_****', encrypted: true },
-  ],
-  preview: [
-    { id: '5', key: 'DATABASE_URL', value: 'postgresql://****:****@db.example.com/staging', encrypted: true },
-    { id: '6', key: 'API_SECRET', value: 'sk-staging-****', encrypted: true },
-    { id: '7', key: 'NEXT_PUBLIC_API_URL', value: 'https://api-staging.saas-vala.com', encrypted: false },
-  ],
-  development: [
-    { id: '8', key: 'DATABASE_URL', value: 'postgresql://localhost/dev', encrypted: false },
-    { id: '9', key: 'API_SECRET', value: 'dev-secret', encrypted: false },
-    { id: '10', key: 'NEXT_PUBLIC_API_URL', value: 'http://localhost:3001', encrypted: false },
-  ],
+// Env vars are stored per-server in the servers.env_vars JSONB column
+// This component reads from the selected server's env_vars
+const defaultEnvVars: Record<string, { id: string; key: string; value: string; encrypted: boolean }[]> = {
+  production: [],
+  preview: [],
+  development: [],
 };
 
 export function ServerEnvVars() {
@@ -63,7 +51,7 @@ export function ServerEnvVars() {
   const [newVar, setNewVar] = useState({ key: '', value: '', environments: ['production'] });
   const { toast } = useToast();
 
-  const currentVars = mockEnvVars[activeEnv as keyof typeof mockEnvVars];
+  const currentVars = defaultEnvVars[activeEnv as keyof typeof defaultEnvVars] || [];
 
   const toggleShowValue = (id: string) => {
     setShowValues((prev) => ({ ...prev, [id]: !prev[id] }));
