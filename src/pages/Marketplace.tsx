@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { LazySection } from '@/components/marketplace/LazySection';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
+import { EducationSection } from '@/components/marketplace/EducationSection';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
 import { useMarketplaceProducts } from '@/hooks/useMarketplaceProducts';
 import { toast } from 'sonner';
@@ -103,8 +104,11 @@ export default function Marketplace() {
       <main className="pt-16 pb-8">
         <HeroBannerSlider />
 
-        {/* All categories as dynamic rows — no duplicate hardcoded sections */}
-        {MARKETPLACE_CATEGORIES.map((cat) => (
+        {/* Education — always visible, not lazy */}
+        <EducationSection onBuyNow={handleBuyNow} />
+
+        {/* Remaining categories as dynamic rows */}
+        {MARKETPLACE_CATEGORIES.filter(cat => cat.id !== 'education').map((cat) => (
           <LazySection key={cat.id} height={280}>
             <MarketplaceCategoryRow category={cat} onBuyNow={handleBuyNow} />
           </LazySection>
