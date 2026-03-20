@@ -198,17 +198,17 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
           ) : (
             <>
               <div className="flex gap-1.5">
-                <Button size="sm" variant="outline" className="flex-1 h-8 text-[10px] font-bold rounded-lg border-white/10 text-foreground/70 hover:border-white/20" onClick={handleDemo}>
+                <Button size="sm" variant="outline" className="flex-1 h-8 text-[10px] font-bold rounded-lg border-white/10 text-foreground/70 hover:border-white/20 btn-glow ripple-container" onClick={handleDemo}>
                   <Play style={{ width: 11, height: 11 }} className="mr-1" />{hasDemoAvailable ? 'DEMO' : 'VIEW'}
                 </Button>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={handleFavorite}>
-                  <Heart style={{ width: 14, height: 14 }} className={favorited ? 'fill-pink-400 text-pink-400' : 'text-muted-foreground'} />
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 ripple-container" onClick={handleFavorite}>
+                  <Heart style={{ width: 14, height: 14 }} className={cn('transition-transform duration-200', favorited ? 'fill-pink-400 text-pink-400 scale-110' : 'text-muted-foreground')} />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={handleAddToCart}>
-                  <ShoppingCart style={{ width: 14, height: 14 }} className={inCart ? 'text-primary' : 'text-muted-foreground'} />
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 ripple-container" onClick={handleAddToCart}>
+                  <ShoppingCart style={{ width: 14, height: 14 }} className={cn('transition-transform duration-200', inCart ? 'text-primary scale-110' : 'text-muted-foreground')} />
                 </Button>
               </div>
-              <Button size="sm" className="w-full h-9 text-[11px] font-black rounded-lg text-white border-0" style={{ background: 'linear-gradient(90deg,#2563EB,#1D4ED8)' }} onClick={() => onBuyNow(product)}>
+              <Button size="sm" className="w-full h-9 text-[11px] font-black rounded-lg text-white border-0 btn-glow ripple-container" style={{ background: 'linear-gradient(135deg,#2563EB,#1D4ED8,#3B82F6)' }} onClick={() => onBuyNow(product)}>
                 <Package style={{ width: 13, height: 13 }} className="mr-1" /> BUY NOW — ${price}
               </Button>
             </>
