@@ -3,12 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAutoApkPipeline } from '@/hooks/useAutoApkPipeline';
-import { Smartphone, ScanSearch, Hammer, RefreshCw, Rocket, BarChart3 } from 'lucide-react';
+import { Smartphone, ScanSearch, Hammer, RefreshCw, Rocket, BarChart3, ShoppingCart } from 'lucide-react';
 
 export function AutoApkPipelinePanel() {
   const {
     loading, stats,
-    scanAndRegister, bulkBuild, checkUpdates, runFullPipeline, getStats,
+    scanAndRegister, bulkBuild, checkUpdates, runFullPipeline, autoMarketplaceWorkflow, getStats,
   } = useAutoApkPipeline();
 
   useEffect(() => {
@@ -23,20 +23,26 @@ export function AutoApkPipelinePanel() {
       {/* Header */}
       <Card className="border-primary/20 bg-gradient-to-r from-primary/5 to-transparent">
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <CardTitle className="flex items-center gap-2 text-xl">
                 <Smartphone className="h-6 w-6 text-primary" />
                 Auto APK Conversion Pipeline
               </CardTitle>
               <CardDescription className="mt-1">
-                Automatically converts all SaaS Vala Git repositories into Android APK products with license gating
+                Automatically scans GitHub repos, verifies them, and queues APK builds with license gating
               </CardDescription>
             </div>
-            <Button onClick={runFullPipeline} disabled={loading} size="lg" className="gap-2">
-              <Rocket className="h-4 w-4" />
-              {loading ? 'Running...' : 'Run Full Pipeline'}
-            </Button>
+            <div className="flex gap-2 flex-wrap">
+              <Button onClick={runFullPipeline} disabled={loading} size="lg" className="gap-2">
+                <Rocket className="h-4 w-4" />
+                {loading ? 'Running...' : 'Full Pipeline'}
+              </Button>
+              <Button onClick={() => autoMarketplaceWorkflow(20)} disabled={loading} size="lg" variant="outline" className="gap-2">
+                <ShoppingCart className="h-4 w-4" />
+                {loading ? 'Running...' : 'Marketplace Sync'}
+              </Button>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -53,15 +59,15 @@ export function AutoApkPipelinePanel() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <ActionCard
           icon={<ScanSearch className="h-5 w-5" />}
-          title="Scan Repos"
-          description="Detect new SaaSVala repositories and register them as products"
+          title="Scan & Register"
+          description="Scan GitHub repos & register new products in catalog"
           onClick={scanAndRegister}
           loading={loading}
         />
         <ActionCard
           icon={<Hammer className="h-5 w-5" />}
           title="Bulk Build APKs"
-          description="Queue APK builds for all pending repositories"
+          description="Queue APK builds for all pending repos (verifies on GitHub)"
           onClick={() => bulkBuild(20)}
           loading={loading}
         />
@@ -117,9 +123,9 @@ export function AutoApkPipelinePanel() {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-5 gap-4 text-center">
             {[
-              { step: '1', label: 'Repo Detected', desc: 'GitHub scan' },
-              { step: '2', label: 'Product Created', desc: 'Auto-register' },
-              { step: '3', label: 'APK Built', desc: 'Capacitor build' },
+              { step: '1', label: 'Repo Scanned', desc: 'GitHub API' },
+              { step: '2', label: 'Repo Verified', desc: 'Existence check' },
+              { step: '3', label: 'Build Queued', desc: 'APK queue' },
               { step: '4', label: 'License Gated', desc: 'Key activation' },
               { step: '5', label: 'Marketplace Live', desc: 'Ready to sell' },
             ].map((item, i) => (
