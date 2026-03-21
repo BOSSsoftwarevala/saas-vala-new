@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,60 +6,33 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Card, CardContent } from '@/components/ui/card';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Plus,
-  Search,
-  Filter,
-  MoreVertical,
-  Users,
-  Edit,
-  Trash2,
-  Ban,
-  Play,
-  Shield,
-  Loader2,
-  DollarSign,
-  Percent,
-  CheckCircle,
-  Download,
+  Plus, Search, Filter, MoreVertical, Users, Edit, Trash2, Ban, Play,
+  Shield, Loader2, DollarSign, Percent, CheckCircle, Download,
+  Eye, Wallet, BarChart3, Megaphone, ArrowLeft, Globe, Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useResellers, type Reseller } from '@/hooks/useResellers';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { Switch } from '@/components/ui/switch';
- import { ResellerActivityPanel } from '@/components/reseller/ResellerActivityPanel';
- import { ResellerQuickActions } from '@/components/reseller/ResellerQuickActions';
+import { ResellerActivityPanel } from '@/components/reseller/ResellerActivityPanel';
+import { ResellerQuickActions } from '@/components/reseller/ResellerQuickActions';
+import { supabase } from '@/integrations/supabase/client';
+import { formatDistanceToNow } from 'date-fns';
 
 const ITEMS_PER_PAGE = 25;
 
