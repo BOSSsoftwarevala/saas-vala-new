@@ -70,13 +70,15 @@ const MarketplaceAdmin = React.lazy(() => import("./pages/MarketplaceAdmin"));
 
 const queryClient = new QueryClient();
 
-function PageLoader() {
+const PageLoader = React.forwardRef<HTMLDivElement>((_, ref) => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
+    <div ref={ref} className="min-h-screen flex items-center justify-center bg-background">
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
     </div>
   );
-}
+});
+
+PageLoader.displayName = "PageLoader";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();

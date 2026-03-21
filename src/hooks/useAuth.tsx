@@ -102,8 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = await supabase
           .from('user_roles')
           .select('role')
-          .eq('user_id', userId)
-          .single();
+          .eq('user_id', userId);
 
         if (error) {
           if (attempt < retries) {
@@ -116,7 +115,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        setRole(data?.role as AppRole);
+        const resolvedRole: AppRole | null =
+          data?.some(({ role }) => role === 'super_admin')
+            ? 'super_admin'
+            : data?.some(({ role }) => role === 'reseller')
+              ? 'reseller'
+              : null;
+
+        setRole(resolvedRole);
         setRoleLoading(false);
         return;
       } catch (err) {

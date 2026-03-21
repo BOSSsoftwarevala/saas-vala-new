@@ -46,15 +46,11 @@ export const ProductCard = forwardRef<HTMLDivElement, ProductCardProps>(
             <Package className="h-5 w-5 text-muted-foreground" />
           </div>
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <MoreVertical className="h-4 w-4 text-muted-foreground" />
-              </Button>
+            <DropdownMenuTrigger
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreVertical className="h-4 w-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="bg-popover border-border">
               <DropdownMenuItem>Edit</DropdownMenuItem>
