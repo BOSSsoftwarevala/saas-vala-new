@@ -5,16 +5,19 @@
  import { Badge } from '@/components/ui/badge';
  import { useAuth } from '@/hooks/useAuth';
  import { useWallet } from '@/hooks/useWallet';
- import {
-   Key,
-   Users,
-   DollarSign,
-   Wallet,
-   Share2,
-   Lock,
-   ArrowRight,
-   AlertCircle,
- } from 'lucide-react';
+import {
+  Key,
+  Users,
+  DollarSign,
+  Wallet,
+  Share2,
+  Lock,
+  ArrowRight,
+  AlertCircle,
+  Search,
+  Megaphone,
+  Store,
+} from 'lucide-react';
  
  const MINIMUM_BALANCE = 50;
  
