@@ -15,9 +15,9 @@ import {
   Rocket, Code, Database, Server, Bug, Wrench, Package, Store,
   Sparkles, Loader2, CheckCircle2, Circle, RefreshCw, Globe,
   ChevronRight, ExternalLink, Layout, Smartphone, Clock,
-  Layers, Zap, Settings2, FolderOpen, Play, Eye, Download,
+  Layers, Zap, Settings2, FolderOpen, Eye,
   GitBranch, Cloud, Shield, BarChart3, Plus, Search, Star,
-  Monitor, Palette, Brain, FileCode, ArrowRight,
+  Monitor, Brain, FileCode, ArrowRight,
 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
