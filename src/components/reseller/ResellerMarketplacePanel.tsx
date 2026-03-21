@@ -10,7 +10,6 @@ import {
   Package,
   Store,
   Eye,
-  ShoppingCart,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
