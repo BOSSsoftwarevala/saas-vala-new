@@ -106,7 +106,7 @@ Deno.serve(async (req) => {
 
         // Also create the build script
         const buildScriptContent = generateBuildScript();
-        const encodedScript = btoa(buildScriptContent);
+        const encodedScript = btoa(unescape(encodeURIComponent(buildScriptContent)));
 
         const scriptCheck = await gh(
           "/repos/saasvala/apk-factory/contents/build-apk.sh"
