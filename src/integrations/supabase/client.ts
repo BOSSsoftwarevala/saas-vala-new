@@ -4,14 +4,115 @@ import type { Database } from './types';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const SUPABASE_PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
+  throw new Error('Missing required Supabase environment variables');
+}
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
+// Initialize Supabase client with enhanced configuration
+export const supabase = createClient<Database>(
+  SUPABASE_URL,
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      storage: localStorage,
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce',
+    },
+    db: {
+      schema: 'public',
+    },
+    global: {
+      headers: {
+        'x-app-id': SUPABASE_PROJECT_ID,
+        'x-app-version': '1.0.0',
+      },
+    },
+    // Enable real-time features
+    realtime: {
+      params: {
+        eventsPerSecond: 10,
+      },
+    },
   }
-});
+);
+
+// Type-safe Supabase client instance
+export type SupabaseClient = typeof supabase;
+
+// Helper functions for common operations
+export async function getCurrentUser() {
+  try {
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error) throw error;
+    return user;
+  } catch (error) {
+    console.error('Failed to get current user:', error);
+    return null;
+  }
+}
+
+export async function getSession() {
+  try {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (error) throw error;
+    return session;
+  } catch (error) {
+    console.error('Failed to get session:', error);
+    return null;
+  }
+}
+
+export async function signOut() {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    return true;
+  } catch (error) {
+    console.error('Failed to sign out:', error);
+    return false;
+  }
+}
+
+// Real-time subscription helper
+export function subscribeToTable<T extends keyof Database['public']['Tables']>(
+  table: T,
+  callback: (payload: any) => void,
+  filter?: string
+) {
+  return supabase
+    .channel(`public:${table}`)
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: table as string,
+        filter,
+      },
+      callback
+    )
+    .subscribe();
+}
+
+// Query cache helper
+const queryCache = new Map<string, { data: any; timestamp: number }>();
+
+export function clearQueryCache() {
+  queryCache.clear();
+}
+
+export function getCacheKey(...args: any[]): string {
+  return JSON.stringify(args);
+}
