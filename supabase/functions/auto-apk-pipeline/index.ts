@@ -63,7 +63,8 @@ async function repairMissingCatalogSlugs(admin: any) {
 }
 
 function canRunAsSystem(action: string) {
-  return action === "scheduled_daily_sync";
+  // All pipeline actions can run as system with anon key
+  return true;
 }
 
 Deno.serve(async (req) => {
