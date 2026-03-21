@@ -112,7 +112,7 @@ export default function Marketplace() {
     navigator.clipboard.writeText(text); toast.success(`${label} copied!`);
   };
 
-  if (!bankDetails) return <div>Loading...</div>;
+  
 
   return (
     <div className="min-h-screen overflow-x-hidden" style={{ background: '#0B1020' }}>
