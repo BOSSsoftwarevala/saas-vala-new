@@ -16,32 +16,22 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const adminClient = createClient(supabaseUrl, serviceKey);
 
-    const { license_key, device_id, app_signature, user_id } = await req.json();
+    const { license_key, device_id, app_signature } = await req.json();
 
-    // FIXED: Validate inputs properly
-    if (!license_key || typeof license_key !== 'string' || license_key.trim().length === 0) {
+    if (!license_key) {
       return new Response(
         JSON.stringify({ status: "invalid", reason: "license_key is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // FIXED: Prevent injection attacks
-    if (license_key.length > 100) {
-      return new Response(
-        JSON.stringify({ status: "invalid", reason: "Invalid license key format" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
     const ip = req.headers.get("x-forwarded-for") || "unknown";
 
-    // 1. Find license record - FIXED: Add user_id filter
+    // 1. Find license record
     const { data: download, error } = await adminClient
       .from("apk_downloads")
       .select("*")
       .eq("license_key", license_key)
-      .eq("user_id", user_id || '')
       .single();
 
     if (error || !download) {
@@ -50,35 +40,14 @@ Deno.serve(async (req) => {
         license_key,
         device_id: device_id || null,
         app_signature: app_signature || null,
-        user_id: user_id || null,
         result: "invalid",
         reason: "License key not found",
         ip_address: ip,
-        attempted_at: new Date().toISOString()
-      }).catch(() => {}); // Non-critical
+      });
 
       return new Response(
         JSON.stringify({ status: "invalid", reason: "License key not found" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // FIXED: Verify user ownership if provided
-    if (user_id && download.user_id !== user_id) {
-      await adminClient.from("license_verification_logs").insert({
-        license_key,
-        device_id: device_id || null,
-        app_signature: app_signature || null,
-        user_id: user_id,
-        result: "unauthorized",
-        reason: "User does not own this license",
-        ip_address: ip,
-        attempted_at: new Date().toISOString()
-      }).catch(() => {});
-
-      return new Response(
-        JSON.stringify({ status: "invalid", reason: "Unauthorized access" }),
-        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
@@ -92,8 +61,7 @@ Deno.serve(async (req) => {
         result: "blocked",
         reason: download.blocked_reason || "License revoked",
         ip_address: ip,
-        attempted_at: new Date().toISOString()
-      }).catch(() => {});
+      });
 
       return new Response(
         JSON.stringify({ status: "blocked", reason: download.blocked_reason || "License revoked" }),
@@ -101,44 +69,21 @@ Deno.serve(async (req) => {
       );
     }
 
-    // FIXED: Check expiration
-    if (download.expires_at && new Date(download.expires_at) < new Date()) {
-      await adminClient.from("license_verification_logs").insert({
-        license_key,
-        device_id: device_id || null,
-        app_signature: app_signature || null,
-        user_id: download.user_id,
-        result: "expired",
-        reason: "License expired",
-        ip_address: ip,
-        attempted_at: new Date().toISOString()
-      }).catch(() => {});
-
-      return new Response(
-        JSON.stringify({ status: "expired", reason: "License has expired" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // 3. Device binding check - FIXED: Safer operations
-    if (device_id && typeof device_id === 'string' && device_id.length > 0) {
+    // 3. Device binding check
+    if (device_id) {
       const existingDevice = download.device_info?.device_id;
 
-      if (existingDevice && typeof existingDevice === 'string' && existingDevice !== device_id) {
+      if (existingDevice && existingDevice !== device_id) {
         // Already bound to a different device
-        const existingShort = existingDevice.substring(0, 8);
-        const deviceShort = device_id.substring(0, 8);
-        
         await adminClient.from("license_verification_logs").insert({
           license_key,
           device_id,
           app_signature: app_signature || null,
           user_id: download.user_id,
           result: "wrong_device",
-          reason: `Bound to device ${existingShort}..., attempted from ${deviceShort}...`,
+          reason: `Bound to device ${existingDevice.substring(0, 8)}..., attempted from ${device_id.substring(0, 8)}...`,
           ip_address: ip,
-          attempted_at: new Date().toISOString()
-        }).catch(() => {});
+        });
 
         return new Response(
           JSON.stringify({
@@ -149,39 +94,24 @@ Deno.serve(async (req) => {
         );
       }
 
-      // Bind device on first use or update attempts
-      const updatePayload: any = {
-        verification_attempts: (download.verification_attempts || 0) + 1,
-        last_verified_at: new Date().toISOString()
-      };
-
+      // Bind device on first use
       if (!existingDevice) {
-        updatePayload.device_info = { 
-          device_id, 
-          app_signature: app_signature || null, 
-          bound_at: new Date().toISOString() 
-        };
+        await adminClient
+          .from("apk_downloads")
+          .update({
+            device_info: { device_id, app_signature: app_signature || null, bound_at: new Date().toISOString() },
+            verification_attempts: (download.verification_attempts || 0) + 1,
+          })
+          .eq("id", download.id);
+      } else {
+        // Same device, just update attempts
+        await adminClient
+          .from("apk_downloads")
+          .update({
+            verification_attempts: (download.verification_attempts || 0) + 1,
+          })
+          .eq("id", download.id);
       }
-
-      const { error: updateError } = await adminClient
-        .from("apk_downloads")
-        .update(updatePayload)
-        .eq("id", download.id);
-
-      if (updateError) {
-        console.error("Update error:", updateError);
-        // Don't fail verification on update error
-      }
-    } else {
-      // No device_id, just update attempts
-      await adminClient
-        .from("apk_downloads")
-        .update({
-          verification_attempts: (download.verification_attempts || 0) + 1,
-          last_verified_at: new Date().toISOString()
-        })
-        .eq("id", download.id)
-        .catch(() => {});
     }
 
     // 4. Log valid verification
@@ -193,8 +123,7 @@ Deno.serve(async (req) => {
       result: "valid",
       reason: "License verified successfully",
       ip_address: ip,
-      attempted_at: new Date().toISOString()
-    }).catch(() => {});
+    });
 
     return new Response(
       JSON.stringify({
@@ -206,10 +135,9 @@ Deno.serve(async (req) => {
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-  } catch (err: any) {
-    console.error("Verification error:", err);
+  } catch (err) {
     return new Response(
-      JSON.stringify({ status: "error", reason: "Internal verification error" }),
+      JSON.stringify({ status: "error", reason: err.message || "Internal error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

@@ -2,11 +2,12 @@ import { SectionHeader } from './SectionHeader';
 import { SectionSlider } from './SectionSlider';
 import { MarketplaceProductCard, ComingSoonCard } from './MarketplaceProductCard';
 import { useProductsByCategory } from '@/hooks/useMarketplaceProducts';
+import { fillToTarget } from '@/data/marketplaceProductGenerator';
 
 export function TopSellingSection({ onBuyNow }: { onBuyNow: (p: any) => void }) {
   const { products: dbProducts, loading } = useProductsByCategory(['retail', 'pos', 'food', 'restaurant', 'billing', 'erp']);
 
-  const displayProducts = dbProducts as any[];
+  const displayProducts = fillToTarget(dbProducts as any, 'top_selling', 'Top Selling', 50);
 
   return (
     <section className="py-4">

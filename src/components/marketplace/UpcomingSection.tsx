@@ -2,11 +2,12 @@ import { SectionHeader } from './SectionHeader';
 import { SectionSlider } from './SectionSlider';
 import { MarketplaceProductCard, ComingSoonCard } from './MarketplaceProductCard';
 import { useProductsByCategory } from '@/hooks/useMarketplaceProducts';
+import { fillToTarget } from '@/data/marketplaceProductGenerator';
 
 export function UpcomingSection() {
   const { products: dbProducts, loading } = useProductsByCategory(['upcoming', 'pipeline', 'coming_soon']);
   const allDb = dbProducts.map(p => ({ ...p, isAvailable: false, status: 'upcoming' as const }));
-  const displayProducts = (allDb as any[]).map(p => ({
+  const displayProducts = fillToTarget(allDb as any, 'upcoming', 'Upcoming', 50).map(p => ({
     ...p,
     isAvailable: false,
     status: 'upcoming' as const,

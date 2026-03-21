@@ -1,5 +1,4 @@
 import React, { useState, useCallback } from 'react';
-import { playClickSound } from '@/lib/clickSound';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,12 +44,8 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
   const iconColor = catColors[product.category] || '#f97316';
   const cardRank = rank ?? index + 1;
 
-  // FIXED: Validate price before using
+  // Dynamic fields from DB
   const price = product.price || 5;
-  if (!Number.isFinite(price) || price <= 0) {
-    throw new Error(`Invalid product price for ${product.id}`);
-  }
-  
   const discount = (product as any).discount_percent || 0;
   const rating = (product as any).rating || 4.5;
   const originalPrice = discount > 0 ? Math.round(price / (1 - discount / 100)) : price * 2;
@@ -62,10 +57,10 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
     : ['Dashboard', 'Reports', 'Analytics', 'API'];
 
   const getDemoUrl = useCallback((): string | null => {
+    const d = (product as any).demoUrl || (product as any).demo_url;
+    if (d && d.startsWith('http') && !d.includes('github.com')) return d;
     const g = (product as any).gitRepoUrl || (product as any).git_repo_url;
     if (g && g.startsWith('http')) return g;
-    const d = (product as any).demoUrl || (product as any).demo_url;
-    if (d && d.startsWith('http')) return d;
     return null;
   }, [product]);
 
@@ -73,27 +68,23 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
   const hasDemoAvailable = getDemoUrl() !== null;
 
   const handleFavorite = useCallback(() => {
-    playClickSound();
     if (!user) { toast.error('Sign in to add to favorites'); return; }
     setFavorited(p => !p);
     toast.success(favorited ? 'Removed from favorites' : `❤️ Added to favorites!`);
   }, [user, favorited]);
 
   const handleAddToCart = useCallback(() => {
-    playClickSound();
     toggleItem({ id: product.id, title: product.title, subtitle: product.subtitle || '', image: product.image || '', price, category: product.category });
     toast.success(inCart ? 'Removed from cart' : `🛒 Added to cart!`);
   }, [product, inCart, toggleItem, price]);
 
   const handleNotifyMe = useCallback(() => {
-    playClickSound();
     if (!user) { toast.error('Sign in to get notified'); return; }
     setNotified(true);
     toast.success(`🔔 You'll be notified when ${product.title} is ready!`);
   }, [user, product.title]);
 
   const handleDemo = useCallback(() => {
-    playClickSound();
     const url = getDemoUrl();
     if (!url) { setFeaturesOpen(true); return; }
     if (!isIframeable(url)) {
@@ -108,29 +99,20 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
     if (!user) { toast.error('Please sign in to download APK'); return; }
     setDownloadChecking(true);
     try {
-      // FIXED: Add user_id filter for security
       const { data: licenseRecord } = await supabase
-        .from('license_keys').select('license_key, status, expires_at, meta, user_id')
-        .eq('created_by', user.id)
-        .eq('user_id', user.id)
-        .eq('status', 'active').limit(50);
-      
+        .from('license_keys').select('license_key, status, expires_at, meta')
+        .eq('created_by', user.id).eq('status', 'active').limit(50);
       const match = licenseRecord?.find((l: any) => {
-        // Verify user ownership
-        if (l.user_id !== user.id) return false;
         const m = l.meta as any;
         return m?.product_id === product.id || m?.product_title === product.title;
       });
-      
       if (!match?.license_key) {
         toast.error('Please purchase first', { action: { label: 'BUY NOW', onClick: () => onBuyNow(product) } });
         setDownloadChecking(false); return;
       }
-      
       if (match.expires_at && new Date(match.expires_at) < new Date()) {
         toast.error('License expired. Please renew.'); setDownloadChecking(false); return;
       }
-      
       const isUuid = /^[0-9a-f]{8}-/.test(product.id);
       if (isUuid) {
         const { data, error } = await supabase.functions.invoke('download-apk', {
@@ -138,7 +120,6 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
         });
         if (!error && data?.success) { window.open(data.download_url, '_blank'); setDownloadChecking(false); return; }
       }
-      
       toast.success(`✅ License Key: ${match.license_key}`, {
         duration: 10000,
         action: { label: 'Copy', onClick: () => navigator.clipboard.writeText(match.license_key) },
@@ -152,16 +133,15 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
   return (
     <>
       <div
-        className="flex-shrink-0 rounded-2xl overflow-hidden flex flex-col group cursor-pointer snap-start card-10d card-stagger"
+        className="flex-shrink-0 rounded-2xl overflow-hidden flex flex-col group cursor-pointer"
         style={{
-          width: 'clamp(220px, 28vw, 280px)',
-          minWidth: 220,
-          maxWidth: 280,
-          background: 'rgba(255,255,255,0.04)',
-          border: '1px solid rgba(255,255,255,0.08)',
-          backdropFilter: 'blur(12px)',
-          animationDelay: `${index * 80}ms`,
+          width: 280,
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.07)',
+          transition: 'transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease',
         }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 8px 32px rgba(37,99,235,0.15)'; e.currentTarget.style.borderColor = 'rgba(37,99,235,0.3)'; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.07)'; }}
       >
         {/* Header */}
         <div className="relative px-4 py-4 flex items-center gap-3" style={{ background: `linear-gradient(135deg, rgba(37,99,235,0.08), transparent)` }}>
@@ -216,28 +196,28 @@ export const MarketplaceProductCard = React.memo<MarketplaceProductCardProps>(({
           ) : (
             <>
               <div className="flex gap-1.5">
-                <Button size="sm" variant="outline" className="flex-1 h-8 text-[10px] font-bold rounded-lg border-white/10 text-foreground/70 hover:border-white/20 btn-glow ripple-container" onClick={handleDemo}>
+                <Button size="sm" variant="outline" className="flex-1 h-8 text-[10px] font-bold rounded-lg border-white/10 text-foreground/70 hover:border-white/20" onClick={handleDemo}>
                   <Play style={{ width: 11, height: 11 }} className="mr-1" />{hasDemoAvailable ? 'DEMO' : 'VIEW'}
                 </Button>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 ripple-container" onClick={handleFavorite}>
-                  <Heart style={{ width: 14, height: 14 }} className={cn('transition-transform duration-200', favorited ? 'fill-pink-400 text-pink-400 scale-110' : 'text-muted-foreground')} />
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={handleFavorite}>
+                  <Heart style={{ width: 14, height: 14 }} className={favorited ? 'fill-pink-400 text-pink-400' : 'text-muted-foreground'} />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 ripple-container" onClick={handleAddToCart}>
-                  <ShoppingCart style={{ width: 14, height: 14 }} className={cn('transition-transform duration-200', inCart ? 'text-primary scale-110' : 'text-muted-foreground')} />
+                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={handleAddToCart}>
+                  <ShoppingCart style={{ width: 14, height: 14 }} className={inCart ? 'text-primary' : 'text-muted-foreground'} />
                 </Button>
               </div>
-              <Button size="sm" className="w-full h-9 text-[11px] font-black rounded-lg text-white border-0 btn-glow ripple-container" style={{ background: 'linear-gradient(135deg,#2563EB,#1D4ED8,#3B82F6)' }} onClick={() => onBuyNow(product)}>
+              <Button size="sm" className="w-full h-9 text-[11px] font-black rounded-lg text-white border-0" style={{ background: 'linear-gradient(90deg,#2563EB,#1D4ED8)' }} onClick={() => onBuyNow(product)}>
                 <Package style={{ width: 13, height: 13 }} className="mr-1" /> BUY NOW — ${price}
               </Button>
             </>
           )}
           <div className="flex gap-1.5">
             {apkEnabled && (
-              <Button size="sm" variant="outline" className="flex-1 h-7 text-[10px] font-bold rounded-lg text-white border-0 btn-glow ripple-container" style={{ background: 'linear-gradient(135deg,#7C3AED,#6D28D9,#8B5CF6)' }} onClick={handleDownloadApk} disabled={downloadChecking || isPipeline}>
+              <Button size="sm" variant="outline" className="flex-1 h-7 text-[10px] font-bold rounded-lg text-white border-0" style={{ background: 'linear-gradient(90deg,#7C3AED,#6D28D9)' }} onClick={handleDownloadApk} disabled={downloadChecking || isPipeline}>
                 <Download style={{ width: 11, height: 11 }} className="mr-1" />{downloadChecking ? '...' : isPipeline ? 'PIPELINE' : 'APK'}
               </Button>
             )}
-            <Button size="sm" variant="outline" className={cn('h-7 text-[10px] font-bold rounded-lg border-white/10 text-muted-foreground btn-glow ripple-container', apkEnabled ? 'flex-1' : 'w-full')} onClick={() => setFeaturesOpen(true)}>
+            <Button size="sm" variant="outline" className={cn('h-7 text-[10px] font-bold rounded-lg border-white/10 text-muted-foreground', apkEnabled ? 'flex-1' : 'w-full')} onClick={() => setFeaturesOpen(true)}>
               <Info style={{ width: 11, height: 11 }} className="mr-1" /> FEATURES
             </Button>
           </div>
@@ -312,7 +292,7 @@ MarketplaceProductCard.displayName = 'MarketplaceProductCard';
 
 export function ComingSoonCard({ label }: { label: string }) {
   return (
-    <div className="flex-shrink-0 snap-start" style={{ width: 'clamp(220px, 28vw, 280px)', minWidth: 220, maxWidth: 280 }}>
+    <div className="flex-shrink-0" style={{ width: 280 }}>
       <div className="rounded-2xl border border-dashed flex flex-col items-center justify-center gap-3 text-center"
         style={{ minHeight: 320, borderColor: 'rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)' }}>
         <Package style={{ width: 28, height: 28 }} className="text-muted-foreground" />

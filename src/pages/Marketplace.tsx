@@ -1,9 +1,7 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { LazySection } from '@/components/marketplace/LazySection';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
-import { EducationSection } from '@/components/marketplace/EducationSection';
-import { AllProductsGrid } from '@/components/marketplace/AllProductsGrid';
 import { MARKETPLACE_CATEGORIES } from '@/data/marketplaceCategories';
 import { useMarketplaceProducts } from '@/hooks/useMarketplaceProducts';
 import { toast } from 'sonner';
@@ -28,19 +26,12 @@ interface Product {
   status: 'upcoming' | 'live' | 'bestseller' | 'draft'; price: number;
 }
 
-// Bank details fetched from a simple config approach
-const getBankDetails = async () => {
-  try {
-    const { data } = await supabase
-      .from('products')
-      .select('meta')
-      .eq('slug', '__payment_config__')
-      .maybeSingle();
-    return data?.meta || null;
-  } catch {
-    return null;
-  }
+const bankDetails = {
+  accountName: 'SOFTWARE VALA', bankName: 'INDIAN BANK',
+  accountNumber: '8045924772', ifsc: 'IDIB000K196',
+  branchName: 'KANKAR BAGH', upiId: 'softwarevala@indianbank',
 };
+
 
 type BuyPayMethod = 'wallet' | 'upi' | 'bank' | 'crypto';
 
@@ -54,18 +45,12 @@ export default function Marketplace() {
   const [buyPayMethod, setBuyPayMethod] = useState<BuyPayMethod>('wallet');
   const [manualTxnRef, setManualTxnRef] = useState('');
   const [_manualSubmitted, setManualSubmitted] = useState(false);
-  const [bankDetails, setBankDetails] = useState<any>(null);
   const paymentLockRef = useRef(false);
   const { purchaseApk, processing } = useApkPurchase();
   const { checkUserStatus } = useFraudDetection();
   const { user } = useAuth();
   
   useMarketplaceProducts();
-
-  // Load bank details securely on mount
-  React.useEffect(() => {
-    getBankDetails().then(data => setBankDetails(data));
-  }, []);
 
   const handleBuyNow = async (product: Product) => {
     if (!user) { toast.error('Please sign in to purchase'); return; }
@@ -112,30 +97,20 @@ export default function Marketplace() {
     navigator.clipboard.writeText(text); toast.success(`${label} copied!`);
   };
 
-  
-
   return (
-    <div className="min-h-screen overflow-x-hidden" style={{ background: '#0B1020' }}>
+    <div className="min-h-screen" style={{ background: '#0B1020' }}>
       <MarketplaceHeader />
-      <main className="pt-16 pb-8 max-w-[100vw] overflow-x-hidden">
+      <main className="pt-16 pb-8">
         <HeroBannerSlider />
 
-        {/* Education — always visible, not lazy */}
-        <EducationSection onBuyNow={handleBuyNow} />
-
-        {/* Remaining categories as dynamic rows */}
-        {MARKETPLACE_CATEGORIES.filter(cat => cat.id !== 'education').map((cat) => (
+        {/* All categories as dynamic rows — no duplicate hardcoded sections */}
+        {MARKETPLACE_CATEGORIES.map((cat) => (
           <LazySection key={cat.id} height={280}>
             <MarketplaceCategoryRow category={cat} onBuyNow={handleBuyNow} />
           </LazySection>
         ))}
 
-        {/* All Products — Infinite Scroll Grid */}
-        <LazySection height={400}>
-          <AllProductsGrid onBuyNow={handleBuyNow} />
-        </LazySection>
-
-
+        {/* Simple Pricing */}
         <section id="pricing" className="py-12 px-4 md:px-8 border-t border-border">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-2xl md:text-3xl font-black text-foreground mb-3">💰 Simple Pricing</h2>
@@ -208,7 +183,7 @@ export default function Marketplace() {
                 <button className="w-full flex items-center justify-center gap-1 text-xs text-muted-foreground py-1" onClick={() => setShowMorePayment(!showMorePayment)}>
                   {showMorePayment ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />} More Options
                 </button>
-                {showMorePayment && bankDetails && (
+                {showMorePayment && (
                   <div className="space-y-2">
                     <div className={cn('rounded-xl border cursor-pointer', buyPayMethod === 'upi' ? 'border-primary bg-primary/5' : 'border-border')} onClick={() => setBuyPayMethod('upi')}>
                       <div className="flex items-center gap-3 p-3"><Wallet className="h-4 w-4" /><div><p className="font-medium text-sm">UPI</p><p className="text-xs text-muted-foreground">GPay, PhonePe, Paytm</p></div></div>

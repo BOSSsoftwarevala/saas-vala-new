@@ -68,7 +68,7 @@ export const SectionSlider = React.forwardRef<HTMLDivElement, SectionSliderProps
   };
 
   return (
-    <div className="relative group max-w-[100vw] overflow-hidden">
+    <div className="relative group">
       {/* Left arrow */}
       {canScrollLeft && (
         <button
@@ -76,11 +76,11 @@ export const SectionSlider = React.forwardRef<HTMLDivElement, SectionSliderProps
           className={cn(
             'absolute left-1 top-1/2 -translate-y-1/2 z-20',
             'h-10 w-10 rounded-full',
-            'bg-background/80 border border-border/50 shadow-xl',
+            'bg-background/90 border border-border shadow-xl',
             'flex items-center justify-center',
             'text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary',
-            'opacity-0 group-hover:opacity-100',
-            'slider-arrow-10d'
+            'transition-all duration-200',
+            'opacity-0 group-hover:opacity-100'
           )}
           aria-label="Scroll left"
         >
@@ -92,10 +92,10 @@ export const SectionSlider = React.forwardRef<HTMLDivElement, SectionSliderProps
       <div
         ref={scrollRef}
         className={cn(
-          'flex gap-3 md:gap-4 overflow-x-auto scrollbar-hide px-4 md:px-8 pb-2 snap-x snap-mandatory',
+          'flex gap-4 overflow-x-auto scrollbar-hide px-4 md:px-8 pb-2',
           className
         )}
-        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitOverflowScrolling: 'touch' }}
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {children}
       </div>
@@ -107,11 +107,11 @@ export const SectionSlider = React.forwardRef<HTMLDivElement, SectionSliderProps
           className={cn(
             'absolute right-1 top-1/2 -translate-y-1/2 z-20',
             'h-10 w-10 rounded-full',
-            'bg-background/80 border border-border/50 shadow-xl',
+            'bg-background/90 border border-border shadow-xl',
             'flex items-center justify-center',
             'text-foreground hover:bg-primary hover:text-primary-foreground hover:border-primary',
-            'opacity-0 group-hover:opacity-100',
-            'slider-arrow-10d'
+            'transition-all duration-200',
+            'opacity-0 group-hover:opacity-100'
           )}
           aria-label="Scroll right"
         >

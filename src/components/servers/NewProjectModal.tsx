@@ -15,8 +15,10 @@ import { Badge } from '@/components/ui/badge';
 import {
   GitBranch,
   Github,
+  Gitlab,
   ArrowRight,
   Search,
+  Star,
   Clock,
   Check,
   ChevronRight,
@@ -25,28 +27,35 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useEffect } from 'react';
 
 interface NewProjectModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-interface CatalogRepo {
-  id: string;
-  project_name: string;
-  github_repo_url: string | null;
-  tech_stack: string | null;
-  updated_at: string | null;
-}
+// Mock repositories
+const mockRepos = [
+  { id: '1', name: 'saas-vala/web', description: 'Main website and dashboard', language: 'TypeScript', stars: 12, updatedAt: '2 hours ago' },
+  { id: '2', name: 'saas-vala/api', description: 'Backend API service', language: 'Node.js', stars: 8, updatedAt: '1 day ago' },
+  { id: '3', name: 'saas-vala/mobile', description: 'React Native mobile app', language: 'TypeScript', stars: 5, updatedAt: '3 days ago' },
+  { id: '4', name: 'saas-vala/docs', description: 'Documentation website', language: 'MDX', stars: 3, updatedAt: '1 week ago' },
+];
+
+// Templates
+const templates = [
+  { id: 't1', name: 'Next.js', description: 'The React Framework', icon: '▲', popular: true },
+  { id: 't2', name: 'Vite + React', description: 'Fast React development', icon: '⚡', popular: true },
+  { id: 't3', name: 'Nuxt', description: 'Vue.js Framework', icon: '💚', popular: false },
+  { id: 't4', name: 'SvelteKit', description: 'Svelte Framework', icon: '🔥', popular: false },
+  { id: 't5', name: 'Astro', description: 'Content-focused websites', icon: '🚀', popular: false },
+  { id: 't6', name: 'Remix', description: 'Full stack React', icon: '💿', popular: false },
+];
 
 const languageColors: Record<string, string> = {
   TypeScript: 'bg-blue-500',
   JavaScript: 'bg-yellow-500',
   'Node.js': 'bg-green-500',
-  Python: 'bg-yellow-600',
-  Java: 'bg-red-500',
+  MDX: 'bg-purple-500',
 };
 
 export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
@@ -56,35 +65,10 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
   const [projectName, setProjectName] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const { toast } = useToast();
-  const [repos, setRepos] = useState<CatalogRepo[]>([]);
-  const [repoLoading, setRepoLoading] = useState(true);
 
-  useEffect(() => {
-    if (!open) return;
-    const fetchRepos = async () => {
-      setRepoLoading(true);
-      const { data } = await supabase
-        .from('source_code_catalog')
-        .select('id, project_name, github_repo_url, tech_stack, updated_at')
-        .order('updated_at', { ascending: false })
-        .limit(50);
-      setRepos((data as CatalogRepo[]) || []);
-      setRepoLoading(false);
-    };
-    fetchRepos();
-  }, [open]);
-
-  const filteredRepos = repos.filter((repo) =>
-    repo.project_name.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredRepos = mockRepos.filter((repo) =>
+    repo.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  const timeAgo = (ts: string | null) => {
-    if (!ts) return '-';
-    const diff = Date.now() - new Date(ts).getTime();
-    const hrs = Math.floor(diff / 3600000);
-    if (hrs < 24) return `${hrs}h ago`;
-    return `${Math.floor(hrs / 24)}d ago`;
-  };
 
   const handleImport = () => {
     setIsImporting(true);
@@ -105,9 +89,9 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
 
   const handleSelectRepo = (repoId: string) => {
     setSelectedRepo(repoId);
-    const repo = repos.find((r) => r.id === repoId);
+    const repo = mockRepos.find((r) => r.id === repoId);
     if (repo) {
-      setProjectName(repo.project_name);
+      setProjectName(repo.name.split('/')[1]);
     }
     setStep('configure');
   };
@@ -138,10 +122,19 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
             </TabsList>
 
             <TabsContent value="import" className="mt-4 space-y-4">
+              {/* Git Provider Selection */}
               <div className="flex gap-2">
                 <Button variant="outline" className="flex-1 gap-2 border-primary text-primary">
                   <Github className="h-4 w-4" />
-                  GitHub ({repos.length} repos)
+                  GitHub
+                </Button>
+                <Button variant="outline" className="flex-1 gap-2 border-border text-muted-foreground">
+                  <Gitlab className="h-4 w-4" />
+                  GitLab
+                </Button>
+                <Button variant="outline" className="flex-1 gap-2 border-border text-muted-foreground">
+                  <GitBranch className="h-4 w-4" />
+                  Bitbucket
                 </Button>
               </div>
 
@@ -158,11 +151,7 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
 
               {/* Repository List */}
               <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                {repoLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  </div>
-                ) : filteredRepos.map((repo) => (
+                {filteredRepos.map((repo) => (
                   <Card
                     key={repo.id}
                     className={cn(
@@ -178,18 +167,22 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
                         <div className="flex items-center gap-3">
                           <Folder className="h-5 w-5 text-muted-foreground" />
                           <div>
-                            <p className="font-medium text-foreground">{repo.project_name}</p>
-                            <p className="text-sm text-muted-foreground truncate max-w-[300px]">{repo.github_repo_url || ''}</p>
+                            <p className="font-medium text-foreground">{repo.name}</p>
+                            <p className="text-sm text-muted-foreground">{repo.description}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-4">
-                          {repo.tech_stack && <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span className={cn('h-3 w-3 rounded-full', languageColors[repo.tech_stack] || 'bg-gray-500')} />
-                            {repo.tech_stack}
-                          </div>}
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span className={cn('h-3 w-3 rounded-full', languageColors[repo.language] || 'bg-gray-500')} />
+                            {repo.language}
+                          </div>
+                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                            <Star className="h-3 w-3" />
+                            {repo.stars}
+                          </div>
                           <div className="flex items-center gap-1 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
-                            {timeAgo(repo.updated_at)}
+                            {repo.updatedAt}
                           </div>
                           <ChevronRight className="h-4 w-4 text-muted-foreground" />
                         </div>
@@ -201,8 +194,26 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
             </TabsContent>
 
             <TabsContent value="template" className="mt-4">
-              <div className="p-8 text-center text-muted-foreground">
-                <p>Templates coming soon. Import from GitHub for now.</p>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 max-h-[350px] overflow-y-auto">
+                {templates.map((template) => (
+                  <Card
+                    key={template.id}
+                    className="glass-card-hover cursor-pointer"
+                    onClick={() => {
+                      setProjectName(`my-${template.name.toLowerCase().replace(/[^a-z0-9]/g, '-')}-app`);
+                      setStep('configure');
+                    }}
+                  >
+                    <CardContent className="p-4 text-center">
+                      <div className="text-3xl mb-2">{template.icon}</div>
+                      <p className="font-medium text-foreground">{template.name}</p>
+                      <p className="text-xs text-muted-foreground">{template.description}</p>
+                      {template.popular && (
+                        <Badge className="mt-2 bg-primary/20 text-primary border-0 text-xs">Popular</Badge>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             </TabsContent>
           </Tabs>
@@ -223,7 +234,7 @@ export function NewProjectModal({ open, onOpenChange }: NewProjectModalProps) {
               <div className="flex items-center gap-3 p-4 bg-muted/30 rounded-lg">
                 <Github className="h-5 w-5 text-muted-foreground" />
                 <span className="font-medium text-foreground">
-                  {repos.find((r) => r.id === selectedRepo)?.project_name}
+                  {mockRepos.find((r) => r.id === selectedRepo)?.name}
                 </span>
                 <Check className="h-4 w-4 text-success ml-auto" />
               </div>

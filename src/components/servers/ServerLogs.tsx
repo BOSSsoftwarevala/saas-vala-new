@@ -27,16 +27,43 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-import { supabase } from '@/integrations/supabase/client';
+// Mock logs data
+const generateLogs = () => {
+  const levels = ['info', 'warn', 'error', 'success'];
+  const messages = [
+    { level: 'info', message: 'GET /api/user - 200 OK', duration: '45ms', source: 'api/user' },
+    { level: 'info', message: 'POST /api/products - 201 Created', duration: '89ms', source: 'api/products' },
+    { level: 'warn', message: 'Rate limit approaching for IP 192.168.1.1', duration: '-', source: 'middleware' },
+    { level: 'error', message: 'Database connection timeout after 5000ms', duration: '5000ms', source: 'api/analytics' },
+    { level: 'info', message: 'Cache hit for key: product_list_page_1', duration: '2ms', source: 'cache' },
+    { level: 'success', message: 'Deployment completed successfully', duration: '45s', source: 'build' },
+    { level: 'info', message: 'Edge function invoked from region: iad1', duration: '12ms', source: 'api/webhook' },
+    { level: 'warn', message: 'Memory usage above 80% threshold', duration: '-', source: 'runtime' },
+    { level: 'info', message: 'GET /api/auth/session - 200 OK', duration: '23ms', source: 'api/auth' },
+    { level: 'error', message: 'Invalid JWT token signature', duration: '-', source: 'api/auth' },
+  ];
 
-interface LogEntry {
-  id: string;
-  timestamp: string;
-  level: string;
-  message: string;
-  source: string;
-  duration: string;
-}
+  return messages.map((log, index) => ({
+    id: `log-${index}`,
+    timestamp: new Date(Date.now() - Math.random() * 3600000).toISOString(),
+    ...log,
+  }));
+};
+
+const mockLogs = generateLogs();
+
+const buildLogs = [
+  { id: 'b1', timestamp: '00:00', message: 'Cloning repository...', status: 'done' },
+  { id: 'b2', timestamp: '00:02', message: 'Installing dependencies...', status: 'done' },
+  { id: 'b3', timestamp: '00:15', message: 'npm install completed (213 packages)', status: 'done' },
+  { id: 'b4', timestamp: '00:16', message: 'Running build command: npm run build', status: 'done' },
+  { id: 'b5', timestamp: '00:28', message: 'Build completed successfully', status: 'done' },
+  { id: 'b6', timestamp: '00:29', message: 'Generating static pages...', status: 'done' },
+  { id: 'b7', timestamp: '00:35', message: 'Generated 12 static pages', status: 'done' },
+  { id: 'b8', timestamp: '00:36', message: 'Collecting build output...', status: 'done' },
+  { id: 'b9', timestamp: '00:38', message: 'Uploading build outputs (2.3 MB)', status: 'done' },
+  { id: 'b10', timestamp: '00:45', message: 'Deployment ready', status: 'success' },
+];
 
 const levelConfig = {
   info: { icon: Info, color: 'text-cyan', bgColor: 'bg-cyan/20' },
@@ -51,57 +78,20 @@ export function ServerLogs() {
   const [levelFilter, setLevelFilter] = useState('all');
   const [isLive, setIsLive] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [buildLogEntries, setBuildLogEntries] = useState<{id: string; timestamp: string; message: string; status: string}[]>([]);
 
-  useEffect(() => {
-    const fetchLogs = async () => {
-      // Fetch deployment logs as runtime logs
-      const { data: dlogs } = await supabase
-        .from('deployment_logs')
-        .select('*')
-        .order('timestamp', { ascending: false })
-        .limit(50);
-      
-      if (dlogs && dlogs.length > 0) {
-        setLogs(dlogs.map((l: any) => ({
-          id: l.id,
-          timestamp: l.timestamp || new Date().toISOString(),
-          level: l.log_level || 'info',
-          message: l.message,
-          source: 'deployment',
-          duration: '-',
-        })));
-      }
-
-      // Fetch latest deployment build logs
-      const { data: deploys } = await supabase
-        .from('deployments')
-        .select('build_logs, created_at')
-        .not('build_logs', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(1);
-      
-      if (deploys && deploys.length > 0 && deploys[0].build_logs) {
-        const lines = deploys[0].build_logs.split('\n').filter(Boolean);
-        setBuildLogEntries(lines.map((line: string, i: number) => ({
-          id: `b-${i}`,
-          timestamp: `00:${String(i).padStart(2, '0')}`,
-          message: line,
-          status: i === lines.length - 1 ? 'success' : 'done',
-        })));
-      }
-    };
-    fetchLogs();
-  }, []);
-
-  const filteredLogs = logs.filter((log) => {
+  const filteredLogs = mockLogs.filter((log) => {
     const matchesSearch =
       log.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
       log.source.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesLevel = levelFilter === 'all' || log.level === levelFilter;
     return matchesSearch && matchesLevel;
   });
+
+  useEffect(() => {
+    if (isLive && scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [filteredLogs, isLive]);
 
   return (
     <div className="space-y-6">
@@ -174,11 +164,6 @@ export function ServerLogs() {
             </Select>
           </div>
 
-          {filteredLogs.length === 0 && (
-            <div className="p-8 text-center text-muted-foreground text-sm">
-              No runtime logs available. Logs appear after deployments.
-            </div>
-          )}
           {/* Logs */}
           <Card className="glass-card">
             <ScrollArea className="h-[500px]" ref={scrollRef}>
@@ -227,19 +212,14 @@ export function ServerLogs() {
                 <CardTitle className="text-sm font-medium text-foreground">
                   Latest Build - Production
                 </CardTitle>
-                {buildLogEntries.length > 0 && (
-                  <Badge variant="outline" className="bg-success/20 text-success border-success/30">
-                    {buildLogEntries.length} steps
-                  </Badge>
-                )}
+                <Badge variant="outline" className="bg-success/20 text-success border-success/30">
+                  Completed in 45s
+                </Badge>
               </div>
             </CardHeader>
             <ScrollArea className="h-[400px]">
               <div className="font-mono text-sm px-4 pb-4">
-                {buildLogEntries.length === 0 && (
-                  <p className="text-muted-foreground text-center py-8">No build logs available</p>
-                )}
-                {buildLogEntries.map((log) => (
+                {buildLogs.map((log) => (
                   <div key={log.id} className="flex items-center gap-3 py-1.5">
                     <span className="text-xs text-muted-foreground w-12">{log.timestamp}</span>
                     {log.status === 'success' ? (

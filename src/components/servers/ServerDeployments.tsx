@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -17,19 +17,83 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { supabase } from '@/integrations/supabase/client';
 
-interface DeploymentRow {
-  id: string;
-  status: string | null;
-  branch: string | null;
-  commit_sha: string | null;
-  commit_message: string | null;
-  deployed_url: string | null;
-  duration_seconds: number | null;
-  created_at: string | null;
-  build_logs: string | null;
-}
+// Mock deployments data
+const mockDeployments = [
+  {
+    id: 'd1',
+    status: 'ready',
+    environment: 'Production',
+    branch: 'main',
+    commit: 'a1b2c3d',
+    commitMessage: 'feat: add user authentication system',
+    author: 'Manoj Kumar',
+    timestamp: '2 hours ago',
+    duration: '45s',
+    url: 'https://saas-vala.com',
+  },
+  {
+    id: 'd2',
+    status: 'building',
+    environment: 'Preview',
+    branch: 'feature/dashboard',
+    commit: 'e4f5g6h',
+    commitMessage: 'fix: resolve dashboard layout issue',
+    author: 'Manoj Kumar',
+    timestamp: 'Just now',
+    duration: '...',
+    url: 'https://feature-dashboard-saas-vala.vercel.app',
+  },
+  {
+    id: 'd3',
+    status: 'ready',
+    environment: 'Preview',
+    branch: 'feature/api',
+    commit: 'i7j8k9l',
+    commitMessage: 'chore: update API endpoints',
+    author: 'Dev Team',
+    timestamp: '5 hours ago',
+    duration: '38s',
+    url: 'https://feature-api-saas-vala.vercel.app',
+  },
+  {
+    id: 'd4',
+    status: 'error',
+    environment: 'Preview',
+    branch: 'bugfix/cors',
+    commit: 'm0n1o2p',
+    commitMessage: 'fix: cors headers configuration',
+    author: 'Manoj Kumar',
+    timestamp: '1 day ago',
+    duration: '12s',
+    url: null,
+    error: 'Build failed: Module not found',
+  },
+  {
+    id: 'd5',
+    status: 'ready',
+    environment: 'Production',
+    branch: 'main',
+    commit: 'q3r4s5t',
+    commitMessage: 'refactor: optimize database queries',
+    author: 'Dev Team',
+    timestamp: '2 days ago',
+    duration: '52s',
+    url: 'https://saas-vala.com',
+  },
+  {
+    id: 'd6',
+    status: 'canceled',
+    environment: 'Preview',
+    branch: 'experiment/ai',
+    commit: 'u6v7w8x',
+    commitMessage: 'experiment: add AI chatbot',
+    author: 'Manoj Kumar',
+    timestamp: '3 days ago',
+    duration: '8s',
+    url: null,
+  },
+];
 
 const statusConfig: Record<string, {
   icon: typeof CheckCircle2;
@@ -78,56 +142,13 @@ const envConfig = {
 export function ServerDeployments() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDeployment, setSelectedDeployment] = useState<string | null>(null);
-  const [deployments, setDeployments] = useState<DeploymentRow[]>([]);
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchDeployments = async () => {
-      const { data } = await supabase
-        .from('deployments')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
-      setDeployments((data as DeploymentRow[]) || []);
-      setLoading(false);
-    };
-    fetchDeployments();
-  }, []);
-
-  const mapStatus = (s: string | null) => {
-    if (s === 'success') return 'ready';
-    if (s === 'building') return 'building';
-    if (s === 'failed') return 'error';
-    return s || 'canceled';
-  };
-
-  const timeAgo = (ts: string | null) => {
-    if (!ts) return '-';
-    const diff = Date.now() - new Date(ts).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins} min ago`;
-    const hrs = Math.floor(mins / 60);
-    if (hrs < 24) return `${hrs} hours ago`;
-    return `${Math.floor(hrs / 24)} days ago`;
-  };
-
-  const filteredDeployments = deployments.filter(
-    (d) => {
-      const q = searchQuery.toLowerCase();
-      return (d.commit_message || '').toLowerCase().includes(q) ||
-        (d.branch || '').toLowerCase().includes(q) ||
-        (d.commit_sha || '').toLowerCase().includes(q);
-    }
+  const filteredDeployments = mockDeployments.filter(
+    (d) =>
+      d.commitMessage.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.branch.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      d.commit.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -154,25 +175,19 @@ export function ServerDeployments() {
       <div className="glass-card rounded-xl overflow-hidden">
         <ScrollArea className="h-[600px]">
           <div className="divide-y divide-border">
-            {filteredDeployments.length === 0 && (
-              <div className="p-8 text-center text-muted-foreground">No deployments found</div>
-            )}
-            {filteredDeployments.map((dep) => {
-              const mappedStatus = mapStatus(dep.status);
-              const status = statusConfig[mappedStatus] || statusConfig.canceled;
+            {filteredDeployments.map((deployment) => {
+              const status = statusConfig[deployment.status as keyof typeof statusConfig];
               const StatusIcon = status.icon;
-              const isExpanded = selectedDeployment === dep.id;
-              const env = dep.branch === 'main' ? 'Production' : 'Preview';
-              const duration = dep.duration_seconds ? `${dep.duration_seconds}s` : '...';
+              const isExpanded = selectedDeployment === deployment.id;
 
               return (
                 <div
-                  key={dep.id}
+                  key={deployment.id}
                   className={cn(
                     'p-4 hover:bg-muted/30 cursor-pointer transition-colors',
                     isExpanded && 'bg-muted/30'
                   )}
-                  onClick={() => setSelectedDeployment(isExpanded ? null : dep.id)}
+                  onClick={() => setSelectedDeployment(isExpanded ? null : deployment.id)}
                 >
                   {/* Main Row */}
                   <div className="flex items-center gap-4">
@@ -185,31 +200,32 @@ export function ServerDeployments() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-medium text-foreground truncate">
-                          {dep.commit_message || 'No commit message'}
+                          {deployment.commitMessage}
                         </span>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <GitBranch className="h-3 w-3" />
-                          {dep.branch || 'main'}
+                          {deployment.branch}
                         </div>
                         <div className="flex items-center gap-1">
                           <GitCommit className="h-3 w-3" />
-                          {dep.commit_sha ? dep.commit_sha.slice(0, 7) : '-'}
+                          {deployment.commit}
                         </div>
+                        <span>{deployment.author}</span>
                       </div>
                     </div>
 
                     {/* Right Side */}
                     <div className="flex items-center gap-3 shrink-0">
-                      <Badge variant="outline" className={envConfig[env as keyof typeof envConfig]}>
-                        {env}
+                      <Badge variant="outline" className={envConfig[deployment.environment as keyof typeof envConfig]}>
+                        {deployment.environment}
                       </Badge>
                       <div className="text-right text-sm hidden sm:block">
-                        <div className="text-muted-foreground">{timeAgo(dep.created_at)}</div>
+                        <div className="text-muted-foreground">{deployment.timestamp}</div>
                         <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
-                          {duration}
+                          {deployment.duration}
                         </div>
                       </div>
                       <ChevronRight className={cn(
@@ -223,6 +239,7 @@ export function ServerDeployments() {
                   {isExpanded && (
                     <div className="mt-4 pt-4 border-t border-border animate-fade-in">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Left: Details */}
                         <div className="space-y-3">
                           <div>
                             <span className="text-xs text-muted-foreground">Status</span>
@@ -233,22 +250,23 @@ export function ServerDeployments() {
                               </Badge>
                             </div>
                           </div>
-                          {dep.status === 'failed' && dep.build_logs && (
+                          {deployment.error && (
                             <div>
                               <span className="text-xs text-muted-foreground">Error</span>
-                              <p className="text-sm text-destructive mt-1">{dep.build_logs}</p>
+                              <p className="text-sm text-destructive mt-1">{deployment.error}</p>
                             </div>
                           )}
                           <div>
                             <span className="text-xs text-muted-foreground">Build Duration</span>
-                            <p className="text-sm text-foreground mt-1">{duration}</p>
+                            <p className="text-sm text-foreground mt-1">{deployment.duration}</p>
                           </div>
                         </div>
 
+                        {/* Right: Actions */}
                         <div className="flex flex-wrap gap-2 items-start justify-end">
-                          {dep.deployed_url && (
+                          {deployment.url && (
                             <Button variant="outline" size="sm" className="gap-2 border-border" asChild>
-                              <a href={dep.deployed_url} target="_blank" rel="noopener noreferrer">
+                              <a href={deployment.url} target="_blank" rel="noopener noreferrer">
                                 <ExternalLink className="h-3 w-3" />
                                 Visit
                               </a>
@@ -262,6 +280,11 @@ export function ServerDeployments() {
                             <RotateCcw className="h-3 w-3" />
                             Redeploy
                           </Button>
+                          {deployment.environment === 'Preview' && deployment.status === 'ready' && (
+                            <Button size="sm" className="bg-orange-gradient hover:opacity-90 text-white gap-2">
+                              Promote to Production
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>

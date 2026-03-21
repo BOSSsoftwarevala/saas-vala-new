@@ -8,6 +8,7 @@ import {
   Package,
   Key,
   Server,
+  MessageSquare,
   Cpu,
   Wallet,
   TrendingUp,
@@ -17,8 +18,11 @@ import {
   LogOut,
   Users,
   Store,
+  FileText,
+  Activity,
   Bot,
-  Rocket,
+  Zap,
+  Smartphone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import saasValaLogo from '@/assets/saas-vala-logo.jpg';
@@ -32,19 +36,23 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
+  { title: 'Marketplace', icon: Store, href: '/' },
   { title: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
   { title: 'Products', icon: Package, href: '/products' },
+  { title: 'Marketplace View', icon: Store, href: '/', adminOnly: true },
   { title: 'Keys', icon: Key, href: '/keys' },
   { title: 'Servers', icon: Server, href: '/servers' },
   { title: 'SaaS AI', icon: Cpu, href: '/saas-ai-dashboard' },
-  { title: 'AI Chat', icon: Bot, href: '/ai-chat' },
-  { title: 'VALA Builder', icon: Rocket, href: '/vala-builder' },
-  { title: 'AI APIs', icon: Bot, href: '/ai-apis', adminOnly: true },
+  { title: 'VALA Builder', icon: Zap, href: '/vala-builder' },
+  { title: 'AI Chat', icon: MessageSquare, href: '/ai-chat' },
+  { title: 'AI APIs', icon: MessageSquare, href: '/ai-apis', adminOnly: true },
   { title: 'Auto-Pilot', icon: Bot, href: '/automation', adminOnly: true },
+  { title: 'APK Pipeline', icon: Smartphone, href: '/apk-pipeline', adminOnly: true },
   { title: 'Wallet', icon: Wallet, href: '/wallet' },
   { title: 'SEO & Leads', icon: TrendingUp, href: '/seo-leads' },
-  { title: 'Reseller Management', icon: Users, href: '/resellers', adminOnly: true },
-  { title: 'Marketplace Admin', icon: Store, href: '/admin/marketplace', adminOnly: true },
+  { title: 'Resellers', icon: Users, href: '/resellers', adminOnly: true },
+  { title: 'Audit Logs', icon: FileText, href: '/audit-logs', adminOnly: true },
+  { title: 'System Health', icon: Activity, href: '/system-health', adminOnly: true },
   { title: 'Settings', icon: Settings, href: '/settings', adminOnly: true },
 ];
 
@@ -53,10 +61,18 @@ export function Sidebar() {
   const location = useLocation();
   const { isSuperAdmin, signOut } = useAuth();
 
-  const blockedNavPaths = new Set(['/marketplace', '/audit-logs', '/system-health', '/apk-pipeline']);
+  const resolvedNavItems = navItems.map((item) => {
+    if (item.title === 'Marketplace') {
+      return {
+        ...item,
+        href: isSuperAdmin ? '/admin/marketplace' : '/',
+      };
+    }
+    return item;
+  });
 
-  const filteredNavItems = navItems.filter(
-    (item) => (!item.adminOnly || isSuperAdmin) && !blockedNavPaths.has(item.href)
+  const filteredNavItems = resolvedNavItems.filter(
+    (item) => !item.adminOnly || isSuperAdmin
   );
 
   return (

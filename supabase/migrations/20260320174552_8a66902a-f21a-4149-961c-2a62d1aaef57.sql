@@ -1,1 +1,0 @@
-UPDATE products SET demo_enabled = true WHERE marketplace_visible = true AND demo_enabled = false;
