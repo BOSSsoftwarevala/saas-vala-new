@@ -2988,6 +2988,90 @@ export type Database = {
         }
         Relationships: []
       }
+      reseller_campaigns: {
+        Row: {
+          budget: number
+          campaign_type: string
+          created_at: string
+          description: string | null
+          id: string
+          impressions: number
+          leads_count: number
+          name: string
+          spent: number
+          status: string
+          target_audience: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget?: number
+          campaign_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          impressions?: number
+          leads_count?: number
+          name: string
+          spent?: number
+          status?: string
+          target_audience?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget?: number
+          campaign_type?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          impressions?: number
+          leads_count?: number
+          name?: string
+          spent?: number
+          status?: string
+          target_audience?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      reseller_seo_runs: {
+        Row: {
+          cost: number
+          created_at: string
+          id: string
+          result: Json | null
+          status: string
+          target_url: string
+          tool_id: string
+          tool_name: string
+          user_id: string
+        }
+        Insert: {
+          cost?: number
+          created_at?: string
+          id?: string
+          result?: Json | null
+          status?: string
+          target_url: string
+          tool_id: string
+          tool_name: string
+          user_id: string
+        }
+        Update: {
+          cost?: number
+          created_at?: string
+          id?: string
+          result?: Json | null
+          status?: string
+          target_url?: string
+          tool_id?: string
+          tool_name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       resellers: {
         Row: {
           commission_percent: number | null
