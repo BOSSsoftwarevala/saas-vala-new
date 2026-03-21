@@ -107,6 +107,7 @@ export function useAutoApkPipeline() {
     bulkBuild,
     checkUpdates,
     runFullPipeline,
+    autoMarketplaceWorkflow,
     getStats,
   };
 }
