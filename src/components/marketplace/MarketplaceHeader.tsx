@@ -215,10 +215,11 @@ export function MarketplaceHeader() {
               variant="outline"
               size="sm"
               className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10 hidden sm:flex"
-              onClick={() => navigate(user ? '/auth?apply=reseller' : '/auth?apply=reseller')}
+              onClick={handleApplyReseller}
+              disabled={applyingReseller}
             >
-              <Users className="h-4 w-4" />
-              <span className="hidden lg:inline">Apply Reseller</span>
+              {applyingReseller ? <Loader2 className="h-4 w-4 animate-spin" /> : <Users className="h-4 w-4" />}
+              <span className="hidden lg:inline">{applyingReseller ? 'Joining...' : 'Apply Reseller'}</span>
             </Button>
           )}
 
