@@ -36,8 +36,14 @@ import { formatDistanceToNow } from 'date-fns';
 
 const ITEMS_PER_PAGE = 25;
 
+interface ResellerDetail {
+  seoRuns: any[];
+  campaigns: any[];
+  walletBalance: number;
+}
+
 export default function Resellers() {
-   const { resellers, loading, total, fetchResellers, updateReseller, deleteReseller } = useResellers();
+  const { resellers, loading, total, fetchResellers, updateReseller, deleteReseller } = useResellers();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,8 +51,10 @@ export default function Resellers() {
   const [editReseller, setEditReseller] = useState<Reseller | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [selectedReseller, setSelectedReseller] = useState<Reseller | null>(null);
+  const [resellerDetail, setResellerDetail] = useState<ResellerDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  // Form state
   const [formData, setFormData] = useState({
     company_name: '',
     commission_percent: 10,
@@ -54,6 +62,27 @@ export default function Resellers() {
     is_active: true,
     is_verified: false,
   });
+
+  const openResellerDetail = async (reseller: Reseller) => {
+    setSelectedReseller(reseller);
+    setDetailLoading(true);
+    try {
+      const [seoRes, campRes, walletRes] = await Promise.all([
+        supabase.from('reseller_seo_runs').select('*').eq('user_id', reseller.user_id).order('created_at', { ascending: false }).limit(20),
+        supabase.from('reseller_campaigns').select('*').eq('user_id', reseller.user_id).order('created_at', { ascending: false }).limit(20),
+        supabase.from('wallets').select('balance').eq('user_id', reseller.user_id).maybeSingle(),
+      ]);
+      setResellerDetail({
+        seoRuns: (seoRes.data as any[]) || [],
+        campaigns: (campRes.data as any[]) || [],
+        walletBalance: (walletRes.data as any)?.balance || 0,
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDetailLoading(false);
+    }
+  };
 
   const filteredResellers = resellers.filter((reseller) => {
     const name = (reseller.company_name || '').toLowerCase();
