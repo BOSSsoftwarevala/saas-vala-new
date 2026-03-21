@@ -39,6 +39,8 @@ const navItems: NavItem[] = [
   { title: 'Marketplace', icon: Store, href: '/' },
   { title: 'Dashboard', icon: LayoutDashboard, href: '/dashboard' },
   { title: 'Products', icon: Package, href: '/products' },
+  { title: 'Resellers', icon: Users, href: '/resellers', adminOnly: true },
+  { title: 'Marketplace Admin', icon: Store, href: '/admin/marketplace', adminOnly: true },
   { title: 'Marketplace View', icon: Store, href: '/', adminOnly: true },
   { title: 'Keys', icon: Key, href: '/keys' },
   { title: 'Servers', icon: Server, href: '/servers' },
@@ -50,8 +52,6 @@ const navItems: NavItem[] = [
   { title: 'APK Pipeline', icon: Smartphone, href: '/apk-pipeline', adminOnly: true },
   { title: 'Wallet', icon: Wallet, href: '/wallet' },
   { title: 'SEO & Leads', icon: TrendingUp, href: '/seo-leads' },
-  { title: 'Resellers', icon: Users, href: '/resellers', adminOnly: true },
-  { title: 'Marketplace Admin', icon: Store, href: '/admin/marketplace', adminOnly: true },
   { title: 'Audit Logs', icon: FileText, href: '/audit-logs', adminOnly: true },
   { title: 'System Health', icon: Activity, href: '/system-health', adminOnly: true },
   { title: 'Settings', icon: Settings, href: '/settings', adminOnly: true },
@@ -180,7 +180,7 @@ export function Sidebar() {
 
             if (collapsed) {
               return (
-                <Tooltip key={item.href} delayDuration={0}>
+                <Tooltip key={`${item.href}-${item.title}`} delayDuration={0}>
                   <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
                   <TooltipContent side="right" className="bg-popover text-popover-foreground border-border">
                     {item.title}
@@ -189,7 +189,7 @@ export function Sidebar() {
               );
             }
 
-            return <div key={item.href}>{linkContent}</div>;
+            return <div key={`${item.href}-${item.title}`}>{linkContent}</div>;
           })}
         </nav>
 
