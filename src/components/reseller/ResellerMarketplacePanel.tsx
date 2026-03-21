@@ -38,7 +38,7 @@ export function ResellerMarketplacePanel() {
     setLoading(true);
     const { data } = await supabase
       .from('products')
-      .select('id, name, slug, description, price, category, status, demo_url, thumbnail_url')
+      .select('id, name, slug, description, price, status, demo_url, thumbnail_url')
       .eq('status', 'active')
       .neq('slug', '__payment_config__')
       .order('name')
