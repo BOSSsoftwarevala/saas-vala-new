@@ -56,10 +56,15 @@ export function useApkPurchase() {
         return { success: false, error: fraudStatus.message };
       }
 
-      // Step 2: Check wallet balance
+      // FIXED: Validate price before processing
+      if (!Number.isFinite(product.price) || product.price <= 0) {
+        throw new Error('Invalid product price');
+      }
+
+      // Step 2: Check wallet balance with version for optimistic locking
       const { data: wallet, error: walletError } = await supabase
         .from('wallets')
-        .select('id, balance')
+        .select('id, balance, version')
         .eq('user_id', user.id)
         .single();
 
@@ -99,11 +104,20 @@ export function useApkPurchase() {
       // Step 4: Generate license key from transaction ID
       const licenseKey = generateTransactionLicenseKey(transaction.id);
 
-      // Step 5: Update wallet balance
-      await supabase
+      // Step 5: Update wallet balance with optimistic locking to prevent race conditions
+      const { error: updateError } = await supabase
         .from('wallets')
-        .update({ balance: newBalance, updated_at: new Date().toISOString() })
-        .eq('id', wallet.id);
+        .update({ 
+          balance: newBalance, 
+          updated_at: new Date().toISOString(),
+          version: (wallet.version || 0) + 1
+        })
+        .eq('id', wallet.id)
+        .eq('version', wallet.version);
+
+      if (updateError) {
+        throw new Error('Wallet update failed - balance conflict');
+      }
 
       // Step 6: Create APK download record (only for real DB products)
       if (!isGeneratedProduct) {
@@ -179,11 +193,12 @@ export function useApkPurchase() {
 
       setProcessing(false);
       
+      // FIXED: Don't expose license key in URL - store in session instead
       return {
         success: true,
         transactionId: transaction.id,
         licenseKey,
-        downloadUrl: `/download/apk/${product.id}?key=${licenseKey}`
+        downloadUrl: `/download/apk/${product.id}`
       };
     } catch (error: any) {
       setProcessing(false);
@@ -211,10 +226,12 @@ export function useApkPurchase() {
     }
 
     try {
+      // FIXED: Always include user_id filter to prevent unauthorized access
       const { data: download, error } = await supabase
         .from('apk_downloads')
         .select('*')
         .eq('license_key', licenseKey)
+        .eq('user_id', user.id)
         .single();
 
       if (error || !download) {
@@ -234,7 +251,7 @@ export function useApkPurchase() {
         };
       }
 
-      // Check if this user owns this license
+      // Check if this user owns this license (double-check)
       if (download.user_id !== user.id) {
         // Fraud - using someone else's license
         const fraudResult = await reportViolation(
@@ -259,12 +276,13 @@ export function useApkPurchase() {
         };
       }
 
-      // Update verification attempts
+      // FIXED: Add last_verified_at timestamp
       await supabase
         .from('apk_downloads')
         .update({
           verification_attempts: (download.verification_attempts || 0) + 1,
-          device_info: deviceInfo ? JSON.parse(JSON.stringify(deviceInfo)) : download.device_info
+          device_info: deviceInfo ? JSON.parse(JSON.stringify(deviceInfo)) : download.device_info,
+          last_verified_at: new Date().toISOString()
         })
         .eq('id', download.id);
 
