@@ -48,7 +48,7 @@ Deno.serve(async (req) => {
             body: JSON.stringify({
               name: "apk-factory",
               description:
-                "Automated APK build factory using GitHub Actions - Software Vala™",
+                "Automated APK build factory using GitHub Actions - Software Vala",
               private: false,
               auto_init: true,
             }),
