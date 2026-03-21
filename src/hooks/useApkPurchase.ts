@@ -179,20 +179,22 @@ export function useApkPurchase() {
       }
 
       // Step 8: Log activity
-      await supabase.from('activity_logs').insert({
-        entity_type: 'apk_download',
-        entity_id: transaction.id,
-        action: 'apk_purchased',
-        performed_by: user.id,
-        details: {
-          product_id: product.id,
-          product_title: product.title,
-          license_key: licenseKey,
-          amount: product.price,
-          transaction_id: transaction.id,
-          is_generated: isGeneratedProduct
-        }
-      }).catch(() => {}); // Non-critical
+      try {
+        await supabase.from('activity_logs').insert({
+          entity_type: 'apk_download',
+          entity_id: transaction.id,
+          action: 'apk_purchased',
+          performed_by: user.id,
+          details: {
+            product_id: product.id,
+            product_title: product.title,
+            license_key: licenseKey,
+            amount: product.price,
+            transaction_id: transaction.id,
+            is_generated: isGeneratedProduct
+          }
+        });
+      } catch {} // Non-critical
 
       // Step 9: Create notification
       await supabase.from('notifications').insert({
