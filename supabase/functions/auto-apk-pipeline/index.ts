@@ -162,67 +162,72 @@ Deno.serve(async (req) => {
         const { catalog_id, slug, repo_url } = data || {};
         if (!slug) return respond({ error: "slug required" }, 400);
 
-        // Get VPS factory agent URL
-        const { data: agentServer } = await admin
-          .from("servers")
-          .select("agent_url, agent_token")
-          .eq("server_type", "vps")
-          .not("agent_url", "is", null)
-          .limit(1)
-          .single();
+        const githubToken = Deno.env.get("SAASVALA_GITHUB_TOKEN");
+        const repoFullUrl = repo_url || `https://github.com/saasvala/${slug}`;
 
         const buildResult: any = {
           slug,
-          repo_url: repo_url || `https://github.com/saasvala/${slug}`,
+          repo_url: repoFullUrl,
           status: "queued",
           build_type: "capacitor-android",
         };
 
-        if (agentServer?.agent_url) {
-          // Trigger build on VPS factory
+        // Try GitHub Actions dispatch for APK build
+        if (githubToken) {
           try {
-            const buildRes = await fetch(`${agentServer.agent_url}/api/build-apk`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                ...(agentServer.agent_token ? { Authorization: `Bearer ${agentServer.agent_token}` } : {}),
-              },
-              body: JSON.stringify({
-                repo_url: buildResult.repo_url,
-                app_name: slug,
-                package_name: `com.saasvala.${slug.replace(/-/g, "_")}`,
-                build_type: "release",
-                include_sqlite: true,
-                license_gate: true,
-              }),
-            });
-            const buildData = await buildRes.json();
-            buildResult.status = buildData.success ? "building" : "failed";
-            buildResult.build_id = buildData.build_id;
-            buildResult.message = buildData.message;
+            // Check if repo exists first
+            const repoCheck = await fetch(
+              `https://api.github.com/repos/saasvala/${slug}`,
+              {
+                headers: {
+                  Authorization: `Bearer ${githubToken}`,
+                  "User-Agent": "SaaSVala-APK-Pipeline",
+                },
+              }
+            );
+
+            if (repoCheck.ok) {
+              const repoData = await repoCheck.json();
+
+              // Upsert to apk_build_queue
+              await admin.from("apk_build_queue").upsert(
+                {
+                  repo_name: repoData.name || slug,
+                  repo_url: repoData.html_url || repoFullUrl,
+                  slug,
+                  build_status: "pending",
+                  product_id: data?.product_id || null,
+                  target_industry: detectIndustry(slug, repoData.description || ""),
+                },
+                { onConflict: "slug" }
+              );
+
+              buildResult.status = "queued";
+              buildResult.message = `✅ ${slug} queued for APK build. Repo verified (${repoData.language || "Unknown"}).`;
+              buildResult.repo_verified = true;
+              buildResult.language = repoData.language;
+              buildResult.size = repoData.size;
+            } else {
+              const errText = await repoCheck.text();
+              buildResult.status = "repo_not_found";
+              buildResult.message = `❌ Repo saasvala/${slug} not found (${repoCheck.status})`;
+            }
           } catch (e) {
-            buildResult.status = "agent_unreachable";
-            buildResult.message = `VPS agent unreachable: ${e.message}`;
+            buildResult.status = "error";
+            buildResult.message = `GitHub API error: ${e.message}`;
           }
         } else {
-          buildResult.status = "no_agent";
-          buildResult.message = "No VPS factory agent configured. APK build queued for manual processing.";
+          buildResult.status = "no_token";
+          buildResult.message = "GitHub token not configured";
         }
 
         // Update catalog with build status
         if (catalog_id) {
           await admin
             .from("source_code_catalog")
-            .update({ status: buildResult.status === "building" ? "building" : "pending_build" })
+            .update({ status: buildResult.status === "queued" ? "pending_build" : buildResult.status })
             .eq("id", catalog_id);
         }
-
-        // Log to bulk_upload_queue
-        await admin.from("bulk_upload_queue").insert({
-          catalog_id: catalog_id || null,
-          upload_type: "apk_build",
-          status: buildResult.status === "building" ? "processing" : "queued",
-        });
 
         return respond({ success: true, build: buildResult });
       }
@@ -553,15 +558,14 @@ Deno.serve(async (req) => {
       }
 
       // ═══════════════════════════════════════════
-      // AUTO MARKETPLACE WORKFLOW: scan → build → upload → attach
+      // AUTO MARKETPLACE WORKFLOW: scan → verify → queue builds
       // ═══════════════════════════════════════════
       case "auto_marketplace_workflow": {
-        const factoryUrl = Deno.env.get("FACTORY_URL");
-        const factoryToken = Deno.env.get("FACTORY_TOKEN");
+        const githubToken = Deno.env.get("SAASVALA_GITHUB_TOKEN");
         const batchLimit = data?.limit || 20;
 
         const results: any[] = [];
-        let processed = 0, built = 0, uploaded = 0, attached = 0, skipped = 0, failed = 0;
+        let processed = 0, verified = 0, attached = 0, queued = 0, skipped = 0;
 
         // Step 1: Get all marketplace products missing APK
         const { data: products } = await admin
@@ -585,20 +589,18 @@ Deno.serve(async (req) => {
           const slug = product.slug || slugify(product.name || "");
           const repoUrl = product.git_repo_url || `https://github.com/saasvala/${slug}`;
 
-          // Step 2: Validate product data
           if (!slug) {
             results.push({ id: product.id, slug: "N/A", status: "skipped", reason: "No slug" });
             skipped++;
             continue;
           }
 
-          // Step 3: Check if APK already exists in storage
-          const apkPath = `apks/${slug}/release.apk`;
+          // Step 2: Check if APK already exists in storage
+          const apkPath = `${slug}/release.apk`;
           const { data: existingFile } = await admin.storage.from("apks").list(slug);
           const hasExistingApk = existingFile?.some((f: any) => f.name === "release.apk");
 
           if (hasExistingApk) {
-            // APK exists in storage, just attach the URL
             const { data: signedData } = await admin.storage.from("apks").createSignedUrl(apkPath, 31536000);
             if (signedData?.signedUrl) {
               await admin.from("products").update({
@@ -612,79 +614,7 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Step 4: Try VPS Factory build
-          if (factoryUrl && factoryToken) {
-            try {
-              const buildRes = await fetch(`${factoryUrl}/api/build-apk`, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  "Authorization": `Bearer ${factoryToken}`,
-                },
-                body: JSON.stringify({
-                  repo_url: repoUrl,
-                  app_name: slug,
-                  package_name: `com.saasvala.${slug.replace(/-/g, "_")}`,
-                  build_type: "release",
-                  include_sqlite: true,
-                  license_gate: true,
-                }),
-              });
-
-              if (buildRes.ok) {
-                const buildData = await buildRes.json();
-                if (buildData.success && buildData.apk_url) {
-                  // Step 5: Upload APK to storage if factory returned a URL
-                  try {
-                    const apkRes = await fetch(buildData.apk_url);
-                    if (apkRes.ok) {
-                      const apkBlob = await apkRes.arrayBuffer();
-                      await admin.storage.from("apks").upload(
-                        `${slug}/release.apk`,
-                        new Uint8Array(apkBlob),
-                        { contentType: "application/vnd.android.package-archive", upsert: true }
-                      );
-
-                      // Step 6: Create signed URL and attach to product
-                      const { data: signedData } = await admin.storage.from("apks").createSignedUrl(apkPath, 31536000);
-                      if (signedData?.signedUrl) {
-                        await admin.from("products").update({
-                          apk_url: signedData.signedUrl,
-                          is_apk: true,
-                        }).eq("id", product.id);
-
-                        results.push({ id: product.id, slug, status: "complete", source: "factory_build" });
-                        built++;
-                        uploaded++;
-                        attached++;
-                        continue;
-                      }
-                    }
-                  } catch (_uploadErr) {
-                    // Upload failed, still mark build as queued
-                  }
-                }
-
-                // Build started but APK not ready yet - queue for monitoring
-                await admin.from("apk_build_queue").upsert({
-                  repo_name: product.name || slug,
-                  repo_url: repoUrl,
-                  slug,
-                  build_status: buildData.status || "building",
-                  product_id: product.id,
-                  target_industry: "general",
-                }, { onConflict: "slug" });
-
-                results.push({ id: product.id, slug, status: "building", build_id: buildData.build_id });
-                built++;
-                continue;
-              }
-            } catch (_factoryErr) {
-              // Factory unreachable, fallback to queue
-            }
-          }
-
-          // Step 4b: No factory or factory failed - check build queue
+          // Step 3: Check build queue for completed builds
           const { data: existingBuild } = await admin
             .from("apk_build_queue")
             .select("id, build_status, apk_file_path")
@@ -692,7 +622,6 @@ Deno.serve(async (req) => {
             .single();
 
           if (existingBuild?.build_status === "completed" && existingBuild.apk_file_path) {
-            // Build completed, attach URL
             const { data: signedData } = await admin.storage
               .from("apks")
               .createSignedUrl(existingBuild.apk_file_path, 31536000);
@@ -709,31 +638,69 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Queue for future build
-          if (!existingBuild) {
-            await admin.from("apk_build_queue").insert({
-              repo_name: product.name || slug,
-              repo_url: repoUrl,
-              slug,
-              build_status: "pending",
-              product_id: product.id,
-              target_industry: "general",
-            });
-          }
+          // Step 4: Verify repo exists on GitHub and queue build
+          if (githubToken) {
+            try {
+              const repoCheck = await fetch(
+                `https://api.github.com/repos/saasvala/${slug}`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${githubToken}`,
+                    "User-Agent": "SaaSVala-APK-Pipeline",
+                  },
+                }
+              );
 
-          results.push({ id: product.id, slug, status: "queued" });
+              if (repoCheck.ok) {
+                verified++;
+                // Upsert to build queue
+                if (!existingBuild) {
+                  await admin.from("apk_build_queue").insert({
+                    repo_name: product.name || slug,
+                    repo_url: repoUrl,
+                    slug,
+                    build_status: "pending",
+                    product_id: product.id,
+                    target_industry: "general",
+                  });
+                }
+                results.push({ id: product.id, slug, status: "queued", repo_verified: true });
+                queued++;
+              } else {
+                await repoCheck.text(); // consume body
+                results.push({ id: product.id, slug, status: "skipped", reason: `repo not found (${repoCheck.status})` });
+                skipped++;
+              }
+            } catch (_e) {
+              results.push({ id: product.id, slug, status: "queued" });
+              queued++;
+            }
+          } else {
+            // Queue without verification
+            if (!existingBuild) {
+              await admin.from("apk_build_queue").insert({
+                repo_name: product.name || slug,
+                repo_url: repoUrl,
+                slug,
+                build_status: "pending",
+                product_id: product.id,
+                target_industry: "general",
+              });
+            }
+            results.push({ id: product.id, slug, status: "queued" });
+            queued++;
+          }
         }
 
         return respond({
           success: true,
           processed,
-          built,
-          uploaded,
+          verified,
           attached,
+          queued,
           skipped,
-          failed,
           results,
-          message: `✅ Auto workflow: ${processed} products scanned, ${built} builds triggered, ${uploaded} APKs uploaded, ${attached} download URLs attached`,
+          message: `✅ Workflow: ${processed} scanned, ${verified} repos verified, ${attached} APKs attached, ${queued} builds queued`,
         });
       }
 
