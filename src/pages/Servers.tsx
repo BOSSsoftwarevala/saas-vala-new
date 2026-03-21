@@ -50,7 +50,7 @@ export default function Servers() {
             </Suspense>
 
             {/* Server List */}
-            <Suspense fallback={<PageSkeleton />}>
+            <Suspense fallback={<div className="h-64 bg-muted rounded animate-pulse" />}>
               <ServerListPanel />
             </Suspense>
 

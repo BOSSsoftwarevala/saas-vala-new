@@ -221,12 +221,14 @@ export function useApkPurchase() {
       const errorMessage = error.message || 'Purchase failed';
       
       // Log error
-      await supabase.from('error_logs').insert({
-        user_id: user?.id,
-        error_type: 'apk_purchase_error',
-        error_message: errorMessage,
-        context: { product_id: product.id, product_title: product.title }
-      }).catch(() => {}); // Non-critical
+      try {
+        await supabase.from('error_logs').insert({
+          user_id: user?.id,
+          error_type: 'apk_purchase_error',
+          error_message: errorMessage,
+          context: { product_id: product.id, product_title: product.title }
+        });
+      } catch {} // Non-critical
 
       return { success: false, error: errorMessage };
     }
