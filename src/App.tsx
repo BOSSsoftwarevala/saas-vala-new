@@ -165,6 +165,7 @@ function AppRoutes() {
         <Route path="/manufacturing-role-detail" element={<ProtectedRoute><ManufacturingRoleDetail /></ProtectedRoute>} />
         <Route path="/education" element={<ProtectedRoute><EducationCategory /></ProtectedRoute>} />
         <Route path="/ai-chat" element={<ProtectedRoute><AiChat /></ProtectedRoute>} />
+        <Route path="/vala-builder" element={<ProtectedRoute><ValaBuilder /></ProtectedRoute>} />
         <Route path="/saas-ai-dashboard" element={<ProtectedRoute><SaasAiDashboard /></ProtectedRoute>} />
         <Route path="/ai-apis" element={<ProtectedRoute><AiApis /></ProtectedRoute>} />
         <Route path="/wallet" element={<ProtectedRoute><Wallet /></ProtectedRoute>} />
