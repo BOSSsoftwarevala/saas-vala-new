@@ -80,19 +80,23 @@ const PageLoader = React.forwardRef<HTMLDivElement>((_, ref) => {
 
 PageLoader.displayName = "PageLoader";
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+const ProtectedRoute = React.forwardRef<unknown, { children: React.ReactNode }>(({ children }, _ref) => {
   const { user, loading } = useAuth();
   if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/auth" replace />;
   return <>{children}</>;
-}
+});
 
-function AdminRoute({ children }: { children: React.ReactNode }) {
+ProtectedRoute.displayName = "ProtectedRoute";
+
+const AdminRoute = React.forwardRef<unknown, { children: React.ReactNode }>(({ children }, _ref) => {
   const { isSuperAdmin, loading } = useAuth();
   if (loading) return <PageLoader />;
   if (!isSuperAdmin) return <Navigate to="/" replace />;
   return <>{children}</>;
-}
+});
+
+AdminRoute.displayName = "AdminRoute";
 
 function AppRoutes() {
   return (
