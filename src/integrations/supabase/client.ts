@@ -43,6 +43,10 @@ export const supabase = createClient<Database>(
 // Type-safe Supabase client instance
 export type SupabaseClient = typeof supabase;
 
+// Cache configuration
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const queryCache = new Map<string, { data: any; timestamp: number }>();
+
 // Helper functions for common operations
 export async function getCurrentUser() {
   try {
@@ -78,6 +82,7 @@ export async function signOut() {
   try {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
+    clearQueryCache();
     return true;
   } catch (error) {
     console.error('Failed to sign out:', error);
@@ -106,13 +111,85 @@ export function subscribeToTable<T extends keyof Database['public']['Tables']>(
     .subscribe();
 }
 
-// Query cache helper
-const queryCache = new Map<string, { data: any; timestamp: number }>();
+// Query cache helpers with TTL
+export function getCacheKey(...args: any[]): string {
+  return JSON.stringify(args);
+}
 
-export function clearQueryCache() {
+export function getFromCache<T>(key: string): T | null {
+  const cached = queryCache.get(key);
+  if (!cached) return null;
+  
+  // Check TTL
+  if (Date.now() - cached.timestamp > CACHE_TTL) {
+    queryCache.delete(key);
+    return null;
+  }
+  
+  return cached.data as T;
+}
+
+export function setInCache(key: string, data: any): void {
+  queryCache.set(key, {
+    data,
+    timestamp: Date.now(),
+  });
+}
+
+export function clearQueryCache(): void {
   queryCache.clear();
 }
 
-export function getCacheKey(...args: any[]): string {
-  return JSON.stringify(args);
+// Retry helper for failed requests
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  maxRetries = 3,
+  delayMs = 1000
+): Promise<T> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      if (attempt < maxRetries - 1) {
+        const delay = delayMs * Math.pow(2, attempt); // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError || new Error('Max retries exceeded');
+}
+
+// Request with authentication headers
+export async function makeAuthenticatedRequest(
+  url: string,
+  options: RequestInit = {}
+) {
+  const session = await getSession();
+  
+  const headers = new Headers(options.headers);
+  if (session?.access_token) {
+    headers.set('Authorization', `Bearer ${session.access_token}`);
+  }
+  headers.set('Content-Type', 'application/json');
+  headers.set('apikey', SUPABASE_PUBLISHABLE_KEY);
+
+  return fetch(url, {
+    ...options,
+    headers,
+  });
+}
+
+// Error handler
+export function handleSupabaseError(error: any): string {
+  if (!error) return 'Unknown error';
+  
+  if (typeof error === 'string') return error;
+  if (error.message) return error.message;
+  if (error.error) return error.error;
+  
+  return JSON.stringify(error);
 }
