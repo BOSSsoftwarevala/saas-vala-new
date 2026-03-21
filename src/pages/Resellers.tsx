@@ -362,6 +362,9 @@ export default function Resellers() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="bg-popover border-border">
+                              <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => openResellerDetail(reseller)}>
+                                <Eye className="h-4 w-4" /> View Details
+                              </DropdownMenuItem>
                               <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => openEditDialog(reseller)}>
                                 <Edit className="h-4 w-4" /> Edit
                               </DropdownMenuItem>
