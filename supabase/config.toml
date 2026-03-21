@@ -50,3 +50,6 @@ verify_jwt = false
 
 [functions.factory-deploy]
 verify_jwt = false
+
+[functions.apk-factory]
+verify_jwt = false
