@@ -197,13 +197,15 @@ export function useApkPurchase() {
       } catch {} // Non-critical
 
       // Step 9: Create notification
-      await supabase.from('notifications').insert({
-        user_id: user.id,
-        title: '📱 APK Ready for Download',
-        message: `${product.title} purchased. Your License Key: ${licenseKey}`,
-        type: 'success',
-        action_url: '/keys'
-      }).catch(() => {}); // Non-critical
+      try {
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          title: '📱 APK Ready for Download',
+          message: `${product.title} purchased. Your License Key: ${licenseKey}`,
+          type: 'success',
+          action_url: '/keys'
+        });
+      } catch {} // Non-critical
 
       setProcessing(false);
       
