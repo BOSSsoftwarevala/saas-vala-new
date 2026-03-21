@@ -8,12 +8,8 @@ import { AutoSubdomain } from '@/components/servers/AutoSubdomain';
 import { CustomDomain } from '@/components/servers/CustomDomain';
 import { SimpleBuildLogs } from '@/components/servers/SimpleBuildLogs';
 import { SimpleSettings } from '@/components/servers/SimpleSettings';
-import { ErrorBoundary } from '@/components/common/ErrorBoundary';
-import { PageSkeleton } from '@/components/common/PageSkeleton';
-import { Helmet } from 'react-helmet-async';
 
 // Lazy load heavy components
-const StatusCardsLazy = React.lazy(() => import('@/components/servers/StatusCards').then(m => ({ default: m.StatusCards })));
 const AutoSubdomainLazy = React.lazy(() => import('@/components/servers/AutoSubdomain').then(m => ({ default: m.AutoSubdomain })));
 const CustomDomainLazy = React.lazy(() => import('@/components/servers/CustomDomain').then(m => ({ default: m.CustomDomain })));
 const SimpleSettingsLazy = React.lazy(() => import('@/components/servers/SimpleSettings').then(m => ({ default: m.SimpleSettings })));
