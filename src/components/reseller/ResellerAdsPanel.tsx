@@ -35,7 +35,7 @@ interface Campaign {
 }
 
 export function ResellerAdsPanel() {
-  const { wallet, refetchWallet } = useWallet();
+  const { wallet, fetchWallet: refetchWallet } = useWallet();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);

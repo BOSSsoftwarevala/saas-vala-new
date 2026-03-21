@@ -39,7 +39,7 @@ interface SeoRun {
 }
 
 export function ResellerSeoPanel() {
-  const { wallet, refetchWallet } = useWallet();
+  const { wallet, fetchWallet: refetchWallet } = useWallet();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [targetUrl, setTargetUrl] = useState('');
