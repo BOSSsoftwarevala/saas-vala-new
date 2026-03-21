@@ -1845,6 +1845,7 @@ export type Database = {
           product_id: string | null
           status: Database["public"]["Enums"]["key_status"] | null
           updated_at: string | null
+          user_id: string | null
         }
         Insert: {
           activated_at?: string | null
@@ -1865,6 +1866,7 @@ export type Database = {
           product_id?: string | null
           status?: Database["public"]["Enums"]["key_status"] | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Update: {
           activated_at?: string | null
@@ -1885,6 +1887,7 @@ export type Database = {
           product_id?: string | null
           status?: Database["public"]["Enums"]["key_status"] | null
           updated_at?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -4136,6 +4139,7 @@ export type Database = {
           is_locked: boolean | null
           updated_at: string | null
           user_id: string
+          version: number
         }
         Insert: {
           balance?: number | null
@@ -4145,6 +4149,7 @@ export type Database = {
           is_locked?: boolean | null
           updated_at?: string | null
           user_id: string
+          version?: number
         }
         Update: {
           balance?: number | null
@@ -4154,6 +4159,7 @@ export type Database = {
           is_locked?: boolean | null
           updated_at?: string | null
           user_id?: string
+          version?: number
         }
         Relationships: []
       }

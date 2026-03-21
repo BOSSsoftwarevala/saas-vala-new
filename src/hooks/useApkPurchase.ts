@@ -179,29 +179,33 @@ export function useApkPurchase() {
       }
 
       // Step 8: Log activity
-      await supabase.from('activity_logs').insert({
-        entity_type: 'apk_download',
-        entity_id: transaction.id,
-        action: 'apk_purchased',
-        performed_by: user.id,
-        details: {
-          product_id: product.id,
-          product_title: product.title,
-          license_key: licenseKey,
-          amount: product.price,
-          transaction_id: transaction.id,
-          is_generated: isGeneratedProduct
-        }
-      }).catch(() => {}); // Non-critical
+      try {
+        await supabase.from('activity_logs').insert({
+          entity_type: 'apk_download',
+          entity_id: transaction.id,
+          action: 'apk_purchased',
+          performed_by: user.id,
+          details: {
+            product_id: product.id,
+            product_title: product.title,
+            license_key: licenseKey,
+            amount: product.price,
+            transaction_id: transaction.id,
+            is_generated: isGeneratedProduct
+          }
+        });
+      } catch {} // Non-critical
 
       // Step 9: Create notification
-      await supabase.from('notifications').insert({
-        user_id: user.id,
-        title: '📱 APK Ready for Download',
-        message: `${product.title} purchased. Your License Key: ${licenseKey}`,
-        type: 'success',
-        action_url: '/keys'
-      }).catch(() => {}); // Non-critical
+      try {
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          title: '📱 APK Ready for Download',
+          message: `${product.title} purchased. Your License Key: ${licenseKey}`,
+          type: 'success',
+          action_url: '/keys'
+        });
+      } catch {} // Non-critical
 
       setProcessing(false);
       
@@ -217,12 +221,14 @@ export function useApkPurchase() {
       const errorMessage = error.message || 'Purchase failed';
       
       // Log error
-      await supabase.from('error_logs').insert({
-        user_id: user?.id,
-        error_type: 'apk_purchase_error',
-        error_message: errorMessage,
-        context: { product_id: product.id, product_title: product.title }
-      }).catch(() => {}); // Non-critical
+      try {
+        await supabase.from('error_logs').insert({
+          user_id: user?.id,
+          error_type: 'apk_purchase_error',
+          error_message: errorMessage,
+          context: { product_id: product.id, product_title: product.title }
+        });
+      } catch {} // Non-critical
 
       return { success: false, error: errorMessage };
     }

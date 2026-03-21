@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { MarketplaceHeader } from '@/components/marketplace/MarketplaceHeader';
 import { LazySection } from '@/components/marketplace/LazySection';
 import { MarketplaceCategoryRow } from '@/components/marketplace/MarketplaceCategoryRow';
@@ -28,14 +28,18 @@ interface Product {
   status: 'upcoming' | 'live' | 'bestseller' | 'draft'; price: number;
 }
 
-// FIXED: Bank details moved to secure backend config
-// DO NOT hardcode sensitive payment info in frontend code
+// Bank details fetched from a simple config approach
 const getBankDetails = async () => {
-  const { data } = await supabase
-    .from('payment_config')
-    .select('*')
-    .single();
-  return data;
+  try {
+    const { data } = await supabase
+      .from('products')
+      .select('meta')
+      .eq('slug', '__payment_config__')
+      .maybeSingle();
+    return data?.meta || null;
+  } catch {
+    return null;
+  }
 };
 
 type BuyPayMethod = 'wallet' | 'upi' | 'bank' | 'crypto';
