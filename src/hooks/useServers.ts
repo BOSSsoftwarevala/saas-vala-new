@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { serversApi } from '@/lib/api';
+import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
 
 export interface AgentStatus {
@@ -60,120 +61,65 @@ export function useServers() {
 
   const fetchServers = useCallback(async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('servers')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const res = await serversApi.list();
+      setServers((res.data || []) as Server[]);
+    } catch (e: any) {
       toast.error('Failed to fetch servers');
-      console.error(error);
-    } else {
-      setServers((data || []) as Server[]);
+      console.error(e);
     }
     setLoading(false);
   }, []);
 
   const fetchDeployments = useCallback(async (serverId?: string) => {
-    let query = supabase
-      .from('deployments')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50);
-
-    if (serverId) {
-      query = query.eq('server_id', serverId);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      console.error(error);
-    } else {
-      setDeployments((data || []) as Deployment[]);
+    try {
+      // Deployments still fetched via SDK for filtering
+      let query = supabase.from('deployments').select('*')
+        .order('created_at', { ascending: false }).limit(50);
+      if (serverId) query = query.eq('server_id', serverId);
+      const { data, error } = await query;
+      if (!error) setDeployments((data || []) as Deployment[]);
+    } catch (e) {
+      console.error(e);
     }
   }, []);
 
   const createServer = async (server: Partial<Server>) => {
-    const { data: userData } = await supabase.auth.getUser();
-    const subdomain = server.name?.toLowerCase().replace(/[^a-z0-9]/g, '-') + '-' + Math.random().toString(36).substring(2, 6);
-
-    const { data, error } = await supabase
-      .from('servers')
-      .insert({
-        name: server.name || '',
-        subdomain,
-        git_repo: server.git_repo,
-        git_branch: server.git_branch || 'main',
-        runtime: server.runtime || 'nodejs18',
-        status: 'stopped',
-        auto_deploy: server.auto_deploy ?? true,
-        created_by: userData.user?.id,
-      })
-      .select()
-      .single();
-
-    if (error) {
+    try {
+      const res = await serversApi.create(server);
+      toast.success(`Server created: ${res.data.subdomain}.saasvala.com`);
+      await fetchServers();
+      return res.data;
+    } catch (e: any) {
       toast.error('Failed to create server');
-      throw error;
+      throw e;
     }
-    toast.success(`Server created: ${subdomain}.saasvala.com`);
-    await fetchServers();
-    return data;
   };
 
   const updateServer = async (id: string, updates: Partial<Server>) => {
-    const { error } = await supabase
-      .from('servers')
-      .update(updates)
-      .eq('id', id);
-
-    if (error) {
-      toast.error('Failed to update server');
-      throw error;
-    }
+    const { error } = await supabase.from('servers').update(updates).eq('id', id);
+    if (error) { toast.error('Failed to update server'); throw error; }
     toast.success('Server updated');
     await fetchServers();
   };
 
   const deleteServer = async (id: string) => {
-    const { error } = await supabase
-      .from('servers')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
-      toast.error('Failed to delete server');
-      throw error;
-    }
+    const { error } = await supabase.from('servers').delete().eq('id', id);
+    if (error) { toast.error('Failed to delete server'); throw error; }
     toast.success('Server deleted');
     await fetchServers();
   };
 
   const deployServer = async (id: string) => {
-    const { data: userData } = await supabase.auth.getUser();
-
-    const { error } = await supabase
-      .from('deployments')
-      .insert({
-        server_id: id,
-        status: 'building',
-        triggered_by: userData.user?.id,
-      });
-
-    if (error) {
+    try {
+      await serversApi.triggerDeploy(id);
+      toast.success('Deployment triggered');
+      await fetchServers();
+      await fetchDeployments(id);
+    } catch (e: any) {
       toast.error('Failed to trigger deployment');
-      throw error;
+      throw e;
     }
-
-    await supabase
-      .from('servers')
-      .update({ status: 'deploying', last_deploy_at: new Date().toISOString() })
-      .eq('id', id);
-
-    toast.success('Deployment triggered');
-    await fetchServers();
-    await fetchDeployments(id);
   };
 
   const stopServer = async (id: string) => {
@@ -188,11 +134,7 @@ export function useServers() {
     const { data, error } = await supabase.functions.invoke('server-agent', {
       body: { action: 'register', params },
     });
-
-    if (error || !data?.success) {
-      throw new Error(error?.message || data?.error || 'Agent registration failed');
-    }
-
+    if (error || !data?.success) throw new Error(error?.message || data?.error || 'Agent registration failed');
     return data;
   }, []);
 
@@ -200,11 +142,7 @@ export function useServers() {
     const { data, error } = await supabase.functions.invoke('server-agent', {
       body: { action: 'verify', serverId, params: agent_token ? { agent_token } : {} },
     });
-
-    if (error || !data?.success) {
-      throw new Error(error?.message || data?.error || 'Agent verification failed');
-    }
-
+    if (error || !data?.success) throw new Error(error?.message || data?.error || 'Agent verification failed');
     return data;
   }, []);
 
@@ -214,23 +152,18 @@ export function useServers() {
       const { data, error } = await supabase.functions.invoke('server-agent', {
         body: { action: 'status', serverId },
       });
-
       if (error || !data?.success) {
-        console.error('[Agent Check] Error:', error || data?.error);
         setServers((prev) => prev.map((s) => (s.id === serverId && s.status !== 'deploying' ? { ...s, status: 'stopped' } : s)));
         return null;
       }
-
       setAgentStatuses((prev) => ({ ...prev, [serverId]: data as AgentStatus }));
       setServers((prev) => prev.map((s) => {
         if (s.id !== serverId) return s;
         const nextStatus = data.server?.agent_alive ? 'live' : (s.status === 'deploying' ? 'deploying' : 'stopped');
         return { ...s, status: nextStatus as Server['status'] };
       }));
-
       return data as AgentStatus;
     } catch (err) {
-      console.error('[Agent Check] Failed:', err);
       return null;
     } finally {
       setCheckingAgent((prev) => ({ ...prev, [serverId]: false }));
@@ -238,13 +171,8 @@ export function useServers() {
   }, []);
 
   const checkAllAgents = useCallback(async () => {
-    const { data: agentServers } = await supabase
-      .from('servers')
-      .select('id')
-      .not('agent_url', 'is', null);
-
+    const { data: agentServers } = await supabase.from('servers').select('id').not('agent_url', 'is', null);
     if (!agentServers?.length) return;
-
     await Promise.all(agentServers.map((s) => checkAgentStatus(s.id)));
   }, [checkAgentStatus]);
 
@@ -258,32 +186,15 @@ export function useServers() {
       checkAllAgents();
       heartbeatRef.current = setInterval(checkAllAgents, 60000);
     }
-
     return () => {
-      if (heartbeatRef.current) {
-        clearInterval(heartbeatRef.current);
-        heartbeatRef.current = null;
-      }
+      if (heartbeatRef.current) { clearInterval(heartbeatRef.current); heartbeatRef.current = null; }
     };
   }, [servers.length, checkAllAgents]);
 
   return {
-    servers,
-    deployments,
-    loading,
-    agentStatuses,
-    checkingAgent,
-    fetchServers,
-    fetchDeployments,
-    createServer,
-    updateServer,
-    deleteServer,
-    deployServer,
-    stopServer,
-    suspendServer,
-    registerAgent,
-    verifyAgent,
-    checkAgentStatus,
-    checkAllAgents,
+    servers, deployments, loading, agentStatuses, checkingAgent,
+    fetchServers, fetchDeployments, createServer, updateServer, deleteServer,
+    deployServer, stopServer, suspendServer,
+    registerAgent, verifyAgent, checkAgentStatus, checkAllAgents,
   };
 }

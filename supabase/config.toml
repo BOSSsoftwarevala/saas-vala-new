@@ -53,3 +53,6 @@ verify_jwt = false
 
 [functions.apk-factory]
 verify_jwt = false
+
+[functions.api-gateway]
+verify_jwt = false

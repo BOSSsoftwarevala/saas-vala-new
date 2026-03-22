@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { resellersApi } from '@/lib/api';
 import type { Json } from '@/integrations/supabase/types';
 
 export interface Reseller {
@@ -16,7 +16,6 @@ export interface Reseller {
   meta: Json;
   created_at: string;
   updated_at: string;
-  // Joined profile data
   profile?: {
     full_name: string | null;
     email: string | null;
@@ -32,111 +31,49 @@ export function useResellers() {
   const fetchResellers = async (page = 1, limit = 25, search = '') => {
     setLoading(true);
     try {
-      // First fetch resellers
-      let query = supabase
-        .from('resellers')
-        .select('*', { count: 'exact' })
-        .order('created_at', { ascending: false })
-        .range((page - 1) * limit, page * limit - 1);
-
-      if (search) {
-        query = query.ilike('company_name', `%${search}%`);
-      }
-
-      const { data, error, count } = await query;
-
-      if (error) {
-        toast.error('Failed to fetch resellers');
-        console.error(error);
-        return;
-      }
-
-      // Enrich with profile data (full_name, email)
-      const resellerData = data || [];
-      const userIds = resellerData.map((r: any) => r.user_id).filter(Boolean);
-
-      let profileMap: Record<string, { full_name: string | null; email: string | null; phone: string | null }> = {};
-
-      if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, phone')
-          .in('user_id', userIds);
-
-        (profiles || []).forEach((p: any) => {
-          profileMap[p.user_id] = { full_name: p.full_name, email: null, phone: p.phone };
-        });
-      }
-
-      const enriched = resellerData.map((r: any) => ({
-        ...r,
-        profile: profileMap[r.user_id] || null,
-        // Use profile name as display name if company_name is empty
-        company_name: r.company_name || profileMap[r.user_id]?.full_name || 'Unnamed Reseller',
-      }));
-
-      setResellers(enriched as Reseller[]);
-      setTotal(count || 0);
+      const res = await resellersApi.list({ page, limit, search });
+      setResellers((res.data || []) as Reseller[]);
+      setTotal(res.total || 0);
+    } catch (e: any) {
+      toast.error('Failed to fetch resellers');
+      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
   const createReseller = async (reseller: Partial<Reseller>) => {
-    const { data, error } = await supabase
-      .from('resellers')
-      .insert({
-        user_id: reseller.user_id!,
-        company_name: reseller.company_name,
-        commission_percent: reseller.commission_percent || 10,
-        credit_limit: reseller.credit_limit || 0,
-        is_active: reseller.is_active ?? true,
-        is_verified: reseller.is_verified ?? false,
-      })
-      .select()
-      .single();
-
-    if (error) {
+    try {
+      const res = await resellersApi.create(reseller);
+      toast.success('Reseller created');
+      await fetchResellers();
+      return res.data;
+    } catch (e: any) {
       toast.error('Failed to create reseller');
-      throw error;
+      throw e;
     }
-    toast.success('Reseller created');
-    await fetchResellers();
-    return data;
   };
 
   const updateReseller = async (id: string, updates: Partial<Reseller>) => {
-    const { error } = await supabase
-      .from('resellers')
-      .update({
-        company_name: updates.company_name,
-        commission_percent: updates.commission_percent,
-        credit_limit: updates.credit_limit,
-        is_active: updates.is_active,
-        is_verified: updates.is_verified,
-      })
-      .eq('id', id);
-
-    if (error) {
+    try {
+      await resellersApi.update(id, updates);
+      toast.success('Reseller updated');
+      await fetchResellers();
+    } catch (e: any) {
       toast.error('Failed to update reseller');
-      throw error;
+      throw e;
     }
-    toast.success('Reseller updated');
-    await fetchResellers();
   };
 
   const deleteReseller = async (id: string) => {
-    const { error } = await supabase
-      .from('resellers')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
+    try {
+      await resellersApi.update(id, { is_active: false } as any);
+      toast.success('Reseller deleted');
+      await fetchResellers();
+    } catch (e: any) {
       toast.error('Failed to delete reseller');
-      throw error;
+      throw e;
     }
-    toast.success('Reseller deleted');
-    await fetchResellers();
   };
 
   const suspendReseller = async (id: string) => {

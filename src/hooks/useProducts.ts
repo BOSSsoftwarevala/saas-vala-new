@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { productsApi } from '@/lib/api';
 import type { Json } from '@/integrations/supabase/types';
 
 export interface Product {
@@ -43,103 +43,57 @@ export function useProducts() {
 
   const fetchProducts = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('products')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    try {
+      const res = await productsApi.list();
+      setProducts((res.data || []) as Product[]);
+    } catch (e: any) {
       toast.error('Failed to fetch products');
-      console.error(error);
-    } else {
-      setProducts((data || []) as Product[]);
+      console.error(e);
     }
     setLoading(false);
   };
 
   const fetchCategories = async () => {
-    const { data, error } = await supabase
-      .from('categories')
-      .select('*')
-      .eq('is_active', true)
-      .order('sort_order');
-
-    if (error) {
-      console.error(error);
-    } else {
-      setCategories((data || []) as Category[]);
+    try {
+      const res = await productsApi.categories();
+      setCategories((res.data || []) as Category[]);
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const createProduct = async (product: Partial<Product>) => {
-    const { data: userData } = await supabase.auth.getUser();
-    const { data, error } = await supabase
-      .from('products')
-      .insert({
-        name: product.name || '',
-        slug: product.slug || product.name?.toLowerCase().replace(/[^a-z0-9]/g, '-') || '',
-        description: product.description || null,
-        category_id: product.category_id && product.category_id.trim() !== '' ? product.category_id : null,
-        status: product.status || 'draft',
-        price: product.price || 0,
-        currency: product.currency || 'INR',
-        version: product.version || '1.0.0',
-        features: product.features || [],
-        created_by: userData.user?.id,
-        git_repo_url: product.git_repo_url || null,
-        git_repo_name: product.git_repo_name || null,
-        git_default_branch: product.git_default_branch || 'main',
-        deploy_status: product.deploy_status || 'idle',
-        marketplace_visible: product.marketplace_visible || false,
-        demo_url: product.demo_url || null,
-        live_url: product.live_url || null,
-      })
-      .select()
-      .single();
-
-    if (error) {
+    try {
+      const res = await productsApi.create(product);
+      toast.success('Product created');
+      await fetchProducts();
+      return res.data;
+    } catch (e: any) {
       toast.error('Failed to create product');
-      throw error;
+      throw e;
     }
-    toast.success('Product created');
-    await fetchProducts();
-    return data;
   };
 
   const updateProduct = async (id: string, updates: Partial<Product>) => {
-    // Sanitize category_id - convert empty string to null for UUID field
-    const sanitizedUpdates = {
-      ...updates,
-      category_id: updates.category_id && String(updates.category_id).trim() !== '' 
-        ? updates.category_id 
-        : null
-    };
-    
-    const { error } = await supabase
-      .from('products')
-      .update(sanitizedUpdates)
-      .eq('id', id);
-
-    if (error) {
+    try {
+      await productsApi.update(id, updates);
+      toast.success('Product updated');
+      await fetchProducts();
+    } catch (e: any) {
       toast.error('Failed to update product');
-      throw error;
+      throw e;
     }
-    toast.success('Product updated');
-    await fetchProducts();
   };
 
   const deleteProduct = async (id: string) => {
-    const { error } = await supabase
-      .from('products')
-      .delete()
-      .eq('id', id);
-
-    if (error) {
+    try {
+      await productsApi.delete(id);
+      toast.success('Product deleted');
+      await fetchProducts();
+    } catch (e: any) {
       toast.error('Failed to delete product');
-      throw error;
+      throw e;
     }
-    toast.success('Product deleted');
-    await fetchProducts();
   };
 
   const suspendProduct = async (id: string) => {
