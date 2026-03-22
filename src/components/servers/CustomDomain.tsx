@@ -152,9 +152,9 @@ export function CustomDomain() {
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground font-medium">Connected Domains ({domains.length})</p>
             {domains.map((domain) => {
-              const s = statusConfig[domain.status || 'pending_verification'] || statusConfig.pending_verification;
+              const s = statusConfig[domain.status || 'pending'] || statusConfig.pending;
               const SIcon = s.icon;
-              const isPending = domain.status === 'pending_verification';
+              const isPending = domain.status === 'pending';
 
               return (
                 <div key={domain.id} className="space-y-3">
