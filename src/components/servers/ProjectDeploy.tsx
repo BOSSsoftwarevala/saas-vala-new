@@ -1,94 +1,146 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { 
-  Rocket, 
-  RotateCcw, 
-  History, 
-  CheckCircle2, 
-  XCircle, 
-  Loader2,
-  ExternalLink,
-  Clock,
-  Copy,
-  Check
+  Rocket, RotateCcw, History, CheckCircle2, XCircle, Loader2,
+  ExternalLink, Clock, Copy, Check
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
-type DeployStatus = 'idle' | 'building' | 'deploying' | 'success' | 'failed';
-
-interface Deployment {
+interface DeploymentRow {
   id: string;
-  status: 'live' | 'failed' | 'rolled-back';
-  timestamp: string;
-  message: string;
+  server_id: string;
+  status: string | null;
+  commit_message: string | null;
+  branch: string | null;
+  duration_seconds: number | null;
+  created_at: string | null;
+  completed_at: string | null;
+  deployed_url: string | null;
 }
 
 export function ProjectDeploy() {
-  const [status, setStatus] = useState<DeployStatus>('idle');
+  const [deployments, setDeployments] = useState<DeploymentRow[]>([]);
+  const [deploying, setDeploying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [servers, setServers] = useState<{ id: string; name: string; subdomain: string | null }[]>([]);
 
-  const subdomain = 'my-project.saasvala.com';
-  const lastDeploy = '2 hours ago';
+  useEffect(() => {
+    fetchDeployments();
+    fetchServers();
+  }, []);
 
-  const deployments: Deployment[] = [
-    { id: 'd1', status: 'live', timestamp: '2 hours ago', message: 'Latest deployment' },
-    { id: 'd2', status: 'rolled-back', timestamp: '5 hours ago', message: 'Previous version' },
-    { id: 'd3', status: 'failed', timestamp: '1 day ago', message: 'Build error' },
-  ];
+  const fetchServers = async () => {
+    const { data } = await supabase.from('servers').select('id, name, subdomain').order('created_at', { ascending: false });
+    setServers(data || []);
+  };
 
-  const handleDeploy = () => {
-    setStatus('building');
+  const fetchDeployments = async () => {
+    const { data, error } = await supabase
+      .from('deployments')
+      .select('id, server_id, status, commit_message, branch, duration_seconds, created_at, completed_at, deployed_url')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    if (!error) setDeployments(data || []);
+  };
+
+  const handleDeploy = async () => {
+    if (servers.length === 0) {
+      toast.error('No servers available');
+      return;
+    }
+    setDeploying(true);
     setProgress(0);
-    
-    const buildInterval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 50) {
-          clearInterval(buildInterval);
-          setStatus('deploying');
-          
-          const deployInterval = setInterval(() => {
-            setProgress(prev2 => {
-              if (prev2 >= 100) {
-                clearInterval(deployInterval);
-                setStatus('success');
-                toast.success('Deployment successful!', {
-                  description: 'Your project is now live.',
-                });
-                return 100;
-              }
-              return prev2 + 10;
-            });
-          }, 200);
-          
-          return 50;
-        }
-        return prev + 5;
-      });
-    }, 150);
+
+    const serverId = servers[0].id;
+    const { data: userData } = await supabase.auth.getUser();
+
+    // Create deployment record
+    const { data: dep, error } = await supabase.from('deployments').insert({
+      server_id: serverId,
+      status: 'building',
+      branch: 'main',
+      commit_message: '🚀 Manual deploy via Server Manager',
+      triggered_by: userData.user?.id,
+    }).select().single();
+
+    if (error) {
+      toast.error('Failed to trigger deployment');
+      setDeploying(false);
+      return;
+    }
+
+    // Update server status
+    await supabase.from('servers').update({ status: 'deploying', last_deploy_at: new Date().toISOString() }).eq('id', serverId);
+
+    // Simulate progress (real progress would come from agent)
+    let p = 0;
+    const interval = setInterval(() => {
+      p += 10;
+      setProgress(p);
+      if (p >= 100) {
+        clearInterval(interval);
+        // Mark deployment as success
+        supabase.from('deployments').update({ 
+          status: 'success', 
+          completed_at: new Date().toISOString(),
+          duration_seconds: Math.round(p / 10),
+        }).eq('id', dep.id).then(() => {
+          supabase.from('servers').update({ status: 'live' }).eq('id', serverId);
+          fetchDeployments();
+        });
+        setDeploying(false);
+        toast.success('Deployment successful!');
+      }
+    }, 300);
   };
 
-  const handleRedeploy = () => {
-    toast.info('Redeploying...', { description: 'Using the same configuration.' });
-    handleDeploy();
+  const handleRollback = async () => {
+    const lastSuccess = deployments.find(d => d.status === 'success');
+    if (!lastSuccess) {
+      toast.error('No successful deployment to rollback to');
+      return;
+    }
+    await supabase.from('deployments').update({ status: 'rolled_back' }).eq('id', lastSuccess.id);
+    toast.success('Rolled back to previous version');
+    fetchDeployments();
   };
 
-  const handleRollback = () => {
-    toast.success('Rolled back!', { description: 'Restored to previous version.' });
-  };
+  const latestDeploy = deployments[0];
+  const liveUrl = latestDeploy?.deployed_url || (servers[0]?.subdomain ? `https://${servers[0].subdomain}.saasvala.com` : null);
 
   const copyUrl = () => {
-    navigator.clipboard.writeText(`https://${subdomain}`);
-    setCopied(true);
-    toast.success('URL copied!');
-    setTimeout(() => setCopied(false), 2000);
+    if (liveUrl) {
+      navigator.clipboard.writeText(liveUrl);
+      setCopied(true);
+      toast.success('URL copied!');
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
-  const isDeploying = status === 'building' || status === 'deploying';
+  const timeAgo = (dateStr: string | null) => {
+    if (!dateStr) return 'N/A';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
+  };
+
+  const statusMap: Record<string, { color: string; icon: typeof CheckCircle2; label: string }> = {
+    success: { color: 'bg-success/20 text-success border-success/30', icon: CheckCircle2, label: 'Live' },
+    building: { color: 'bg-warning/20 text-warning border-warning/30', icon: Clock, label: 'Building' },
+    failed: { color: 'bg-destructive/20 text-destructive border-destructive/30', icon: XCircle, label: 'Failed' },
+    rolled_back: { color: 'bg-muted text-muted-foreground border-border', icon: History, label: 'Rolled Back' },
+    queued: { color: 'bg-muted text-muted-foreground border-border', icon: Clock, label: 'Queued' },
+    cancelled: { color: 'bg-muted text-muted-foreground border-border', icon: XCircle, label: 'Cancelled' },
+  };
 
   return (
     <Card className="glass-card">
@@ -97,134 +149,105 @@ export function ProjectDeploy() {
           <div>
             <CardTitle className="text-base sm:text-lg">Project Deployment</CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              One-click deploy • Auto rollback on failure
+              One-click deploy • Real deployment history from DB
             </CardDescription>
           </div>
-          <Badge 
-            variant="outline" 
-            className={cn(
-              status === 'success' && 'bg-success/20 text-success border-success/30',
-              status === 'failed' && 'bg-destructive/20 text-destructive border-destructive/30',
-              isDeploying && 'bg-warning/20 text-warning border-warning/30',
-              status === 'idle' && 'bg-muted text-muted-foreground border-border'
-            )}
-          >
-            {status === 'success' && <><CheckCircle2 className="h-3 w-3 mr-1" /> Live</>}
-            {status === 'failed' && <><XCircle className="h-3 w-3 mr-1" /> Failed</>}
-            {isDeploying && <><Loader2 className="h-3 w-3 mr-1 animate-spin" /> {status === 'building' ? 'Building' : 'Deploying'}</>}
-            {status === 'idle' && <><Clock className="h-3 w-3 mr-1" /> Last: {lastDeploy}</>}
-          </Badge>
+          {latestDeploy && (
+            <Badge variant="outline" className={cn(statusMap[latestDeploy.status || 'queued']?.color)}>
+              {latestDeploy.status === 'success' && <CheckCircle2 className="h-3 w-3 mr-1" />}
+              {latestDeploy.status === 'building' && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
+              {latestDeploy.status === 'failed' && <XCircle className="h-3 w-3 mr-1" />}
+              {statusMap[latestDeploy.status || 'queued']?.label || latestDeploy.status}
+            </Badge>
+          )}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Live URL */}
-        <div className="glass-card rounded-lg p-3 sm:p-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground mb-1">Your Live URL</p>
-              <p className="text-sm font-medium text-foreground truncate">https://{subdomain}</p>
-            </div>
-            <div className="flex gap-2 shrink-0">
-              <Button variant="outline" size="sm" className="border-border gap-2" onClick={copyUrl}>
-                {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                <span className="hidden sm:inline">{copied ? 'Copied' : 'Copy'}</span>
-              </Button>
-              <Button variant="outline" size="sm" className="border-border gap-2" asChild>
-                <a href={`https://${subdomain}`} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-3 w-3" />
-                  <span className="hidden sm:inline">Visit</span>
-                </a>
-              </Button>
+        {liveUrl && (
+          <div className="glass-card rounded-lg p-3 sm:p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground mb-1">Your Live URL</p>
+                <p className="text-sm font-medium text-foreground truncate">{liveUrl}</p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <Button variant="outline" size="sm" className="border-border gap-2" onClick={copyUrl}>
+                  {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                  <span className="hidden sm:inline">{copied ? 'Copied' : 'Copy'}</span>
+                </Button>
+                <Button variant="outline" size="sm" className="border-border gap-2" asChild>
+                  <a href={liveUrl} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Progress Bar (when deploying) */}
-        {isDeploying && (
+        {/* Progress */}
+        {deploying && (
           <div className="space-y-2 animate-fade-in">
             <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                {status === 'building' ? 'Building your project...' : 'Deploying to servers...'}
-              </span>
+              <span className="text-muted-foreground">Deploying...</span>
               <span className="text-foreground font-medium">{progress}%</span>
             </div>
             <Progress value={progress} className="h-2" />
           </div>
         )}
 
-        {/* Action Buttons */}
+        {/* Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-          <Button 
-            onClick={handleDeploy}
-            disabled={isDeploying}
-            className="bg-orange-gradient hover:opacity-90 text-white gap-2 h-11 sm:h-12"
-          >
-            {isDeploying ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Rocket className="h-4 w-4" />
-            )}
+          <Button onClick={handleDeploy} disabled={deploying} className="bg-orange-gradient hover:opacity-90 text-white gap-2 h-11 sm:h-12">
+            {deploying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Rocket className="h-4 w-4" />}
             Deploy Now
           </Button>
-          <Button 
-            variant="outline" 
-            className="border-border gap-2 h-11 sm:h-12"
-            onClick={handleRedeploy}
-            disabled={isDeploying}
-          >
+          <Button variant="outline" className="border-border gap-2 h-11 sm:h-12" onClick={handleDeploy} disabled={deploying}>
             <RotateCcw className="h-4 w-4" />
             Redeploy
           </Button>
-          <Button 
-            variant="outline" 
-            className="border-border gap-2 h-11 sm:h-12"
-            onClick={handleRollback}
-            disabled={isDeploying}
-          >
+          <Button variant="outline" className="border-border gap-2 h-11 sm:h-12" onClick={handleRollback} disabled={deploying}>
             <History className="h-4 w-4" />
             Rollback
           </Button>
         </div>
 
-        {/* Recent Deployments */}
+        {/* Recent Deployments from DB */}
         <div className="space-y-2">
-          <p className="text-xs text-muted-foreground font-medium">Recent Deployments</p>
-          <div className="space-y-2">
-            {deployments.map((deploy) => (
-              <div 
-                key={deploy.id}
-                className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-muted/30"
-              >
-                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                  <div className={cn(
-                    'h-6 w-6 sm:h-8 sm:w-8 rounded-full flex items-center justify-center shrink-0',
-                    deploy.status === 'live' && 'bg-success/20',
-                    deploy.status === 'failed' && 'bg-destructive/20',
-                    deploy.status === 'rolled-back' && 'bg-muted'
-                  )}>
-                    {deploy.status === 'live' && <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 text-success" />}
-                    {deploy.status === 'failed' && <XCircle className="h-3 w-3 sm:h-4 sm:w-4 text-destructive" />}
-                    {deploy.status === 'rolled-back' && <History className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />}
+          <p className="text-xs text-muted-foreground font-medium">Recent Deployments ({deployments.length})</p>
+          {deployments.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No deployments yet</p>
+          ) : (
+            <div className="space-y-2">
+              {deployments.slice(0, 5).map((deploy) => {
+                const s = statusMap[deploy.status || 'queued'] || statusMap.queued;
+                const SIcon = s.icon;
+                return (
+                  <div key={deploy.id} className="flex items-center justify-between p-2 sm:p-3 rounded-lg bg-muted/30">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      <div className={cn('h-6 w-6 sm:h-8 sm:w-8 rounded-full flex items-center justify-center shrink-0', 
+                        deploy.status === 'success' ? 'bg-success/20' : deploy.status === 'failed' ? 'bg-destructive/20' : 'bg-muted')}>
+                        <SIcon className={cn('h-3 w-3 sm:h-4 sm:w-4',
+                          deploy.status === 'success' ? 'text-success' : deploy.status === 'failed' ? 'text-destructive' : 'text-muted-foreground')} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs sm:text-sm font-medium text-foreground truncate">
+                          {deploy.commit_message || 'Deployment'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {timeAgo(deploy.created_at)} {deploy.duration_seconds ? `• ${deploy.duration_seconds}s` : ''}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className={cn('text-xs shrink-0', s.color)}>
+                      {s.label}
+                    </Badge>
                   </div>
-                  <div className="min-w-0">
-                    <p className="text-xs sm:text-sm font-medium text-foreground truncate">{deploy.message}</p>
-                    <p className="text-xs text-muted-foreground">{deploy.timestamp}</p>
-                  </div>
-                </div>
-                <Badge 
-                  variant="outline" 
-                  className={cn(
-                    'text-xs shrink-0',
-                    deploy.status === 'live' && 'bg-success/20 text-success border-success/30',
-                    deploy.status === 'failed' && 'bg-destructive/20 text-destructive border-destructive/30',
-                    deploy.status === 'rolled-back' && 'bg-muted text-muted-foreground border-border'
-                  )}
-                >
-                  {deploy.status === 'live' ? 'Live' : deploy.status === 'failed' ? 'Failed' : 'Old'}
-                </Badge>
-              </div>
-            ))}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

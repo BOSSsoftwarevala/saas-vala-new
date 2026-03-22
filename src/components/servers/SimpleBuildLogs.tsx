@@ -1,52 +1,84 @@
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { 
-  FileText, 
-  CheckCircle2, 
-  XCircle, 
-  RefreshCw,
-  Clock,
-  AlertCircle
-} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { FileText, CheckCircle2, XCircle, RefreshCw, Clock, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LogEntry {
   id: string;
-  step: string;
-  status: 'done' | 'failed' | 'running';
-  message?: string;
-  time: string;
+  deployment_id: string | null;
+  message: string;
+  log_level: string | null;
+  timestamp: string | null;
+}
+
+interface DeploymentSummary {
+  id: string;
+  status: string | null;
+  duration_seconds: number | null;
+  created_at: string | null;
+  commit_message: string | null;
 }
 
 export function SimpleBuildLogs() {
-  const [logs, setLogs] = useState<LogEntry[]>([
-    { id: 'l1', step: 'Pulling code from GitHub', status: 'done', time: '2s' },
-    { id: 'l2', step: 'Installing packages', status: 'done', time: '15s' },
-    { id: 'l3', step: 'Building your project', status: 'done', time: '28s' },
-    { id: 'l4', step: 'Deploying to servers', status: 'done', time: '5s' },
-    { id: 'l5', step: 'Setting up SSL', status: 'done', time: '3s' },
-    { id: 'l6', step: 'Project is now live!', status: 'done', time: '0s' },
-  ]);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [latestDeploy, setLatestDeploy] = useState<DeploymentSummary | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const [lastBuild, setLastBuild] = useState({
-    status: 'success' as 'success' | 'failed',
-    time: '2 hours ago',
-    duration: '53s',
-  });
+  const fetchLogs = async () => {
+    setLoading(true);
 
-  const handleRetry = () => {
-    toast.info('Retrying build...', { description: 'Starting from scratch.' });
+    // Get latest deployment
+    const { data: deploys } = await supabase
+      .from('deployments')
+      .select('id, status, duration_seconds, created_at, commit_message')
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    const latest = deploys?.[0] || null;
+    setLatestDeploy(latest);
+
+    if (latest) {
+      const { data: logData } = await supabase
+        .from('deployment_logs')
+        .select('*')
+        .eq('deployment_id', latest.id)
+        .order('timestamp', { ascending: true });
+
+      setLogs(logData || []);
+    } else {
+      setLogs([]);
+    }
+    setLoading(false);
   };
 
-  const statusIcon = {
-    done: <CheckCircle2 className="h-4 w-4 text-success" />,
-    failed: <XCircle className="h-4 w-4 text-destructive" />,
-    running: <RefreshCw className="h-4 w-4 text-warning animate-spin" />,
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const timeAgo = (dateStr: string | null) => {
+    if (!dateStr) return 'N/A';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    return `${Math.floor(hours / 24)}d ago`;
   };
+
+  const levelIcon = (level: string | null) => {
+    switch (level) {
+      case 'error': return <XCircle className="h-4 w-4 text-destructive" />;
+      case 'warn': return <Clock className="h-4 w-4 text-warning" />;
+      default: return <CheckCircle2 className="h-4 w-4 text-success" />;
+    }
+  };
+
+  const isSuccess = latestDeploy?.status === 'success';
+  const isFailed = latestDeploy?.status === 'failed';
 
   return (
     <Card className="glass-card">
@@ -59,90 +91,84 @@ export function SimpleBuildLogs() {
             <div>
               <CardTitle className="text-base sm:text-lg">Build Logs</CardTitle>
               <CardDescription className="text-xs sm:text-sm">
-                Read-only • Plain language updates
+                Live from database • Real deployment logs
               </CardDescription>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge 
-              variant="outline" 
-              className={cn(
-                lastBuild.status === 'success' 
-                  ? 'bg-success/20 text-success border-success/30' 
-                  : 'bg-destructive/20 text-destructive border-destructive/30'
-              )}
-            >
-              {lastBuild.status === 'success' ? (
-                <><CheckCircle2 className="h-3 w-3 mr-1" /> Success</>
-              ) : (
-                <><XCircle className="h-3 w-3 mr-1" /> Failed</>
-              )}
-            </Badge>
+            <Button variant="ghost" size="sm" onClick={fetchLogs} disabled={loading}>
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+            </Button>
+            {latestDeploy && (
+              <Badge variant="outline" className={cn(
+                isSuccess ? 'bg-success/20 text-success border-success/30' :
+                isFailed ? 'bg-destructive/20 text-destructive border-destructive/30' :
+                'bg-warning/20 text-warning border-warning/30'
+              )}>
+                {isSuccess ? <><CheckCircle2 className="h-3 w-3 mr-1" /> Success</> :
+                 isFailed ? <><XCircle className="h-3 w-3 mr-1" /> Failed</> :
+                 <><Clock className="h-3 w-3 mr-1" /> {latestDeploy.status}</>}
+              </Badge>
+            )}
           </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Last Build Info */}
-        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Clock className="h-4 w-4" />
-            <span>{lastBuild.time}</span>
+        {latestDeploy && (
+          <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <Clock className="h-4 w-4" />
+              <span>{timeAgo(latestDeploy.created_at)}</span>
+            </div>
+            {latestDeploy.duration_seconds && (
+              <div className="flex items-center gap-1">
+                <span>Duration:</span>
+                <span className="font-medium text-foreground">{latestDeploy.duration_seconds}s</span>
+              </div>
+            )}
+            {latestDeploy.commit_message && (
+              <p className="text-xs truncate max-w-[200px]">{latestDeploy.commit_message}</p>
+            )}
           </div>
-          <div className="flex items-center gap-1">
-            <span>Duration:</span>
-            <span className="font-medium text-foreground">{lastBuild.duration}</span>
-          </div>
-        </div>
+        )}
 
         {/* Build Steps */}
         <ScrollArea className="h-[300px] sm:h-[350px]">
           <div className="space-y-2 pr-4">
-            {logs.map((log, index) => (
-              <div 
-                key={log.id}
-                className={cn(
-                  'flex items-start gap-3 p-3 rounded-lg',
-                  log.status === 'failed' ? 'bg-destructive/10' : 'bg-muted/30'
-                )}
-              >
-                <div className="shrink-0 mt-0.5">
-                  {statusIcon[log.status]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={cn(
-                    'text-sm font-medium',
-                    log.status === 'failed' ? 'text-destructive' : 'text-foreground'
-                  )}>
-                    {log.step}
-                  </p>
-                  {log.message && (
-                    <p className="text-xs text-muted-foreground mt-1">{log.message}</p>
-                  )}
-                </div>
-                <span className="text-xs text-muted-foreground shrink-0">
-                  {log.time}
-                </span>
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
-            ))}
+            ) : logs.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">No build logs yet</p>
+                <p className="text-xs">Deploy a project to see logs here</p>
+              </div>
+            ) : (
+              logs.map((log) => (
+                <div key={log.id} className={cn(
+                  'flex items-start gap-3 p-3 rounded-lg',
+                  log.log_level === 'error' ? 'bg-destructive/10' : 'bg-muted/30'
+                )}>
+                  <div className="shrink-0 mt-0.5">{levelIcon(log.log_level)}</div>
+                  <div className="flex-1 min-w-0">
+                    <p className={cn(
+                      'text-sm font-medium',
+                      log.log_level === 'error' ? 'text-destructive' : 'text-foreground'
+                    )}>
+                      {log.message}
+                    </p>
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {log.timestamp ? new Date(log.timestamp).toLocaleTimeString() : ''}
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         </ScrollArea>
-
-        {/* Retry Button (only show if failed) */}
-        {lastBuild.status === 'failed' && (
-          <div className="flex flex-col items-center gap-3 pt-2">
-            <div className="flex items-center gap-2 text-sm text-destructive">
-              <AlertCircle className="h-4 w-4" />
-              <span>Build failed. Click retry to try again.</span>
-            </div>
-            <Button 
-              onClick={handleRetry}
-              className="bg-orange-gradient hover:opacity-90 text-white gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              Retry Build
-            </Button>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
