@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { marketplaceApi } from '@/lib/api';
 import { supabase } from '@/integrations/supabase/client';
 
 export interface MarketplaceProduct {
@@ -50,7 +51,6 @@ const defaultFeatures = [
 
 const defaultTechStack = ['React', 'Node.js', 'PostgreSQL'];
 
-// Category row mapping
 export const CATEGORY_ROW_MAP: Record<string, string[]> = {
   upcoming: ['upcoming', 'coming_soon', 'pipeline'],
   ondemand: ['on_demand', 'on demand', 'ondemand', 'saas', 'cloud'],
@@ -66,21 +66,14 @@ function formatProductName(name: string): string {
 function getProductPriorityScore(product: MarketplaceProduct): number {
   const repoUrl = (product.gitRepoUrl || '').toLowerCase();
   const demoUrl = (product.demoUrl || '').toLowerCase();
-
   const hasLiveDemo = Boolean(demoUrl && demoUrl.startsWith('http') && !demoUrl.includes('github.com'));
   const hasRealRepo = repoUrl.includes('github.com/saasvala/') || repoUrl.includes('github.com/softwarevala/');
   const hasAnyRepo = Boolean(repoUrl);
   const isLive = product.status === 'live' || product.status === 'bestseller';
   const isAvailable = product.isAvailable !== false;
-
   return (
-    (hasLiveDemo ? 500 : 0) +
-    (hasRealRepo ? 300 : 0) +
-    (!hasRealRepo && hasAnyRepo ? 120 : 0) +
-    (isLive ? 80 : 0) +
-    (isAvailable ? 40 : 0) +
-    (product.featured ? 15 : 0) +
-    (product.trending ? 10 : 0)
+    (hasLiveDemo ? 500 : 0) + (hasRealRepo ? 300 : 0) + (!hasRealRepo && hasAnyRepo ? 120 : 0) +
+    (isLive ? 80 : 0) + (isAvailable ? 40 : 0) + (product.featured ? 15 : 0) + (product.trending ? 10 : 0)
   );
 }
 
@@ -93,13 +86,9 @@ function prioritizeProducts(products: MarketplaceProduct[]): MarketplaceProduct[
 
 export function mapDbProduct(product: any, index: number): MarketplaceProduct {
   const features = Array.isArray(product.features) && product.features.length > 0
-    ? product.features.slice(0, 4).map((f: any) =>
-        typeof f === 'string' ? { icon: 'CheckCircle2', text: f } : f
-      )
+    ? product.features.slice(0, 4).map((f: any) => typeof f === 'string' ? { icon: 'CheckCircle2', text: f } : f)
     : defaultFeatures;
-
   const isAvailable = product.status === 'active' && product.deploy_status !== 'failed';
-
   return {
     id: product.id,
     title: formatProductName(product.name || product.slug || 'Software Product'),
@@ -107,24 +96,15 @@ export function mapDbProduct(product: any, index: number): MarketplaceProduct {
     image: product.thumbnail_url || stockImages[index % stockImages.length],
     status: product.status === 'draft' ? 'draft' : product.trending ? 'bestseller' : 'live',
     price: Number(product.price) || 5,
-    features,
-    techStack: defaultTechStack,
+    features, techStack: defaultTechStack,
     category: product.business_type || 'Software',
     businessType: product.business_type || '',
-    gitRepoUrl: product.git_repo_url,
-    apkUrl: product.apk_url || undefined,
-    demoUrl: product.demo_url || undefined,
-    demoLogin: product.demo_login || undefined,
-    demoPassword: product.demo_password || undefined,
-    demoEnabled: Boolean(product.demo_enabled),
-    featured: Boolean(product.featured),
-    trending: Boolean(product.trending),
-    isAvailable,
-    discount_percent: Number(product.discount_percent) || 0,
-    rating: Number(product.rating) || 4.5,
-    tags: product.tags || [],
-    apk_enabled: product.apk_enabled !== false,
-    license_enabled: product.license_enabled !== false,
+    gitRepoUrl: product.git_repo_url, apkUrl: product.apk_url || undefined,
+    demoUrl: product.demo_url || undefined, demoLogin: product.demo_login || undefined,
+    demoPassword: product.demo_password || undefined, demoEnabled: Boolean(product.demo_enabled),
+    featured: Boolean(product.featured), trending: Boolean(product.trending), isAvailable,
+    discount_percent: Number(product.discount_percent) || 0, rating: Number(product.rating) || 4.5,
+    tags: product.tags || [], apk_enabled: product.apk_enabled !== false, license_enabled: product.license_enabled !== false,
   };
 }
 
@@ -135,27 +115,19 @@ export function useMarketplaceProducts() {
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
-  const { data, error } = await supabase
-        .from('products')
-        .select('id, name, slug, description, short_description, price, status, features, thumbnail_url, git_repo_url, marketplace_visible, apk_url, demo_url, demo_login, demo_password, demo_enabled, featured, trending, business_type, deploy_status, discount_percent, rating, tags, apk_enabled, license_enabled')
-        .eq('marketplace_visible', true)
-        .order('created_at', { ascending: false })
-        .limit(500);
-
-      if (error) {
-        console.error('Failed to fetch marketplace products:', error);
-        setProducts([]);
-      } else {
-        const mapped = (data || []).map((p, i) => mapDbProduct(p, i));
+      try {
+        const res = await marketplaceApi.products();
+        const mapped = (res.data || []).map((p: any, i: number) => mapDbProduct(p, i));
         setProducts(prioritizeProducts(mapped));
+      } catch (e) {
+        console.error('Failed to fetch marketplace products:', e);
+        setProducts([]);
       }
       setLoading(false);
     };
-
     fetchProducts();
   }, []);
 
-  // Split into category rows for the "catalog" section
   const dbRow1 = products.slice(0, 30);
   const remaining = products.slice(30);
   const allRows = [dbRow1];
@@ -165,7 +137,6 @@ export function useMarketplaceProducts() {
     }
   }
 
-  // Category-specific row fetchers
   const getByCategory = (cats: string[]) =>
     prioritizeProducts(
       products.filter(p => {
@@ -175,16 +146,10 @@ export function useMarketplaceProducts() {
       })
     );
 
-  return {
-    products,
-    allRows: allRows.filter(r => r.length > 0),
-    loading,
-    totalCount: products.length,
-    getByCategory,
-  };
+  return { products, allRows: allRows.filter(r => r.length > 0), loading, totalCount: products.length, getByCategory };
 }
 
-// Separate lightweight hook that fetches by category from DB
+// Lightweight hook for category-specific fetching (still uses SDK for performance)
 export function useProductsByCategory(categories: string[]) {
   const [products, setProducts] = useState<MarketplaceProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -192,19 +157,11 @@ export function useProductsByCategory(categories: string[]) {
   useEffect(() => {
     const fetchProducts = async () => {
       setLoading(true);
-      // Fetch all marketplace visible products and filter client-side by category
-      const { data, error } = await supabase
-        .from('products')
+      const { data, error } = await supabase.from('products')
         .select('id, name, slug, description, short_description, price, status, features, thumbnail_url, git_repo_url, marketplace_visible, apk_url, demo_url, demo_login, demo_password, demo_enabled, featured, trending, business_type, deploy_status, discount_percent, rating, tags, apk_enabled, license_enabled')
-        .eq('marketplace_visible', true)
-        .order('created_at', { ascending: false })
-        .limit(500);
-
-      if (error) {
-        setProducts([]);
-      } else {
+        .eq('marketplace_visible', true).order('created_at', { ascending: false }).limit(500);
+      if (error) { setProducts([]); } else {
         const mapped = (data || []).map((p, i) => mapDbProduct(p, i));
-        // Filter by category keywords OR return all if no match
         const filtered = prioritizeProducts(
           mapped.filter(p => {
             const bt = (p.businessType || '').toLowerCase();
@@ -216,7 +173,6 @@ export function useProductsByCategory(categories: string[]) {
       }
       setLoading(false);
     };
-
     fetchProducts();
   }, [categories.join(',')]);
 
