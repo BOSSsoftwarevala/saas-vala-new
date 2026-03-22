@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { apiKeysApi } from '@/lib/api';
 
 export interface AiApiKey {
   id: string;
@@ -22,36 +22,22 @@ export function useAiApiKeys() {
   const fetchApiKeys = async () => {
     setLoading(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) {
-        setLoading(false);
-        return;
-      }
-
-      const { data, error, count } = await supabase
-        .from('ai_usage')
-        .select('*', { count: 'exact' })
-        .eq('user_id', userData.user.id)
-        .order('created_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching AI usage:', error);
-      } else {
-        // Transform ai_usage data into API key format for display
-        const keys: AiApiKey[] = (data || []).map((usage) => ({
-          id: usage.id,
-          user_id: usage.user_id,
-          name: usage.endpoint || 'API Key',
-          api_key: `sk-vala-${usage.id.slice(0, 8)}...${usage.id.slice(-4)}`,
-          enabled: true,
-          usage_limit: 10000,
-          current_usage: (usage.tokens_input || 0) + (usage.tokens_output || 0),
-          last_used_at: usage.created_at,
-          created_at: usage.created_at || new Date().toISOString(),
-        }));
-        setApiKeys(keys);
-        setTotal(count || 0);
-      }
+      const res = await apiKeysApi.list();
+      const keys: AiApiKey[] = (res.data || []).map((usage: any) => ({
+        id: usage.id,
+        user_id: usage.user_id,
+        name: usage.endpoint || 'API Key',
+        api_key: `sk-vala-${usage.id.slice(0, 8)}...${usage.id.slice(-4)}`,
+        enabled: true,
+        usage_limit: 10000,
+        current_usage: (usage.tokens_input || 0) + (usage.tokens_output || 0),
+        last_used_at: usage.created_at,
+        created_at: usage.created_at || new Date().toISOString(),
+      }));
+      setApiKeys(keys);
+      setTotal(keys.length);
+    } catch (e) {
+      console.error('Error fetching AI usage:', e);
     } finally {
       setLoading(false);
     }
@@ -61,25 +47,13 @@ export function useAiApiKeys() {
     const totalKeys = apiKeys.length;
     const activeKeys = apiKeys.filter(k => k.enabled).length;
     const totalRequests = apiKeys.reduce((sum, k) => sum + k.current_usage, 0);
-    const totalCost = totalRequests * 0.00001; // Approximate cost
-
-    return {
-      totalKeys,
-      activeKeys,
-      totalRequests,
-      totalCost,
-    };
+    const totalCost = totalRequests * 0.00001;
+    return { totalKeys, activeKeys, totalRequests, totalCost };
   };
 
   useEffect(() => {
     fetchApiKeys();
   }, []);
 
-  return {
-    apiKeys,
-    loading,
-    total,
-    fetchApiKeys,
-    getUsageStats,
-  };
+  return { apiKeys, loading, total, fetchApiKeys, getUsageStats };
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { walletApi } from '@/lib/api';
 
 export interface Wallet {
   id: string;
@@ -36,187 +36,84 @@ export function useWallet() {
 
   const fetchWallet = async () => {
     setLoading(true);
-    const { data: userData } = await supabase.auth.getUser();
-    
-    if (!userData.user) {
-      setLoading(false);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from('wallets')
-      .select('*')
-      .eq('user_id', userData.user.id)
-      .maybeSingle();
-
-    if (error) {
-      console.error(error);
-    } else {
-      setWallet(data);
+    try {
+      const res = await walletApi.get();
+      setWallet(res.data);
+    } catch (e) {
+      console.error(e);
     }
     setLoading(false);
   };
 
   const fetchAllWallets = async () => {
-    const { data, error } = await supabase
-      .from('wallets')
-      .select('*')
-      .order('balance', { ascending: false });
-
-    if (error) {
-      console.error(error);
-    } else {
-      setAllWallets(data || []);
+    try {
+      const res = await walletApi.all();
+      setAllWallets(res.data || []);
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const fetchTransactions = async (page = 1, limit = 25) => {
     if (!wallet) return;
-    
-    const { data, error, count } = await supabase
-      .from('transactions')
-      .select('*', { count: 'exact' })
-      .eq('wallet_id', wallet.id)
-      .order('created_at', { ascending: false })
-      .range((page - 1) * limit, page * limit - 1);
-
-    if (error) {
-      console.error(error);
-    } else {
-      setTransactions((data || []) as Transaction[]);
-      setTotal(count || 0);
+    try {
+      const res = await walletApi.transactions({ page, limit });
+      setTransactions((res.data || []) as Transaction[]);
+      setTotal(res.total || 0);
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const fetchLicenseStats = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
+    // License stats still fetched via keys API
+    try {
+      const { keysApi } = await import('@/lib/api');
+      const res = await keysApi.list();
+      const keys = res.data || [];
+      const active = keys.filter((k: any) => k.status === 'active');
+      setActiveLicenses(active.length);
 
-    // Get active licenses count
-    const { count: activeCount } = await supabase
-      .from('license_keys')
-      .select('*', { count: 'exact', head: true })
-      .eq('created_by', userData.user.id)
-      .eq('status', 'active');
-
-    setActiveLicenses(activeCount || 0);
-
-    // Get expiring licenses (within 7 days)
-    const sevenDaysFromNow = new Date();
-    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
-
-    const { count: expiringCount } = await supabase
-      .from('license_keys')
-      .select('*', { count: 'exact', head: true })
-      .eq('created_by', userData.user.id)
-      .eq('status', 'active')
-      .not('expires_at', 'is', null)
-      .lt('expires_at', sevenDaysFromNow.toISOString());
-
-    setExpiringLicenses(expiringCount || 0);
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+      const expiring = active.filter((k: any) => k.expires_at && new Date(k.expires_at) < sevenDaysFromNow);
+      setExpiringLicenses(expiring.length);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const addCredit = async (walletId: string, amount: number, description: string, paymentMethod?: string) => {
-    const { data: userData } = await supabase.auth.getUser();
-    
-    // Get current balance
-    const { data: walletData } = await supabase
-      .from('wallets')
-      .select('balance')
-      .eq('id', walletId)
-      .single();
-
-    const newBalance = (walletData?.balance || 0) + amount;
-
-    // Create transaction with meta for payment method
-    const { error: txError } = await supabase
-      .from('transactions')
-      .insert({
-        wallet_id: walletId,
-        type: 'credit',
-        amount,
-        balance_after: newBalance,
-        status: 'completed',
-        description,
-        created_by: userData.user?.id,
-        meta: paymentMethod ? { payment_method: paymentMethod } : null
-      });
-
-    if (txError) {
+    try {
+      const res = await walletApi.add(amount, description, paymentMethod);
+      toast.success(`Added ₹${amount} credit`);
+      await fetchWallet();
+      await fetchAllWallets();
+      return res;
+    } catch (e: any) {
       toast.error('Failed to add credit');
-      throw txError;
+      throw e;
     }
-
-    // Update wallet balance
-    const { error: walletError } = await supabase
-      .from('wallets')
-      .update({ balance: newBalance })
-      .eq('id', walletId);
-
-    if (walletError) {
-      toast.error('Failed to update wallet');
-      throw walletError;
-    }
-
-    toast.success(`Added ₹${amount} credit`);
-    await fetchWallet();
-    await fetchAllWallets();
   };
 
   const deductBalance = async (walletId: string, amount: number, description: string, referenceId?: string, referenceType?: string) => {
-    const { data: userData } = await supabase.auth.getUser();
-    
-    // Get current balance
-    const { data: walletData } = await supabase
-      .from('wallets')
-      .select('balance')
-      .eq('id', walletId)
-      .single();
-
-    if ((walletData?.balance || 0) < amount) {
-      toast.error('Insufficient balance');
-      throw new Error('Insufficient balance');
+    try {
+      const res = await walletApi.withdraw(amount, description, referenceId, referenceType);
+      toast.success(`Deducted ₹${amount}`);
+      await fetchWallet();
+      await fetchAllWallets();
+      return res;
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to deduct balance');
+      throw e;
     }
-
-    const newBalance = (walletData?.balance || 0) - amount;
-
-    // Create transaction
-    const { error: txError } = await supabase
-      .from('transactions')
-      .insert({
-        wallet_id: walletId,
-        type: 'debit',
-        amount,
-        balance_after: newBalance,
-        status: 'completed',
-        description,
-        reference_id: referenceId,
-        reference_type: referenceType,
-        created_by: userData.user?.id
-      });
-
-    if (txError) {
-      toast.error('Failed to deduct balance');
-      throw txError;
-    }
-
-    // Update wallet balance
-    await supabase
-      .from('wallets')
-      .update({ balance: newBalance })
-      .eq('id', walletId);
-
-    toast.success(`Deducted ₹${amount}`);
-    await fetchWallet();
-    await fetchAllWallets();
   };
 
   const getLastPaymentStatus = (): { status: 'success' | 'failed' | 'pending' | null; amount: number } => {
     const lastCreditTx = transactions.find(t => t.type === 'credit');
     if (!lastCreditTx) return { status: null, amount: 0 };
-    
     return {
-      status: lastCreditTx.status === 'completed' ? 'success' : 
+      status: lastCreditTx.status === 'completed' ? 'success' :
               lastCreditTx.status === 'failed' ? 'failed' : 'pending',
       amount: lastCreditTx.amount
     };
