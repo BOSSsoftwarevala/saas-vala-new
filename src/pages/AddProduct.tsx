@@ -20,7 +20,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useProducts } from '@/hooks/useProducts';
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── Types ─────────────���─────────────────────────────────────────────────────
 
 interface FormData {
   // A - Basic Info
@@ -141,7 +141,10 @@ export default function AddProduct() {
     if (!form.seo_title) set('seo_title', v);
   };
 
-  // ─── APK Upload (chunked, any size) ─────────────────────────────────────────
+  // ─── APK Upload (safe + real working) ────────────────────────────────────────
+  // Note: Supabase Storage upload() does NOT support true multipart/append uploads.
+  // The previous "chunked upload simulation" resulted in only the first chunk being uploaded.
+  // This version uses a single real upload (works 100%) and keeps progress UI behavior stable.
 
   const handleApkSelect = useCallback(async (file: File) => {
     if (!file.name.endsWith('.apk')) {
@@ -159,10 +162,10 @@ export default function AddProduct() {
     }
     if (violations.length) setBrandViolations(violations);
 
-    await uploadApkChunked(file);
-  }, [form.name]);
+    await uploadApk(file);
+  }, []);
 
-  const uploadApkChunked = async (file: File) => {
+  const uploadApk = async (file: File) => {
     setApkUploading(true);
     setApkProgress(0);
 
@@ -172,35 +175,16 @@ export default function AddProduct() {
 
       const safeName = file.name.replace(/[^a-z0-9.\-_]/gi, '_');
       const path = `products/${user.id}/${Date.now()}_${safeName}`;
-      const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB chunks
-      const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
 
-      // For files under 50MB — direct upload with progress simulation
-      if (file.size <= 50 * 1024 * 1024) {
-        const { error } = await supabase.storage
-          .from('apks')
-          .upload(path, file, { upsert: true });
+      // Real upload (single object). Reliable for any size supported by your Supabase plan/gateway.
+      const { error } = await supabase.storage
+        .from('apks')
+        .upload(path, file, { upsert: true });
 
-        if (error) throw error;
-        setApkProgress(100);
-      } else {
-        // Chunked upload simulation (Supabase doesn't support multipart natively,
-        // we upload in parts and track progress)
-        for (let i = 0; i < totalChunks; i++) {
-          const start = i * CHUNK_SIZE;
-          const end = Math.min(start + CHUNK_SIZE, file.size);
-          const chunk = file.slice(start, end);
+      if (error) throw error;
 
-          if (i === 0) {
-            const { error } = await supabase.storage
-              .from('apks')
-              .upload(path, chunk, { upsert: true });
-            if (error) throw error;
-          }
-
-          setApkProgress(Math.round(((i + 1) / totalChunks) * 100));
-        }
-      }
+      // Progress: Supabase JS doesn't expose upload progress; set to 100% on success.
+      setApkProgress(100);
 
       // Generate hash (SHA-256 of file)
       const buffer = await file.arrayBuffer();
@@ -223,6 +207,7 @@ export default function AddProduct() {
       toast.success('APK uploaded successfully');
     } catch (err: unknown) {
       toast.error(`Upload failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setApkProgress(0);
     } finally {
       setApkUploading(false);
     }
@@ -249,7 +234,8 @@ export default function AddProduct() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not authenticated');
-      const path = `thumbnails/${user.id}/${Date.now()}_${file.name}`;
+      const safeName = file.name.replace(/[^a-z0-9.\-_]/gi, '_');
+      const path = `thumbnails/${user.id}/${Date.now()}_${safeName}`;
       const { error } = await supabase.storage.from('apks').upload(path, file, { upsert: true });
       if (error) throw error;
       const { data } = supabase.storage.from('apks').getPublicUrl(path);
@@ -271,7 +257,8 @@ export default function AddProduct() {
       if (!user) throw new Error('Not authenticated');
       const urls: string[] = [];
       for (const file of Array.from(files)) {
-        const path = `screenshots/${user.id}/${Date.now()}_${file.name}`;
+        const safeName = file.name.replace(/[^a-z0-9.\-_]/gi, '_');
+        const path = `screenshots/${user.id}/${Date.now()}_${safeName}`;
         const { error } = await supabase.storage.from('apks').upload(path, file, { upsert: true });
         if (error) throw error;
         const { data } = supabase.storage.from('apks').getPublicUrl(path);
@@ -279,8 +266,8 @@ export default function AddProduct() {
       }
       setScreenshots(prev => [...prev, ...urls]);
       toast.success(`${urls.length} screenshot(s) uploaded`);
-    } catch (err: unknown) {
-      toast.error(`Screenshot upload failed`);
+    } catch {
+      toast.error('Screenshot upload failed');
     } finally {
       setScreenshotUploading(false);
     }
@@ -327,9 +314,9 @@ Return ONLY valid JSON, no markdown.`;
       const text = data?.content || data?.message || '';
       let parsed: Record<string, unknown> = {};
       try {
-        // Extract JSON from response
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) parsed = JSON.parse(jsonMatch[0]);
+        else throw new Error('AI returned no JSON');
       } catch {
         throw new Error('AI returned invalid JSON');
       }
@@ -493,7 +480,7 @@ Return ONLY valid JSON, no markdown.`;
       {items.map((item, i) => (
         <Badge key={i} variant="secondary" className={cn('gap-1 pr-1 py-1', color === 'primary' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground')}>
           {item}
-          <button onClick={() => onRemove(i)} className="hover:text-destructive ml-1"><X className="h-3 w-3" /></button>
+          <button type="button" onClick={() => onRemove(i)} className="hover:text-destructive ml-1"><X className="h-3 w-3" /></button>
         </Badge>
       ))}
     </div>
@@ -607,7 +594,7 @@ Return ONLY valid JSON, no markdown.`;
                   <Label>Auto Slug (editable)</Label>
                   <div className="flex gap-2">
                     <Input value={form.slug} onChange={e => set('slug', e.target.value)} placeholder="school-management-pro" className="bg-muted/50 border-border font-mono text-sm" />
-                    <Button variant="outline" size="sm" className="shrink-0" onClick={() => set('slug', autoSlug(form.name))}>Auto</Button>
+                    <Button variant="outline" size="sm" className="shrink-0" type="button" onClick={() => set('slug', autoSlug(form.name))}>Auto</Button>
                   </div>
                 </div>
               </div>
@@ -707,6 +694,7 @@ Return ONLY valid JSON, no markdown.`;
                 ].map(({ value, label, icon: Icon, desc }) => (
                   <button
                     key={value}
+                    type="button"
                     onClick={() => set('source_method', value)}
                     className={cn(
                       'p-4 rounded-xl border-2 text-left transition-all',
@@ -729,12 +717,18 @@ Return ONLY valid JSON, no markdown.`;
                     <Upload className="h-4 w-4 text-primary" /> APK File Upload
                   </h4>
 
-                  <input ref={apkRef} type="file" accept=".apk" className="hidden" onChange={e => e.target.files?.[0] && handleApkSelect(e.target.files[0])} />
+                  <input
+                    ref={apkRef}
+                    type="file"
+                    accept=".apk"
+                    className="hidden"
+                    onChange={e => e.target.files?.[0] && handleApkSelect(e.target.files[0])}
+                  />
 
                   <div
                     onClick={() => !apkUploading && apkRef.current?.click()}
                     onDragOver={e => e.preventDefault()}
-                    onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleApkSelect(f); }}
+                    onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) void handleApkSelect(f); }}
                     className={cn(
                       'border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all',
                       apkUploaded ? 'border-success/50 bg-success/5' : 'border-border hover:border-primary/50 bg-muted/20',
@@ -752,10 +746,10 @@ Return ONLY valid JSON, no markdown.`;
                         <CheckCircle2 className="h-8 w-8 text-success mx-auto" />
                         <p className="font-medium text-success">{apkFile?.name || 'APK uploaded'}</p>
                         <p className="text-xs text-muted-foreground">
-                          Size: {form.apk_file_size ? (form.apk_file_size / 1024 / 1024).toFixed(2) + ' MB' : 'unknown'} | 
+                          Size: {form.apk_file_size ? (form.apk_file_size / 1024 / 1024).toFixed(2) + ' MB' : 'unknown'} |
                           Hash: {form.app_hash?.substring(0, 16)}...
                         </p>
-                        <Button size="sm" variant="outline" onClick={e => { e.stopPropagation(); apkRef.current?.click(); }}>
+                        <Button size="sm" variant="outline" type="button" onClick={e => { e.stopPropagation(); apkRef.current?.click(); }}>
                           Replace APK
                         </Button>
                       </div>
@@ -763,7 +757,7 @@ Return ONLY valid JSON, no markdown.`;
                       <div className="space-y-2">
                         <Upload className="h-8 w-8 text-muted-foreground mx-auto" />
                         <p className="font-medium text-foreground">Drag & drop .apk file here</p>
-                        <p className="text-sm text-muted-foreground">Or click to browse. No size limit. Chunk upload enabled.</p>
+                        <p className="text-sm text-muted-foreground">Or click to browse.</p>
                         <p className="text-xs text-muted-foreground">SHA-256 hash generated automatically.</p>
                       </div>
                     )}
@@ -825,7 +819,7 @@ Return ONLY valid JSON, no markdown.`;
                   {form.thumbnail_url && (
                     <div className="relative">
                       <img src={form.thumbnail_url} alt="Thumbnail" className="w-32 h-32 object-cover rounded-lg border border-border" />
-                      <button onClick={() => set('thumbnail_url', '')} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                      <button type="button" onClick={() => set('thumbnail_url', '')} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5">
                         <X className="h-3 w-3" />
                       </button>
                     </div>
@@ -845,7 +839,7 @@ Return ONLY valid JSON, no markdown.`;
                         </>
                       )}
                     </div>
-                    <Button variant="outline" className="gap-2 w-full border-primary/30 text-primary hover:bg-primary/10">
+                    <Button variant="outline" className="gap-2 w-full border-primary/30 text-primary hover:bg-primary/10" type="button">
                       <Sparkles className="h-4 w-4" />
                       AI Generate Thumbnail
                     </Button>
@@ -862,12 +856,13 @@ Return ONLY valid JSON, no markdown.`;
                   {screenshots.map((url, i) => (
                     <div key={i} className="relative">
                       <img src={url} alt={`Screenshot ${i + 1}`} className="w-24 h-40 object-cover rounded-lg border border-border" />
-                      <button onClick={() => setScreenshots(prev => prev.filter((_, j) => j !== i))} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5">
+                      <button type="button" onClick={() => setScreenshots(prev => prev.filter((_, j) => j !== i))} className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-0.5">
                         <X className="h-3 w-3" />
                       </button>
                     </div>
                   ))}
                   <button
+                    type="button"
                     onClick={() => screenshotRef.current?.click()}
                     className="w-24 h-40 border-2 border-dashed border-border rounded-lg flex flex-col items-center justify-center gap-2 hover:border-primary/50 transition-colors cursor-pointer bg-muted/20"
                   >
@@ -901,8 +896,18 @@ Return ONLY valid JSON, no markdown.`;
               <div className="space-y-2">
                 <Label>Feature List</Label>
                 <div className="flex gap-2">
-                  <Input value={featureInput} onChange={e => setFeatureInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addFeature()} placeholder="Type feature and press Enter" className="bg-muted/50 border-border" />
-                  <Button variant="outline" size="sm" onClick={addFeature} className="shrink-0"><Plus className="h-4 w-4" /></Button>
+                  <Input
+                    value={featureInput}
+                    onChange={e => setFeatureInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key !== 'Enter') return;
+                      e.preventDefault();
+                      addFeature();
+                    }}
+                    placeholder="Type feature and press Enter"
+                    className="bg-muted/50 border-border"
+                  />
+                  <Button variant="outline" size="sm" type="button" onClick={addFeature} className="shrink-0"><Plus className="h-4 w-4" /></Button>
                 </div>
                 <ChipList items={form.features} onRemove={i => set('features', form.features.filter((_, j) => j !== i))} />
               </div>
@@ -911,8 +916,18 @@ Return ONLY valid JSON, no markdown.`;
               <div className="space-y-2">
                 <Label>Tech Stack</Label>
                 <div className="flex gap-2">
-                  <Input value={techInput} onChange={e => setTechInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTech()} placeholder="e.g. React Native, Firebase" className="bg-muted/50 border-border" />
-                  <Button variant="outline" size="sm" onClick={addTech} className="shrink-0"><Plus className="h-4 w-4" /></Button>
+                  <Input
+                    value={techInput}
+                    onChange={e => setTechInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key !== 'Enter') return;
+                      e.preventDefault();
+                      addTech();
+                    }}
+                    placeholder="e.g. React Native, Firebase"
+                    className="bg-muted/50 border-border"
+                  />
+                  <Button variant="outline" size="sm" type="button" onClick={addTech} className="shrink-0"><Plus className="h-4 w-4" /></Button>
                 </div>
                 <ChipList items={form.tech_stack} onRemove={i => set('tech_stack', form.tech_stack.filter((_, j) => j !== i))} color="secondary" />
               </div>
@@ -921,8 +936,18 @@ Return ONLY valid JSON, no markdown.`;
               <div className="space-y-2">
                 <Label>Tags (#format)</Label>
                 <div className="flex gap-2">
-                  <Input value={tagInput} onChange={e => setTagInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addTag()} placeholder="#schoolmanagement #android #apk" className="bg-muted/50 border-border" />
-                  <Button variant="outline" size="sm" onClick={addTag} className="shrink-0"><Plus className="h-4 w-4" /></Button>
+                  <Input
+                    value={tagInput}
+                    onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key !== 'Enter') return;
+                      e.preventDefault();
+                      addTag();
+                    }}
+                    placeholder="#schoolmanagement #android #apk"
+                    className="bg-muted/50 border-border"
+                  />
+                  <Button variant="outline" size="sm" type="button" onClick={addTag} className="shrink-0"><Plus className="h-4 w-4" /></Button>
                 </div>
                 <ChipList items={form.tags} onRemove={i => set('tags', form.tags.filter((_, j) => j !== i))} />
               </div>
@@ -931,8 +956,18 @@ Return ONLY valid JSON, no markdown.`;
               <div className="space-y-2">
                 <Label>SEO Keywords</Label>
                 <div className="flex gap-2">
-                  <Input value={keywordInput} onChange={e => setKeywordInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addKeyword()} placeholder="Type keyword and press Enter" className="bg-muted/50 border-border" />
-                  <Button variant="outline" size="sm" onClick={addKeyword} className="shrink-0"><Plus className="h-4 w-4" /></Button>
+                  <Input
+                    value={keywordInput}
+                    onChange={e => setKeywordInput(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key !== 'Enter') return;
+                      e.preventDefault();
+                      addKeyword();
+                    }}
+                    placeholder="Type keyword and press Enter"
+                    className="bg-muted/50 border-border"
+                  />
+                  <Button variant="outline" size="sm" type="button" onClick={addKeyword} className="shrink-0"><Plus className="h-4 w-4" /></Button>
                 </div>
                 <ChipList items={form.keywords} onRemove={i => set('keywords', form.keywords.filter((_, j) => j !== i))} color="secondary" />
               </div>
@@ -1007,7 +1042,7 @@ Return ONLY valid JSON, no markdown.`;
                         <span className="font-medium text-success text-sm">Auto Generate After Purchase</span>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        License key is automatically generated on payment success. Stored in <code className="text-xs bg-muted px-1 rounded">apk_downloads</code> table. 
+                        License key is automatically generated on payment success. Stored in <code className="text-xs bg-muted px-1 rounded">apk_downloads</code> table.
                         Format: <code className="text-xs bg-muted px-1 rounded">TXN-XXXXXXXX-XXXX</code>
                       </p>
                     </div>
@@ -1148,7 +1183,7 @@ Return ONLY valid JSON, no markdown.`;
             )}
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="outline" onClick={() => navigate('/products')}>Cancel</Button>
+            <Button variant="outline" type="button" onClick={() => navigate('/products')}>Cancel</Button>
             <Button onClick={handleSave} disabled={saving} className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground">
               {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
               Save Product
