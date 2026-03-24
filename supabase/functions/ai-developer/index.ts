@@ -2736,7 +2736,7 @@ Format: [{"path": "src/App.tsx", "content": "actual code here"}, ...]`;
       }, null, 2),
       success: true
     };
-  } catch (error) {
+  } catch (error: any) {
     return { tool_call_id: '', content: JSON.stringify({ error: error.message }), success: false };
   }
 }
