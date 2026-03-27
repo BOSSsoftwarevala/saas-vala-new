@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 function slugify(name: string) {
@@ -697,18 +697,62 @@ Deno.serve(async (req) => {
 
               if (repoCheck.ok) {
                 verified++;
+                await repoCheck.json(); // consume body
+
                 // Upsert to build queue
                 if (!existingBuild) {
                   await admin.from("apk_build_queue").insert({
                     repo_name: product.name || slug,
                     repo_url: repoUrl,
                     slug,
-                    build_status: "pending",
+                    build_status: "building",
                     product_id: product.id,
                     target_industry: "general",
+                    build_started_at: new Date().toISOString(),
                   });
+                } else {
+                  await admin.from("apk_build_queue").update({
+                    build_status: "building",
+                    build_started_at: new Date().toISOString(),
+                    build_error: null,
+                  }).eq("id", existingBuild.id);
                 }
-                results.push({ id: product.id, slug, status: "queued", repo_verified: true });
+
+                // Actually trigger GitHub Actions build
+                try {
+                  const dispatchRes = await fetch(
+                    "https://api.github.com/repos/saasvala/apk-factory/actions/workflows/build-apk.yml/dispatches",
+                    {
+                      method: "POST",
+                      headers: {
+                        Authorization: `Bearer ${githubToken}`,
+                        "User-Agent": "SaaSVala-APK-Pipeline",
+                        "Content-Type": "application/json",
+                      },
+                      body: JSON.stringify({
+                        ref: "main",
+                        inputs: {
+                          repo_url: repoUrl,
+                          app_slug: slug,
+                          package_name: `com.saasvala.${slug.replace(/-/g, "_")}`,
+                          product_id: product.id || "",
+                          supabase_url: supabaseUrl,
+                        },
+                      }),
+                    }
+                  );
+
+                  if (dispatchRes.ok || dispatchRes.status === 204) {
+                    results.push({ id: product.id, slug, status: "building", repo_verified: true });
+                  } else {
+                    const errText = await dispatchRes.text();
+                    console.error(`[APK Pipeline] GitHub Actions dispatch failed for ${slug}: ${errText}`);
+                    results.push({ id: product.id, slug, status: "queued", reason: `dispatch failed: ${dispatchRes.status}` });
+                  }
+                } catch (dispatchErr: any) {
+                  console.error(`[APK Pipeline] Dispatch error for ${slug}:`, dispatchErr.message);
+                  results.push({ id: product.id, slug, status: "queued", reason: dispatchErr.message });
+                }
                 queued++;
               } else {
                 await repoCheck.text(); // consume body
