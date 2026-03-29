@@ -27,10 +27,18 @@ export function useLicenseKeys() {
     setLoading(true);
     try {
       const res = await keysApi.list();
-      setKeys((res.data || []) as LicenseKey[]);
+      const data = res?.data || res || [];
+      setKeys(Array.isArray(data) ? data as LicenseKey[] : []);
     } catch (e: any) {
-      toast.error('Failed to fetch license keys');
-      console.error(e);
+      console.error('Keys fetch error:', e);
+      // Fallback: try direct Supabase query
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data } = await supabase.from('license_keys').select('*').order('created_at', { ascending: false });
+        setKeys((data || []) as LicenseKey[]);
+      } catch {
+        toast.error('Failed to fetch license keys');
+      }
     }
     setLoading(false);
   };
@@ -50,12 +58,37 @@ export function useLicenseKeys() {
   const createKey = async (key: Partial<LicenseKey>) => {
     try {
       const res = await keysApi.generate(key);
-      toast.success('License key created: ' + res.data.license_key);
+      const created = res?.data || res;
+      toast.success('License key created: ' + (created?.license_key || 'OK'));
       await fetchKeys();
-      return res.data;
+      return created;
     } catch (e: any) {
-      toast.error('Failed to create license key');
-      throw e;
+      console.error('Key create error:', e);
+      // Fallback: direct insert
+      try {
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data: { user } } = await supabase.auth.getUser();
+        const licenseKey = key.license_key || generateKeyString();
+        const { data, error } = await supabase.from('license_keys').insert({
+          product_id: key.product_id || '',
+          license_key: licenseKey,
+          key_type: key.key_type || 'yearly',
+          status: 'active',
+          owner_email: key.owner_email,
+          owner_name: key.owner_name,
+          max_devices: key.max_devices || 1,
+          expires_at: key.expires_at,
+          notes: key.notes,
+          created_by: user?.id,
+        }).select().single();
+        if (error) throw error;
+        toast.success('License key created: ' + licenseKey);
+        await fetchKeys();
+        return data;
+      } catch (fallbackErr: any) {
+        toast.error('Failed to create license key: ' + (fallbackErr.message || ''));
+        throw fallbackErr;
+      }
     }
   };
 

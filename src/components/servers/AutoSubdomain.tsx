@@ -118,13 +118,13 @@ export function AutoSubdomain() {
             <div>
               <CardTitle className="text-base sm:text-lg">Auto Subdomain System</CardTitle>
               <CardDescription className="text-xs sm:text-sm">
-                Auto-create {'{repo}.saasvala.com'} via Vercel
+                Auto-create {'{repo}.saasvala.com'} via Cloudflare + Vercel
               </CardDescription>
             </div>
           </div>
           <Badge variant="outline" className="bg-success/20 text-success border-success/30 hidden sm:flex">
             <CheckCircle2 className="h-3 w-3 mr-1" />
-            Vercel Connected
+            Cloudflare DNS Active
           </Badge>
         </div>
       </CardHeader>
