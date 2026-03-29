@@ -246,6 +246,7 @@ export default function AiChat() {
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       const controller = new AbortController();
+      abortControllerRef.current = controller;
       const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 min timeout
 
       try {
