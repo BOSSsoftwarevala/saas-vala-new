@@ -578,18 +578,18 @@ const developerTools = [
       }
     }
   },
-  // ═══ HOSTINGER API TOOLS ═══
+  // ═══ SERVER SSH/API TOOLS ═══
   {
     type: "function",
     function: {
-      name: "hostinger_api",
-      description: "Manage Hostinger VPS servers via official Hostinger API. Can list VPS, get info, restart, stop, start, check metrics, manage firewall, backups, snapshots, and SSH keys. No VALA Agent needed — works directly with Hostinger's cloud API.",
+      name: "server_manage",
+      description: "Manage self-hosted VPS (DigitalOcean/Ubuntu) via VALA Agent or SSH. Actions: status, restart, deploy, logs, metrics, firewall, backups, SSL. Works with any VPS that has VALA Agent installed.",
       parameters: {
         type: "object",
         properties: {
-          action: { type: "string", enum: ["list_vps", "get_vps", "restart_vps", "stop_vps", "start_vps", "get_metrics", "list_backups", "create_backup", "list_snapshots", "list_firewall", "add_firewall_rule", "delete_firewall_rule", "list_ssh_keys", "get_templates"], description: "Hostinger API action to perform" },
-          vps_id: { type: "number", description: "VPS ID (numeric, from Hostinger panel URL e.g. /vps/123456/overview)" },
-          params: { type: "object", description: "Additional parameters for the action (e.g. firewall rule details, backup config)" }
+          action: { type: "string", enum: ["status", "restart_service", "deploy", "logs", "metrics", "list_firewall", "add_firewall_rule", "delete_firewall_rule", "backup", "ssl_status", "nginx_reload"], description: "Server management action" },
+          server_id: { type: "string", description: "Server UUID or IP address" },
+          params: { type: "object", description: "Additional parameters for the action" }
         },
         required: ["action"]
       }
@@ -1115,8 +1115,8 @@ async function executeDeployProject(args: any, supabase: any): Promise<ToolResul
             subdomain_setup: subdomainSetup,
             dns_record_needed: !subdomainSetup.configured ? null : {
               type: 'A', host: repoSlug, domain: 'saasvala.com',
-              value: server.ip_address || '72.61.236.249', ttl: 3600,
-              note: `Add A record: ${repoSlug} -> ${server.ip_address || '72.61.236.249'} at your DNS provider`
+              value: server.ip_address || '64.226.91.27', ttl: 3600,
+              note: `Add A record: ${repoSlug} -> ${server.ip_address || '64.226.91.27'} at your DNS provider`
             },
             agent_response: agentData.data || agentData,
             message: `✅ REAL deployment complete via VALA Agent | ${duration}s | Subdomain: ${subdomainSetup.configured ? '✅ ' + subdomain : '⚠️ manual setup needed'}`
@@ -3071,135 +3071,70 @@ async function executeHealthSnapshot(_args: any, supabase: any): Promise<ToolRes
   }, null, 2), success: true };
 }
 
-// ═══ HOSTINGER API EXECUTION ═══
-async function executeHostingerApi(args: any, supabase: any): Promise<ToolResult> {
-  const { action, vps_id, params = {} } = args;
-  console.log(`[TOOL] hostinger_api: action=${action}, vps_id=${vps_id}`);
+// ═══ SERVER MANAGE EXECUTION (Generic VPS — SSH/Agent) ═══
+async function executeServerManage(args: any, supabase: any): Promise<ToolResult> {
+  const { action, server_id, params = {} } = args;
+  console.log(`[TOOL] server_manage: action=${action}, server_id=${server_id}`);
 
-  const HOSTINGER_API_TOKEN = Deno.env.get('HOSTINGER_API_TOKEN');
-  if (!HOSTINGER_API_TOKEN) {
+  // Find server from DB
+  let server: any = null;
+  if (server_id) {
+    const isUuid = /^[0-9a-f]{8}-/i.test(server_id);
+    const { data } = isUuid
+      ? await supabase.from('servers').select('*').eq('id', server_id).maybeSingle()
+      : await supabase.from('servers').select('*').eq('ip_address', server_id).maybeSingle();
+    server = data;
+  }
+  if (!server) {
+    // Fallback: get first active server
+    const { data } = await supabase.from('servers').select('*').eq('status', 'active').limit(1).maybeSingle();
+    server = data;
+  }
+
+  if (!server) {
     return { tool_call_id: '', content: JSON.stringify({
-      success: false, error: 'HOSTINGER_API_TOKEN not configured. Go to hpanel.hostinger.com → Profile → API → Generate Token, then add it as a secret.',
-      setup_url: 'https://hpanel.hostinger.com/profile/api'
+      success: false, error: 'No server found. Add a server in Server Manager first.',
     }), success: false };
   }
 
-  const BASE = 'https://developers.hostinger.com';
-  const headers: Record<string, string> = {
-    'Authorization': `Bearer ${HOSTINGER_API_TOKEN}`,
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  };
+  // Use VALA Agent if available
+  const agentUrl = server.agent_url || (server.ip_address ? `http://${server.ip_address}:9876` : null);
+  if (!agentUrl) {
+    return { tool_call_id: '', content: JSON.stringify({
+      success: false, error: `Server ${server.name} has no agent URL or IP configured.`,
+      fix: 'Install VALA Agent on server: curl -sSL https://saasvala.com/vala-agent/install.sh | sudo bash'
+    }), success: false };
+  }
 
   try {
-    let endpoint = '';
-    let method = 'GET';
-    let body: string | undefined;
+    const response = await fetchWithTimeout(agentUrl + '/api/' + action, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(server.agent_token ? { 'Authorization': `Bearer ${server.agent_token}` } : {})
+      },
+      body: JSON.stringify({ action, ...params })
+    }, 15000);
 
-    switch (action) {
-      case 'list_vps':
-        endpoint = '/api/vps/v1/virtual-machines';
-        break;
-      case 'get_vps':
-        if (!vps_id) return { tool_call_id: '', content: JSON.stringify({ error: 'vps_id required' }), success: false };
-        endpoint = `/api/vps/v1/virtual-machines/${vps_id}`;
-        break;
-      case 'restart_vps':
-        if (!vps_id) return { tool_call_id: '', content: JSON.stringify({ error: 'vps_id required' }), success: false };
-        endpoint = `/api/vps/v1/virtual-machines/${vps_id}/restart`;
-        method = 'POST';
-        break;
-      case 'stop_vps':
-        if (!vps_id) return { tool_call_id: '', content: JSON.stringify({ error: 'vps_id required' }), success: false };
-        endpoint = `/api/vps/v1/virtual-machines/${vps_id}/stop`;
-        method = 'POST';
-        break;
-      case 'start_vps':
-        if (!vps_id) return { tool_call_id: '', content: JSON.stringify({ error: 'vps_id required' }), success: false };
-        endpoint = `/api/vps/v1/virtual-machines/${vps_id}/start`;
-        method = 'POST';
-        break;
-      case 'get_metrics':
-        if (!vps_id) return { tool_call_id: '', content: JSON.stringify({ error: 'vps_id required' }), success: false };
-        endpoint = `/api/vps/v1/virtual-machines/${vps_id}/metrics`;
-        break;
-      case 'list_backups':
-        if (!vps_id) return { tool_call_id: '', content: JSON.stringify({ error: 'vps_id required' }), success: false };
-        endpoint = `/api/vps/v1/virtual-machines/${vps_id}/backups`;
-        break;
-      case 'create_backup':
-        if (!vps_id) return { tool_call_id: '', content: JSON.stringify({ error: 'vps_id required' }), success: false };
-        endpoint = `/api/vps/v1/virtual-machines/${vps_id}/backups`;
-        method = 'POST';
-        break;
-      case 'list_snapshots':
-        if (!vps_id) return { tool_call_id: '', content: JSON.stringify({ error: 'vps_id required' }), success: false };
-        endpoint = `/api/vps/v1/virtual-machines/${vps_id}/snapshots`;
-        break;
-      case 'list_firewall':
-        if (!vps_id) return { tool_call_id: '', content: JSON.stringify({ error: 'vps_id required' }), success: false };
-        endpoint = `/api/vps/v1/virtual-machines/${vps_id}/firewall`;
-        break;
-      case 'add_firewall_rule':
-        if (!vps_id) return { tool_call_id: '', content: JSON.stringify({ error: 'vps_id required' }), success: false };
-        endpoint = `/api/vps/v1/virtual-machines/${vps_id}/firewall/rules`;
-        method = 'POST';
-        body = JSON.stringify(params);
-        break;
-      case 'delete_firewall_rule':
-        if (!vps_id || !params.rule_id) return { tool_call_id: '', content: JSON.stringify({ error: 'vps_id and params.rule_id required' }), success: false };
-        endpoint = `/api/vps/v1/virtual-machines/${vps_id}/firewall/rules/${params.rule_id}`;
-        method = 'DELETE';
-        break;
-      case 'list_ssh_keys':
-        endpoint = '/api/vps/v1/public-keys';
-        break;
-      case 'get_templates':
-        endpoint = '/api/vps/v1/templates';
-        break;
-      default:
-        return { tool_call_id: '', content: JSON.stringify({ error: `Unknown Hostinger action: ${action}` }), success: false };
-    }
+    const data = await response.json();
 
-    const url = `${BASE}${endpoint}`;
-    const fetchOpts: RequestInit = { method, headers };
-    if (body && (method === 'POST' || method === 'PUT' || method === 'PATCH')) fetchOpts.body = body;
-
-    const response = await fetchWithTimeout(url, fetchOpts, 15000);
-    const responseText = await response.text();
-    
-    let data: any;
-    try { data = JSON.parse(responseText); } catch { data = { raw: responseText }; }
-
-    if (!response.ok) {
-      return { tool_call_id: '', content: JSON.stringify({
-        success: false, action, vps_id, http_status: response.status,
-        error: data.error || data.message || `HTTP ${response.status}`,
-        correlation_id: data.correlation_id,
-        hint: response.status === 401 ? 'API token invalid or expired. Generate new token at hpanel.hostinger.com → Profile → API' :
-              response.status === 404 ? 'VPS ID not found. Use list_vps first to get correct ID.' :
-              response.status === 429 ? 'Rate limited. Wait a few seconds and retry.' : undefined
-      }), success: false };
-    }
-
-    // Log activity (non-critical)
     try {
       await supabase.from('activity_logs').insert({
-        entity_type: 'hostinger', entity_id: vps_id?.toString() || 'global',
-        action: `hostinger_${action}`, details: { action, vps_id, success: true }
+        entity_type: 'server', entity_id: server.id,
+        action: `server_${action}`, details: { action, server_id: server.id, success: response.ok }
       });
     } catch (_) {}
 
     return { tool_call_id: '', content: JSON.stringify({
-      success: true, action, vps_id, live_execution: true, method: 'hostinger_api',
-      data,
-      message: `✅ Hostinger API: ${action} executed successfully`
-    }, null, 2), success: true };
+      success: response.ok, action, server: server.name, ip: server.ip_address,
+      live_execution: true, method: 'vala_agent', data,
+      message: response.ok ? `✅ Server ${action} executed on ${server.name}` : `❌ ${action} failed`
+    }, null, 2), success: response.ok };
 
   } catch (err: any) {
     return { tool_call_id: '', content: JSON.stringify({
-      success: false, action, vps_id, error: err.message,
-      hint: err.message.includes('timeout') ? 'Hostinger API timeout — check network or try again' : undefined
+      success: false, action, server: server.name, error: err.message,
+      hint: 'VALA Agent may not be running. SSH into server and run: pm2 restart vala-agent'
     }), success: false };
   }
 }
@@ -3714,9 +3649,9 @@ async function executeTool(toolCall: ToolCall, supabase: any): Promise<ToolResul
     case 'bulk_product_update':
       result = await executeBulkProductUpdate(args, supabase);
       break;
-    // ═══ HOSTINGER API ═══
-    case 'hostinger_api':
-      result = await executeHostingerApi(args, supabase);
+    // ═══ SERVER MANAGE ═══
+    case 'server_manage':
+      result = await executeServerManage(args, supabase);
       break;
     // ═══ AUTONOMOUS EVOLUTION ENGINE ═══
     case 'system_audit':
