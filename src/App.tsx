@@ -155,9 +155,14 @@ function AppRoutes() {
         <Route path="/audit-logs" element={<ProtectedRoute><AdminRoute><AuditLogs /></AdminRoute></ProtectedRoute>} />
         <Route path="/system-health" element={<ProtectedRoute><AdminRoute><SystemHealth /></AdminRoute></ProtectedRoute>} />
         <Route path="/automation" element={<ProtectedRoute><AdminRoute><Automation /></AdminRoute></ProtectedRoute>} />
+        <Route path="/auto-pilot" element={<ProtectedRoute><AdminRoute><Automation /></AdminRoute></ProtectedRoute>} />
         <Route path="/apk-pipeline" element={<ProtectedRoute><AdminRoute><ApkPipeline /></AdminRoute></ProtectedRoute>} />
         <Route path="/admin/add-product" element={<ProtectedRoute><AdminRoute><AddProduct /></AdminRoute></ProtectedRoute>} />
         <Route path="/admin/marketplace" element={<ProtectedRoute><AdminRoute><MarketplaceAdmin /></AdminRoute></ProtectedRoute>} />
+        <Route path="/marketplace-admin" element={<ProtectedRoute><AdminRoute><MarketplaceAdmin /></AdminRoute></ProtectedRoute>} />
+
+        {/* Aliases for alternate paths */}
+        <Route path="/saas-ai" element={<ProtectedRoute><SaasAiDashboard /></ProtectedRoute>} />
 
         <Route path="*" element={<NotFound />} />
       </Routes>
