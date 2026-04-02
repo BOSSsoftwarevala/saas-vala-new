@@ -8,7 +8,7 @@ const actions = [
   {
     label: 'Add Product',
     icon: Plus,
-    href: '/products',
+    href: '/products/add',
     color: 'bg-primary hover:bg-primary/90 text-primary-foreground',
   },
   {
@@ -20,7 +20,7 @@ const actions = [
   {
     label: 'Upload APK',
     icon: Upload,
-    href: '/products',
+    href: '/apk-pipeline',
     color: 'bg-purple hover:opacity-90 text-white',
   },
   {
