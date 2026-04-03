@@ -67,6 +67,7 @@ const Cart = React.lazy(() => import("./pages/Cart"));
 const ApkPipeline = React.lazy(() => import("./pages/ApkPipeline"));
 const OfflineAppTemplate = React.lazy(() => import("./pages/OfflineAppTemplate"));
 const MarketplaceAdmin = React.lazy(() => import("./pages/MarketplaceAdmin"));
+const Support = React.lazy(() => import("./pages/Support"));
 
 const queryClient = new QueryClient();
 
