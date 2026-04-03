@@ -8,6 +8,7 @@ import {
   Key,
   Server,
   MessageSquare,
+  Headphones,
   Cpu,
   Wallet,
   TrendingUp,
