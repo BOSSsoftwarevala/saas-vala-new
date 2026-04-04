@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Plus, Key, Upload, Server, Wallet } from 'lucide-react';
+import { Plus, Key, Upload, Server, Wallet, Headphones } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
