@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Plus, Key, Upload, Server, Wallet } from 'lucide-react';
+import { Plus, Key, Upload, Server, Wallet, Headphones } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
@@ -34,6 +34,12 @@ const actions = [
     icon: Wallet,
     href: '/wallet',
     color: 'bg-green hover:opacity-90 text-white',
+  },
+  {
+    label: 'Support',
+    icon: Headphones,
+    href: '/support',
+    color: 'bg-primary hover:bg-primary/90 text-primary-foreground',
   },
 ];
 
