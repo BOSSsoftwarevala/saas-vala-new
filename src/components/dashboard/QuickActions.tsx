@@ -35,6 +35,12 @@ const actions = [
     href: '/wallet',
     color: 'bg-green hover:opacity-90 text-white',
   },
+  {
+    label: 'Support',
+    icon: Headphones,
+    href: '/support',
+    color: 'bg-primary hover:bg-primary/90 text-primary-foreground',
+  },
 ];
 
 const containerVariants = {
