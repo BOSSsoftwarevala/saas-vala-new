@@ -300,6 +300,37 @@ Deno.serve(async (req) => {
         });
       }
 
+      case "get_job_logs": {
+        const { run_id } = data || {};
+        if (!run_id) return respond({ error: "run_id required" }, 400);
+        const jobsRes = await gh(`/repos/saasvala/apk-factory/actions/runs/${run_id}/jobs`);
+        if (!jobsRes.ok) {
+          const err = await jobsRes.text();
+          return respond({ error: err }, 500);
+        }
+        const jobsData = await jobsRes.json();
+        const jobs = (jobsData.jobs || []).map((j: any) => ({
+          id: j.id, name: j.name, status: j.status, conclusion: j.conclusion,
+          steps: (j.steps || []).map((s: any) => ({
+            name: s.name, status: s.status, conclusion: s.conclusion,
+            number: s.number,
+          })),
+        }));
+        // Also try to get logs
+        let logSnippet = "";
+        try {
+          const logsRes = await gh(`/repos/saasvala/apk-factory/actions/runs/${run_id}/logs`, {
+            headers: { Accept: "application/vnd.github.v3+json" } as any,
+          });
+          if (logsRes.status === 302) {
+            const logUrl = logsRes.headers.get("Location");
+            if (logUrl) logSnippet = `Log download URL: ${logUrl}`;
+          }
+          await logsRes.text();
+        } catch (_e) { /* ignore */ }
+        return respond({ success: true, jobs, log_snippet: logSnippet });
+      }
+
       default:
         return respond({ error: `Unknown action: ${action}` }, 400);
     }
