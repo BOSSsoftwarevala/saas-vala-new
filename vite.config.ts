@@ -17,6 +17,10 @@ export default defineConfig(({ mode }) => {
       },
     },
 
+    preview: {
+      allowedHosts: ["saasvala.com", "www.saasvala.com", "72.61.236.249"],
+    },
+
     plugins: [
       react(),
       ...(isDev ? [componentTagger()] : []),
