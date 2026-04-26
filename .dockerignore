@@ -3,6 +3,7 @@ node_modules
 .github
 .env.local
 .env.*.local
+.env.production
 dist
 build
 *.log

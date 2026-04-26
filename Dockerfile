@@ -9,6 +9,9 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci
 
+# Copy environment file
+COPY .env ./
+
 # Copy source code
 COPY . .
 
